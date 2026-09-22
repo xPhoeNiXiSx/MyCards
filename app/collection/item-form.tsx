@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
-import { KIND_LABELS, type Item } from "@/lib/collection";
+import { KIND_LABELS, type Item, type ItemKind } from "@/lib/collection";
 
 import type { ActionState } from "./actions";
 
@@ -21,15 +21,23 @@ export function ItemForm({ action, item, submitLabel }: Props) {
     action,
     {},
   );
+  // Le type pilote l'affichage : l'identifiant TCGdex n'a de sens que sur une
+  // carte, et la cote automatique n'existe que dans ce cas.
+  const [kind, setKind] = useState<ItemKind>(item?.kind ?? "single");
+  const isCard = kind === "single";
 
   return (
-    <form action={formAction} className="panel form">
+    <form action={formAction} className="form">
       {item ? <input type="hidden" name="id" value={item.id} /> : null}
 
       <div className="row">
-        <label>
+        <label className="narrow">
           Type
-          <select name="kind" defaultValue={item?.kind ?? "single"}>
+          <select
+            name="kind"
+            value={kind}
+            onChange={(event) => setKind(event.target.value as ItemKind)}
+          >
             {Object.entries(KIND_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -43,13 +51,15 @@ export function ItemForm({ action, item, submitLabel }: Props) {
           <input
             name="name"
             defaultValue={item?.name ?? ""}
-            placeholder="Coffret dresseur d'élite 30 ans"
+            placeholder={
+              isCard ? "Dracaufeu ex" : "Coffret dresseur d'élite 30 ans"
+            }
             required
           />
         </label>
 
-        <label className="narrow">
-          Quantité
+        <label className="tiny">
+          Qté
           <input
             name="quantity"
             type="number"
@@ -60,33 +70,23 @@ export function ItemForm({ action, item, submitLabel }: Props) {
         </label>
       </div>
 
-      <div className="row">
-        <label className="grow">
+      {isCard ? (
+        <label>
           Identifiant TCGdex
           <input
             name="cardId"
             defaultValue={item?.cardId ?? ""}
             placeholder="30c-015"
           />
-          <small>
-            Pour une carte à l&apos;unité : renseigne-le et la cote Cardmarket
-            est récupérée automatiquement. Laisse vide pour du scellé.
-          </small>
+          <small>Renseigné, la cote Cardmarket est récupérée toute seule.</small>
         </label>
-
-        <label className="grow">
-          Extension
-          <input
-            name="setName"
-            defaultValue={item?.setName ?? ""}
-            placeholder="Célébration 30 ans"
-          />
-        </label>
-      </div>
+      ) : (
+        <input type="hidden" name="cardId" value={item?.cardId ?? ""} />
+      )}
 
       <div className="row">
         <label>
-          Prix d&apos;achat (unitaire)
+          Prix d&apos;achat (à l&apos;unité)
           <input
             name="purchasePrice"
             inputMode="decimal"
@@ -96,43 +96,62 @@ export function ItemForm({ action, item, submitLabel }: Props) {
         </label>
 
         <label>
-          Date d&apos;achat
-          <input
-            name="purchaseDate"
-            type="date"
-            defaultValue={item?.purchaseDate ?? ""}
-          />
-        </label>
-
-        <label>
-          Valeur actuelle (unitaire)
+          Valeur actuelle (à l&apos;unité)
           <input
             name="manualValue"
             inputMode="decimal"
             defaultValue={euros(item?.manualValueCents ?? null)}
-            placeholder="62,00"
+            placeholder={isCard ? "cote auto" : "62,00"}
           />
-          <small>Prioritaire sur la cote automatique. Vide = cote marché.</small>
-        </label>
-
-        <label>
-          Relevée le
-          <input
-            name="manualValueDate"
-            type="date"
-            defaultValue={item?.manualValueDate ?? ""}
-          />
+          <small>
+            {isCard
+              ? "Vide = cote Cardmarket automatique."
+              : "À saisir : le scellé n'a pas de cote automatique."}
+          </small>
         </label>
       </div>
 
-      <label>
-        Notes
-        <input
-          name="notes"
-          defaultValue={item?.notes ?? ""}
-          placeholder="État, provenance, numéro de lot…"
-        />
-      </label>
+      <details className="more" open={Boolean(item?.notes || item?.setName)}>
+        <summary>Plus d&apos;options</summary>
+
+        <div className="row">
+          <label className="grow">
+            Extension
+            <input
+              name="setName"
+              defaultValue={item?.setName ?? ""}
+              placeholder="Célébration 30 ans"
+            />
+          </label>
+
+          <label>
+            Date d&apos;achat
+            <input
+              name="purchaseDate"
+              type="date"
+              defaultValue={item?.purchaseDate ?? ""}
+            />
+          </label>
+
+          <label>
+            Valeur relevée le
+            <input
+              name="manualValueDate"
+              type="date"
+              defaultValue={item?.manualValueDate ?? ""}
+            />
+          </label>
+        </div>
+
+        <label>
+          Notes
+          <input
+            name="notes"
+            defaultValue={item?.notes ?? ""}
+            placeholder="État, provenance, numéro de lot…"
+          />
+        </label>
+      </details>
 
       {state.error ? <p className="error">{state.error}</p> : null}
 

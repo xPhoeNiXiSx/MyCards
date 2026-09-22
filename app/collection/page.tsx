@@ -168,7 +168,7 @@ export default async function CollectionPage() {
         <div className="panel">
           <h2>Inventaire vide</h2>
           <p className="hint">
-            Ajoute ton premier article avec le formulaire ci-dessous.
+            Ajoute ton premier article avec le bouton ci-dessous.
           </p>
         </div>
       ) : (
@@ -177,7 +177,6 @@ export default async function CollectionPage() {
             <thead>
               <tr>
                 <th>Article</th>
-                <th>Type</th>
                 <th className="num">Qté</th>
                 <th className="num">Achat</th>
                 <th className="num">Valeur</th>
@@ -188,16 +187,20 @@ export default async function CollectionPage() {
             <tbody>
               {items.map((item) => (
                 <tr key={item.id}>
-                  <td>
+                  <td className="title-cell">
                     <Link href={`/collection/${item.id}`}>{item.name}</Link>
-                    {item.setName ? (
-                      <span className="muted block">{item.setName}</span>
-                    ) : null}
+                    <span className="muted block">
+                      {KIND_LABELS[item.kind]}
+                      {item.setName ? ` · ${item.setName}` : ""}
+                    </span>
                   </td>
-                  <td className="muted">{KIND_LABELS[item.kind]}</td>
-                  <td className="num">{item.quantity}</td>
-                  <td className="num">{formatCents(item.totalPurchaseCents)}</td>
-                  <td className="num">
+                  <td className="num" data-label="Quantité">
+                    {item.quantity}
+                  </td>
+                  <td className="num" data-label="Achat">
+                    {formatCents(item.totalPurchaseCents)}
+                  </td>
+                  <td className="num" data-label="Valeur">
                     <ValueCell item={item} />
                   </td>
                   <td
@@ -208,12 +211,13 @@ export default async function CollectionPage() {
                           ? "up"
                           : "down"
                     }`}
+                    data-label="Plus-value"
                   >
                     {item.gainCents === null
                       ? "—"
                       : formatSignedCents(item.gainCents)}
                   </td>
-                  <td className="num">
+                  <td className="num actions">
                     <form action={deleteItemAction}>
                       <input type="hidden" name="id" value={item.id} />
                       <button type="submit" className="link danger">
@@ -228,8 +232,12 @@ export default async function CollectionPage() {
         </div>
       )}
 
-      <h2 className="section-title">Ajouter un article</h2>
-      <ItemForm action={addItemAction} submitLabel="Ajouter" />
+      <details className="panel disclosure" open={items.length === 0}>
+        <summary>
+          <span>Ajouter un article</span>
+        </summary>
+        <ItemForm action={addItemAction} submitLabel="Ajouter" />
+      </details>
     </main>
   );
 }

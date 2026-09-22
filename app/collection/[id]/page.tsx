@@ -29,7 +29,9 @@ export default async function EditItemPage({
       </header>
 
       <h2 className="section-title">{item.name}</h2>
-      <ItemForm action={updateItemAction} item={item} submitLabel="Enregistrer" />
+      <div className="panel">
+        <ItemForm action={updateItemAction} item={item} submitLabel="Enregistrer" />
+      </div>
     </main>
   );
 }

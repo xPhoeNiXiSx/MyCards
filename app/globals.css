@@ -268,21 +268,28 @@ a {
   gap: 6px;
   font-size: 0.8125rem;
   color: var(--muted);
-  flex: 1 1 180px;
   min-width: 0;
 }
 
-.form label.grow {
+/* Le dimensionnement ne vaut que dans une ligne. `.form` étant une colonne,
+   l'appliquer à tous les champs transformerait la base flex en hauteur
+   imposée et creuserait des blancs sous les champs pleine largeur. */
+.form .row > label {
+  flex: 1 1 180px;
+}
+
+.form .row > label.grow {
   flex: 3 1 240px;
 }
 
-.form label.narrow {
-  flex: 0 1 110px;
+.form .row > label.narrow {
+  flex: 0 1 158px;
 }
 
 .form small {
   font-size: 0.75rem;
-  line-height: 1.45;
+  line-height: 1.4;
+  margin-top: -2px;
 }
 
 .form input,
@@ -444,4 +451,239 @@ th.num {
 .nav-link {
   font-size: 0.8125rem;
   color: var(--muted);
+}
+
+/* --- Densité et ergonomie --------------------------------------------- */
+
+.page {
+  padding-top: 32px;
+  padding-bottom: 64px;
+}
+
+.form .row > label.tiny {
+  flex: 0 1 84px;
+}
+
+/* Sections repliables : le formulaire d'ajout et les champs secondaires
+   sont masqués par défaut, ce sont eux qui allongeaient la page. */
+.disclosure {
+  padding: 0;
+}
+
+.disclosure > summary,
+.more > summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 24px;
+}
+
+.disclosure > summary::-webkit-details-marker,
+.more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure > summary::before,
+.more > summary::before {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 0.9375rem;
+  line-height: 1;
+}
+
+.disclosure[open] > summary::before,
+.more[open] > summary::before {
+  content: "−";
+}
+
+.disclosure[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.disclosure > .form {
+  padding: 20px 24px 24px;
+}
+
+.more {
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.more > summary {
+  padding: 8px 0;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.tiles {
+  margin-top: 24px;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.tile {
+  padding: 14px 16px;
+  gap: 2px;
+}
+
+.tile strong {
+  font-size: 1.1875rem;
+}
+
+.tile .muted {
+  font-size: 0.75rem;
+}
+
+.table-wrap {
+  margin-top: 24px;
+}
+
+.title-cell a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.actions {
+  width: 1%;
+}
+
+/* Sous 720 px le tableau devient une pile de fiches : plus de défilement
+   horizontal, et chaque valeur porte son libellé. */
+@media (max-width: 720px) {
+  .table-wrap {
+    border: 0;
+    background: none;
+    overflow: visible;
+  }
+
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: auto;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody tr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+
+  tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  td {
+    border: 0;
+    padding: 5px 0;
+    white-space: normal;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  td::before {
+    content: attr(data-label);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    flex: none;
+  }
+
+  td.title-cell {
+    display: block;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td.title-cell a {
+    font-size: 1rem;
+  }
+
+  /* `width: 1%` vient de la mise en page desktop : sans reprise ici, la
+     cellule d'actions déborde hors de la fiche. */
+  td.actions {
+    width: auto;
+    justify-content: flex-end;
+    padding-top: 10px;
+  }
+
+  /* La valeur et sa provenance forment un seul bloc aligné à droite. */
+  td[data-label] > span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    text-align: right;
+  }
+
+  .source {
+    display: inline;
+  }
+
+  /* Nom sur toute la largeur, puis type et quantité côte à côte. */
+  .form .row {
+    gap: 12px;
+  }
+
+  .form .row > label.grow {
+    order: -1;
+    flex: 1 1 100%;
+  }
+
+  .form .row > label.narrow {
+    flex: 1 1 140px;
+  }
+
+  .form .row > label.tiny {
+    flex: 1 1 80px;
+  }
+
+  .tiles {
+    grid-template-columns: 1fr;
+  }
+
+  .tile {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tile strong {
+    order: 3;
+    margin-left: auto;
+    font-size: 1.0625rem;
+  }
+
+  .disclosure > summary,
+  .disclosure > .form {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
 }
