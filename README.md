@@ -11,6 +11,19 @@ Deux écrans :
 - **`/collection`** — l'inventaire personnel, privé : articles possédés, prix
   d'achat, valeur actuelle et plus-value
 
+## Design
+
+Direction « papier chaud et encre » : le mode clair évoque le carton d'une
+carte, le mode sombre l'encre. L'accent terracotta est réservé à la marque et
+aux repères actifs. Deux familles via `next/font` — **Inter** pour le texte,
+**Space Grotesk** pour les titres et tous les montants, parce que les chiffres
+sont le sujet de l'application.
+
+Tout est piloté par des variables CSS dans `app/globals.css`, redéfinies pour
+le thème sombre. `--font-body` et `--font-display` ont un repli déclaré dans
+`:root` : une `font-family` construite sur une variable absente est invalide
+*en entier* et ferait retomber la page en serif.
+
 ## Stack
 
 - **Next.js 16** (App Router) + React 19 + TypeScript

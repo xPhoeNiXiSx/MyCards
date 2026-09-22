@@ -163,31 +163,37 @@ export default async function CollectionPage() {
         <p>Inventaire — {summary.itemCount} ligne{summary.itemCount > 1 ? "s" : ""}</p>
       </header>
 
-      <section className="tiles">
-        <div className="tile">
-          <span className="tile-label">Investi</span>
-          <strong>{formatCents(summary.totalPurchaseCents)}</strong>
-          <span className="muted">{summary.unitCount} article{summary.unitCount > 1 ? "s" : ""}</span>
-        </div>
-        <div className="tile">
-          <span className="tile-label">Valeur actuelle</span>
-          <strong>{formatCents(summary.totalValueCents)}</strong>
-          {summary.unvaluedCount > 0 ? (
-            <span className="muted">
-              {summary.unvaluedCount} ligne{summary.unvaluedCount > 1 ? "s" : ""} sans cote
-            </span>
-          ) : (
-            <span className="muted">tout est valorisé</span>
-          )}
-        </div>
-        <div className="tile">
-          <span className="tile-label">Plus-value</span>
-          <strong className={summary.gainCents >= 0 ? "up" : "down"}>
-            {formatSignedCents(summary.gainCents)}
-          </strong>
-          <span className="muted">
-            {change === undefined ? "—" : `${change > 0 ? "+" : ""}${change} %`}
+      <section className="summary">
+        <div className="summary-main">
+          <span className="summary-label">Valeur actuelle</span>
+          <span className="summary-value">
+            {formatCents(summary.totalValueCents)}
           </span>
+          <span className={`pill ${summary.gainCents >= 0 ? "up" : "down"}`}>
+            {formatSignedCents(summary.gainCents)}
+            {change === undefined ? null : (
+              <small>
+                {change > 0 ? "+" : ""}
+                {change} %
+              </small>
+            )}
+          </span>
+        </div>
+
+        <div className="summary-aside">
+          <div className="summary-item">
+            <strong>{formatCents(summary.totalPurchaseCents)}</strong>
+            <span>investi</span>
+          </div>
+          <div className="summary-item">
+            <strong>{summary.unitCount}</strong>
+            <span>
+              article{summary.unitCount > 1 ? "s" : ""}
+              {summary.unvaluedCount > 0
+                ? `, ${summary.unvaluedCount} sans cote`
+                : ""}
+            </span>
+          </div>
         </div>
       </section>
 
