@@ -1,42 +1,44 @@
 /* ==========================================================================
    MyCards — système visuel
-   Direction : papier chaud et encre. Le clair évoque le carton d'une carte,
-   le sombre l'encre ; l'accent terracotta ne sert qu'aux repères actifs et à
+   Thème sombre unique. L'accent terracotta ne sert qu'aux repères actifs et à
    la marque. Les montants portent la typographie d'affichage, parce qu'ils
    sont le sujet de l'application.
    ========================================================================== */
 
+/* Thème unique : sombre. L'application n'est utilisée que dans ce mode, donc
+   pas de variante claire à maintenir ni de `prefers-color-scheme` à suivre. */
 :root {
+  color-scheme: dark;
+
   /* Surfaces, de l'arrière-plan au premier plan. */
-  --bg: #faf8f5;
-  --bg-sunken: #f2eee8;
-  --surface: #ffffff;
-  --surface-hover: #faf8f5;
+  --bg: #131210;
+  --bg-sunken: #0e0d0c;
+  --surface: #1c1a18;
+  --surface-hover: #232120;
 
   /* Texte, du plus appuyé au plus discret. */
-  --fg: #1a1815;
-  --fg-muted: #6f6a63;
-  --fg-faint: #9a938a;
+  --fg: #f1ede7;
+  --fg-muted: #a39c92;
+  --fg-faint: #7c756c;
 
-  --border: #e7e1d8;
-  --border-strong: #d6cec2;
+  --border: #2e2b27;
+  --border-strong: #3d3833;
 
-  --accent: #c0552f;
-  --accent-soft: #f6e9e2;
+  --accent: #e08a68;
+  --accent-soft: #34251e;
 
-  --positive: #2c7a54;
-  --positive-soft: #e4f1e9;
-  --negative: #b93f2c;
-  --negative-soft: #fbe8e4;
+  --positive: #6cc08b;
+  --positive-soft: #1a2b22;
+  --negative: #ef8b7d;
+  --negative-soft: #2f1e1b;
 
   --radius-sm: 8px;
   --radius: 14px;
   --radius-lg: 20px;
 
-  --shadow-sm: 0 1px 2px rgba(31, 24, 15, 0.05);
-  --shadow: 0 1px 2px rgba(31, 24, 15, 0.05), 0 8px 24px rgba(31, 24, 15, 0.07);
-  --shadow-lg: 0 2px 6px rgba(31, 24, 15, 0.08),
-    0 18px 44px rgba(31, 24, 15, 0.16);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 44px rgba(0, 0, 0, 0.5);
 
   /* Repli défini ici plutôt que dans la seule pile : `font-family` construite
      sur une variable absente est invalide *en entier*, et la page retombe en
@@ -47,34 +49,6 @@
   --font-body-stack: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   --font-display-stack: var(--font-display), var(--font-body), ui-sans-serif,
     system-ui, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #131210;
-    --bg-sunken: #0e0d0c;
-    --surface: #1c1a18;
-    --surface-hover: #232120;
-
-    --fg: #f1ede7;
-    --fg-muted: #a39c92;
-    --fg-faint: #7c756c;
-
-    --border: #2e2b27;
-    --border-strong: #3d3833;
-
-    --accent: #e08a68;
-    --accent-soft: #34251e;
-
-    --positive: #6cc08b;
-    --positive-soft: #1a2b22;
-    --negative: #ef8b7d;
-    --negative-soft: #2f1e1b;
-
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.36);
-    --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 44px rgba(0, 0, 0, 0.5);
-  }
 }
 
 *,
