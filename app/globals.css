@@ -687,3 +687,129 @@ th.num {
     padding-right: 18px;
   }
 }
+
+/* --- Navigation ------------------------------------------------------- */
+
+/* Le menu est ancré en bas : c'est la zone atteignable au pouce sur mobile,
+   et la page peut être longue. */
+.site-nav {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.nav-toggle {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 10px 28px rgba(0, 0, 0, 0.12);
+  order: 2;
+}
+
+.nav-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.32);
+  cursor: default;
+  z-index: -1;
+}
+
+.nav-sheet {
+  order: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+  min-width: 250px;
+  max-width: calc(100vw - 32px);
+}
+
+.nav-sheet[hidden] {
+  display: none;
+}
+
+.nav-sheet ul {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-sheet a,
+.nav-logout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9375rem;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.nav-sheet a:hover,
+.nav-logout:hover {
+  background: var(--bg);
+}
+
+.nav-sheet a.active {
+  background: var(--bg);
+}
+
+.nav-sheet a.active .nav-label::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.nav-label {
+  font-weight: 600;
+}
+
+.nav-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.nav-sheet li + li {
+  border-top: 1px solid var(--border);
+  padding-top: 2px;
+  margin-top: 2px;
+}
+
+.nav-logout {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* Le bouton flotte au-dessus du contenu : on réserve la place en bas. */
+.page {
+  padding-bottom: 104px;
+}

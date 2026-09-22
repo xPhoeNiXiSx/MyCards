@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { SetGallery } from "./set-gallery";
+import { SiteNav } from "./site-nav";
 
 export default function HomePage() {
   return (
@@ -9,13 +8,10 @@ export default function HomePage() {
         <h1 className="wordmark">
           My<span>Cards</span>
         </h1>
-        <p>
-          <Link href="/collection" className="nav-link">
-            Mon inventaire
-          </Link>
-        </p>
+        <p>Données : TCGdex — édition française</p>
       </header>
       <SetGallery />
+      <SiteNav />
     </main>
   );
 }

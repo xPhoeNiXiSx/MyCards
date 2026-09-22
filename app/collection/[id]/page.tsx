@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
 import { getItem } from "@/lib/collection";
 
+import { SiteNav } from "../../site-nav";
 import { updateItemAction } from "../actions";
 import { ItemForm } from "../item-form";
 
@@ -32,6 +33,7 @@ export default async function EditItemPage({
       <div className="panel">
         <ItemForm action={updateItemAction} item={item} submitLabel="Enregistrer" />
       </div>
+      <SiteNav authenticated />
     </main>
   );
 }
