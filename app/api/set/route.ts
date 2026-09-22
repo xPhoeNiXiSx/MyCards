@@ -9,12 +9,22 @@ import { fetchAnniversarySet } from "@/lib/tcgdex";
  */
 export async function GET() {
   try {
-    const payload = await fetchAnniversarySet();
-    return NextResponse.json(payload);
+    return json(await fetchAnniversarySet());
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erreur inconnue côté TCGdex.";
     console.error("[api/set]", error);
-    return NextResponse.json({ error: message }, { status: 502 });
+    return json({ error: message }, 502);
   }
+}
+
+/**
+ * `NextResponse.json` n'annonce pas d'encodage, et les navigateurs affichent
+ * alors le JSON en Latin-1 : les accents deviennent illisibles.
+ */
+function json(body: unknown, status = 200): NextResponse {
+  return NextResponse.json(body, {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }
