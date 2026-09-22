@@ -42,17 +42,26 @@ export async function GET(request: Request) {
       ? (rarities.extrait[0] as string)
       : "Commune";
 
+  // Une rareté que toutes les collections possèdent : un résultat vide sur
+  // « Commune » est un vrai échec, pas une collection qui n'en contient pas.
+  const courante = "Commune";
+
   const essais = await Promise.all([
     probe(`/cards?set=eq:${encodeURIComponent(setId)}`),
     probe(`/cards?rarity=eq:${encodeURIComponent(premiere)}`),
+    // Les deux encodages, côte à côte : deux-points littéraux et `%20` contre
+    // la sortie de `URLSearchParams`, `%3A` et `+`.
     probe(
-      `/cards?set=eq:${encodeURIComponent(setId)}&rarity=eq:${encodeURIComponent(premiere)}`,
+      `/cards?set=eq:${encodeURIComponent(setId)}&rarity=eq:${encodeURIComponent(courante)}`,
     ),
-    probe(`/sets/${encodeURIComponent(setId)}?rarity=eq:${encodeURIComponent(premiere)}`),
+    probe(
+      `/cards?${new URLSearchParams({ set: `eq:${setId}`, rarity: `eq:${courante}` }).toString()}`,
+    ),
+    probe(`/sets/${encodeURIComponent(setId)}?rarity=eq:${encodeURIComponent(courante)}`),
   ]);
 
   return NextResponse.json(
-    { raretes: rarities, rareteTestee: premiere, essais },
+    { raretes: rarities, rareteTestee: premiere, rareteCourante: "Commune", essais },
     { headers: { "content-type": "application/json; charset=utf-8" } },
   );
 }

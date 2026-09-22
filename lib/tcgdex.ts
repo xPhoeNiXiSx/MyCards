@@ -192,9 +192,12 @@ export async function fetchCardsOfSet(
   setId: string,
   rarity: string,
 ): Promise<CardResume[]> {
-  const query = new URLSearchParams({
-    set: `eq:${setId}`,
-    rarity: `eq:${rarity}`,
-  });
-  return get<CardResume[]>(`/cards?${query.toString()}`);
+  // Construite à la main, et pas avec `URLSearchParams` : celui-ci encode les
+  // deux-points en `%3A` et les espaces en `+`, alors que l'API attend le
+  // préfixe `eq:` littéral et `%20`. La requête revenait vide.
+  const query =
+    `set=eq:${encodeURIComponent(setId)}` +
+    `&rarity=eq:${encodeURIComponent(rarity)}`;
+
+  return get<CardResume[]>(`/cards?${query}`);
 }
