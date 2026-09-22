@@ -1,6 +1,6 @@
 import { Logo } from "./logo";
 import { SetGallery } from "./set-gallery";
-import { SiteNav } from "./site-nav";
+import { TabBar } from "./tab-bar";
 
 export default function HomePage() {
   return (
@@ -15,7 +15,7 @@ export default function HomePage() {
         <p>Données : TCGdex — édition française</p>
       </header>
       <SetGallery />
-      <SiteNav />
+      <TabBar />
     </main>
   );
 }

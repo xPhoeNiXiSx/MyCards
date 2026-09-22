@@ -13,7 +13,7 @@ import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
 import { Logo } from "../logo";
-import { SiteNav } from "../site-nav";
+import { TabBar } from "../tab-bar";
 
 import { addItemAction, deleteItemAction, migrateAction } from "./actions";
 import { ItemForm } from "./item-form";
@@ -42,7 +42,7 @@ function Setup({ missing }: { missing: string[] }) {
           le README.
         </p>
       </div>
-      <SiteNav />
+      <TabBar />
     </main>
   );
 }
@@ -61,7 +61,7 @@ function Migrate() {
           <button type="submit">Initialiser la base</button>
         </form>
       </div>
-      <SiteNav authenticated />
+      <TabBar />
     </main>
   );
 }
@@ -77,7 +77,7 @@ function DatabaseError({ message }: { message: string }) {
           d&apos;environnement Vercel, puis redéploie.
         </p>
       </div>
-      <SiteNav authenticated />
+      <TabBar />
     </main>
   );
 }
@@ -276,7 +276,7 @@ export default async function CollectionPage() {
         <ItemForm action={addItemAction} submitLabel="Ajouter" />
       </details>
 
-      <SiteNav authenticated />
+      <TabBar />
     </main>
   );
 }

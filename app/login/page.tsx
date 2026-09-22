@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { Logo } from "../logo";
 import { LoginForm } from "./login-form";
-import { SiteNav } from "../site-nav";
 
 export default async function LoginPage({
   searchParams,
@@ -24,7 +23,6 @@ export default async function LoginPage({
         </h1>
       </header>
       <LoginForm next={next ?? ""} />
-      <SiteNav />
     </main>
   );
 }
