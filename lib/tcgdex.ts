@@ -16,6 +16,17 @@ export type SetResume = {
   cardCount: { total: number; official: number };
 };
 
+export type SerieResume = {
+  id: string;
+  name: string;
+  logo?: string;
+};
+
+/** Une série et les sets qui la composent. */
+export type SerieDetail = SerieResume & {
+  sets: SetResume[];
+};
+
 export type CardResume = {
   id: string;
   localId: string;
@@ -126,4 +137,42 @@ export async function fetchSets(): Promise<SetResume[]> {
 /** Fiche d'un set désigné par son identifiant. */
 export async function fetchSet(id: string): Promise<SetDetail> {
   return get<SetDetail>(`/sets/${encodeURIComponent(id)}`);
+}
+
+/** Fiche d'une série, avec la liste de ses sets. */
+export async function fetchSerie(id: string): Promise<SerieDetail> {
+  return get<SerieDetail>(`/series/${encodeURIComponent(id)}`);
+}
+
+/**
+ * Catalogue complet : toutes les séries, chacune avec ses sets.
+ *
+ * TCGdex ne fournit pas les sets dans la liste des séries : il faut une
+ * requête par série. Elles partent en parallèle et sont mises en cache une
+ * heure, donc le visiteur ne paie ce coût qu'une fois par heure et par
+ * déploiement. Le catalogue bouge de quelques sets par an.
+ *
+ * L'ordre de l'API est chronologique : on l'inverse pour présenter les séries
+ * récentes en premier, et leurs sets de même.
+ */
+export async function fetchCatalogue(): Promise<SerieDetail[]> {
+  const series = await get<SerieResume[]>("/series");
+
+  const details = await Promise.allSettled(
+    series.map((serie) => fetchSerie(serie.id)),
+  );
+
+  const resolved: SerieDetail[] = [];
+  for (const result of details) {
+    if (result.status === "rejected") {
+      console.warn("[tcgdex] série indisponible", result.reason);
+      continue;
+    }
+    // Une série sans set n'a rien à ouvrir : elle n'est pas listée.
+    if (result.value.sets?.length) {
+      resolved.push({ ...result.value, sets: [...result.value.sets].reverse() });
+    }
+  }
+
+  return resolved.reverse();
 }

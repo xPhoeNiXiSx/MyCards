@@ -98,19 +98,26 @@ a {
 .page {
   max-width: 1160px;
   margin: 0 auto;
-  padding: 28px 16px calc(76px + env(safe-area-inset-bottom, 0px));
+  padding: 0 16px calc(76px + env(safe-area-inset-bottom, 0px));
 }
 
 .page.narrow {
   max-width: 560px;
 }
 
+/* Collant en haut : le catalogue est long, et la marque sert de retour à
+   l'accueil. Le fond est opaque, sinon le contenu défilerait en transparence
+   sous l'en-tête. */
 .masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 18px;
+  padding: 22px 0 14px;
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
 
@@ -896,8 +903,8 @@ button[type="submit"]:disabled {
 /* --- Sous 720 px -------------------------------------------------------- */
 
 @media (max-width: 720px) {
-  .page {
-    padding-top: 22px;
+  .masthead {
+    padding-top: 16px;
   }
 
   .summary {
@@ -1077,4 +1084,119 @@ button[type="submit"]:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* --- Catalogue en accordéon --------------------------------------------- */
+
+.catalogue-meta {
+  margin: 14px 0 18px;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+}
+
+.acc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acc-placeholder {
+  height: 56px;
+  border-radius: var(--radius);
+}
+
+.acc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.acc > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  cursor: pointer;
+  list-style: none;
+  min-width: 0;
+}
+
+.acc > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Le chevron dit l'état ; il pivote à l'ouverture. */
+.acc > summary::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-right: 1.8px solid var(--fg-faint);
+  border-bottom: 1.8px solid var(--fg-faint);
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+}
+
+.acc[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.acc > summary:hover {
+  background: var(--surface-hover);
+}
+
+.acc-title {
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acc-meta {
+  font-size: 0.75rem;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.acc-logo {
+  height: 22px;
+  width: 34px;
+  object-fit: contain;
+  flex: none;
+}
+
+.acc > .acc-body {
+  padding: 0 14px 14px;
+}
+
+/* Second niveau : posé sur le fond de page pour se distinguer du premier. */
+.acc.nested {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+}
+
+.acc.nested + .acc.nested {
+  margin-top: 6px;
+}
+
+.acc.nested > summary {
+  padding: 11px 14px;
+}
+
+.acc.nested > summary:hover {
+  background: var(--bg-sunken);
+}
+
+.acc.nested > .acc-body {
+  padding: 4px 12px 14px;
+}
+
+.acc.nested .filter {
+  margin: 4px 0 14px;
 }

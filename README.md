@@ -13,7 +13,7 @@ plutôt que publique par oubli.
 
 Deux écrans :
 
-- **`/`** — la collection anniversaire **30 ans**
+- **`/`** — le catalogue complet : toutes les séries et leurs collections
 - **`/collection`** — l'inventaire : articles possédés, prix d'achat, valeur
   actuelle et plus-value
 
@@ -87,8 +87,9 @@ rejeu est sans effet.
 | Chemin                 | Rôle                                                        |
 | ---------------------- | ----------------------------------------------------------- |
 | `app/page.tsx`         | Page d'accueil (statique)                                    |
-| `app/set-gallery.tsx`  | Grille des cartes, chargée côté navigateur                   |
-| `app/api/set/route.ts` | Route serveur : interroge TCGdex et met la réponse en cache  |
+| `app/series-browser.tsx` | Catalogue en accordéon, cartes chargées à l'ouverture        |
+| `app/api/series/route.ts` | Catalogue : séries et leurs collections                    |
+| `app/api/sets/[id]/route.ts` | Cartes d'une collection                                |
 | `app/collection/`      | Inventaire : liste, totaux, formulaires, actions serveur      |
 | `app/compte/`          | Compte : session, déconnexion, futurs réglages                 |
 | `app/tab-bar.tsx`      | Barre d'onglets fixée en bas, icônes seules                    |
@@ -110,9 +111,15 @@ navigateur : pas de dépendance au CORS, une seule réponse mise en cache (1 h)
 pour tous les visiteurs, et c'est le point d'accroche naturel pour le suivi des
 cotes à venir.
 
-Le set « 30 ans » est résolu **par son nom** dans le catalogue TCGdex, pas par
-un identifiant codé en dur. Pour forcer un set précis, définir la variable
-d'environnement `TCGDEX_SET_ID`.
+Le catalogue est un accordéon à deux niveaux — série, puis collection, puis
+cartes. Rien n'est chargé tant qu'une collection n'est pas ouverte : il y a
+environ 150 collections et plusieurs dizaines de milliers de cartes. Une
+collection déjà ouverte garde ses cartes en mémoire, la refermer et la rouvrir
+ne redemande rien.
+
+TCGdex ne donne pas les collections dans la liste des séries : le catalogue
+fait une requête par série, en parallèle, mise en cache une heure côté
+serveur.
 
 ## Déploiement
 

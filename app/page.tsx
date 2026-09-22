@@ -1,5 +1,5 @@
 import { Wordmark } from "./wordmark";
-import { SetGallery } from "./set-gallery";
+import { SeriesBrowser } from "./series-browser";
 import { TabBar } from "./tab-bar";
 
 export default function HomePage() {
@@ -12,7 +12,7 @@ export default function HomePage() {
       </header>
 
       <h1 className="page-title">Collection</h1>
-      <SetGallery />
+      <SeriesBrowser />
       <TabBar />
     </main>
   );
