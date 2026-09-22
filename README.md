@@ -5,11 +5,17 @@
 Suivi de collection Pokémon. Première étape : la collection anniversaire
 **30 ans** affichée sur la page d'accueil, en français.
 
+**L'application entière est privée.** Toute route autre que la page de
+connexion redirige vers celle-ci tant que la session n'est pas ouverte — la
+galerie et les routes API comprises. La fermeture se fait dans `proxy.ts`,
+en amont du rendu, pour qu'une route ajoutée plus tard soit fermée par défaut
+plutôt que publique par oubli.
+
 Deux écrans :
 
-- **`/`** — la collection anniversaire **30 ans**, publique
-- **`/collection`** — l'inventaire personnel, privé : articles possédés, prix
-  d'achat, valeur actuelle et plus-value
+- **`/`** — la collection anniversaire **30 ans**
+- **`/collection`** — l'inventaire : articles possédés, prix d'achat, valeur
+  actuelle et plus-value
 
 ## Design
 
@@ -84,6 +90,8 @@ n'est jamais supprimé, le rejeu est sans effet.
 | `app/api/set/route.ts` | Route serveur : interroge TCGdex et met la réponse en cache  |
 | `app/collection/`      | Inventaire : liste, totaux, formulaires, actions serveur      |
 | `app/login/`           | Connexion par mot de passe                                    |
+| `proxy.ts`             | Ferme toute l'application derrière la session                  |
+| `lib/session.ts`       | Signature et vérification du cookie, sans `next/headers`      |
 | `lib/tcgdex.ts`        | Client TCGdex — serveur uniquement                           |
 | `lib/images.ts`        | Construction des URL d'images — utilisable côté navigateur   |
 | `lib/collection.ts`    | CRUD de l'inventaire et calcul des plus-values                |

@@ -23,6 +23,7 @@ import {
 } from "../lib/collection";
 import { formatCents, parseEuros, percentChange } from "../lib/money";
 import { readQuote } from "../lib/pricing";
+import { newToken, safeEquals, verifyToken } from "../lib/session";
 
 const checks: string[] = [];
 
@@ -194,6 +195,40 @@ async function main() {
   assert.equal(readQuote(undefined), undefined);
   assert.equal(readQuote({ tcgplayer: { market: 4 } }), undefined);
   ok("absence de cote gérée sans exception");
+
+  // --- Session ----------------------------------------------------------
+
+  process.env.AUTH_SECRET = "secret-de-test";
+
+  const token = await newToken();
+  assert.equal(await verifyToken(token), true);
+  ok("un jeton fraîchement émis est accepté");
+
+  assert.equal(await verifyToken(undefined), false);
+  assert.equal(await verifyToken("nimportequoi"), false);
+  assert.equal(await verifyToken("1700000000.signaturebidon"), false);
+  ok("un jeton absent ou mal signé est refusé");
+
+  // Rejouer un jeton signé avec une autre clé ne doit rien donner.
+  const [issued] = token.split(".");
+  process.env.AUTH_SECRET = "une-autre-clef";
+  assert.equal(await verifyToken(token), false);
+  ok("un jeton signé avec une autre clé est refusé");
+
+  process.env.AUTH_SECRET = "secret-de-test";
+  // Un jeton daté d'il y a plus de 30 jours est périmé.
+  const vieux = Number(issued) - 31 * 24 * 3600 * 1000;
+  const { signPayload } = await import("../lib/session");
+  assert.equal(
+    await verifyToken(`${vieux}.${await signPayload(String(vieux))}`),
+    false,
+  );
+  ok("un jeton de plus de 30 jours est périmé");
+
+  assert.equal(safeEquals("abc", "abc"), true);
+  assert.equal(safeEquals("abc", "abd"), false);
+  assert.equal(safeEquals("abc", "abcd"), false);
+  ok("comparaison à temps constant");
 
   await pg.close();
 
