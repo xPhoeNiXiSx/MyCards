@@ -512,10 +512,6 @@ th.num {
   color: var(--accent);
 }
 
-.actions {
-  width: 1%;
-}
-
 .muted {
   color: var(--fg-muted);
 }
@@ -643,20 +639,91 @@ button[type="submit"]:disabled {
   cursor: progress;
 }
 
-button.link {
-  font: inherit;
-  font-size: 0.8125rem;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  color: var(--fg-faint);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+/* --- Suppression -------------------------------------------------------- */
+
+/* Mise à l'écart du reste du formulaire : une action destructrice ne se range
+   pas à côté de « Enregistrer ». */
+.danger-zone {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
 }
 
-button.link.danger:hover {
+.danger-button {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--negative);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.danger-button:hover {
+  border-color: var(--negative);
+  background: var(--negative-soft);
+}
+
+.danger-button.solid {
+  color: var(--bg);
+  background: var(--negative);
+  border-color: var(--negative);
+  font-weight: 600;
+}
+
+.danger-button.solid:hover {
+  opacity: 0.9;
+}
+
+.ghost-button {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--fg);
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.ghost-button:hover {
+  background: var(--surface-hover);
+}
+
+/* L'élément `dialog` natif arrive avec ses propres marges et bordures : on
+   repart de zéro. */
+.confirm {
+  margin: auto;
+  max-width: 400px;
+  width: calc(100% - 32px);
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+}
+
+.confirm::backdrop {
+  background: rgba(10, 8, 6, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.confirm h2 {
+  font-size: 1.0625rem;
+  margin-bottom: 8px;
+  text-wrap: balance;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 /* Sections repliables : le formulaire d'ajout et les champs secondaires sont
@@ -913,14 +980,6 @@ button.link.danger:hover {
 
   td.title-cell a {
     font-size: 1rem;
-  }
-
-  /* `width: 1%` vient de la mise en page desktop : sans reprise ici, la
-     cellule d'actions déborde hors de la fiche. */
-  td.actions {
-    width: auto;
-    justify-content: flex-end;
-    padding-top: 10px;
   }
 
   /* La valeur et sa provenance forment un seul bloc aligné à droite. */

@@ -15,7 +15,7 @@ import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 import { Wordmark } from "../wordmark";
 import { TabBar } from "../tab-bar";
 
-import { addItemAction, deleteItemAction, migrateAction } from "./actions";
+import { addItemAction, migrateAction } from "./actions";
 import { ItemForm } from "./item-form";
 
 // L'inventaire dépend de la session : jamais de rendu statique ici.
@@ -236,7 +236,6 @@ export default async function CollectionPage() {
                 <th className="num">Achat</th>
                 <th className="num">Valeur</th>
                 <th className="num">Plus-value</th>
-                <th />
               </tr>
             </thead>
             <tbody>
@@ -280,14 +279,6 @@ export default async function CollectionPage() {
                     {item.gainCents === null
                       ? "—"
                       : formatSignedCents(item.gainCents)}
-                  </td>
-                  <td className="num actions">
-                    <form action={deleteItemAction}>
-                      <input type="hidden" name="id" value={item.id} />
-                      <button type="submit" className="link danger">
-                        Supprimer
-                      </button>
-                    </form>
                   </td>
                 </tr>
               ))}

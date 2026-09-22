@@ -127,6 +127,8 @@ export async function deleteItemAction(form: FormData): Promise<void> {
 
   await deleteItem(id);
   revalidatePath("/collection");
+  // La fiche vient de disparaître : rester dessus afficherait un 404.
+  redirect("/collection");
 }
 
 /**

@@ -8,6 +8,7 @@ import { TabBar } from "../../tab-bar";
 import { Wordmark } from "../../wordmark";
 import { updateItemAction } from "../actions";
 import { ItemForm } from "../item-form";
+import { DeleteItem } from "./delete-item";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,11 @@ export default async function EditItemPage({
       <div className="panel">
         <ItemForm action={updateItemAction} item={item} submitLabel="Enregistrer" />
       </div>
+
+      <div className="danger-zone">
+        <DeleteItem id={item.id} name={item.name} />
+      </div>
+
       <TabBar />
     </main>
   );
