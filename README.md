@@ -88,6 +88,7 @@ rejeu est sans effet.
 | ---------------------- | ----------------------------------------------------------- |
 | `app/page.tsx`         | Page d'accueil (statique)                                    |
 | `app/series-browser.tsx` | Catalogue en accordéon, cartes chargées à l'ouverture        |
+| `app/card-viewer.tsx`  | Visionneuse plein écran, navigation carte à carte             |
 | `app/api/series/route.ts` | Catalogue : séries et leurs collections                    |
 | `app/api/sets/[id]/route.ts` | Cartes d'une collection                                |
 | `app/collection/`      | Inventaire : liste, totaux, formulaires, actions serveur      |

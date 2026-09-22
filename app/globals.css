@@ -1025,7 +1025,7 @@ button[type="submit"]:disabled {
   }
 
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px 10px;
   }
 
@@ -1205,4 +1205,119 @@ button[type="submit"]:disabled {
 
 .acc.nested .filter {
   margin: 4px 0 14px;
+}
+
+/* --- Visionneuse -------------------------------------------------------- */
+
+.viewer {
+  margin: auto;
+  width: min(100vw - 24px, 520px);
+  max-height: calc(100dvh - 48px);
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 0;
+  overflow: visible;
+}
+
+.viewer::backdrop {
+  background: rgba(8, 7, 6, 0.82);
+  backdrop-filter: blur(3px);
+}
+
+.viewer-stage {
+  display: grid;
+  place-items: center;
+  padding: 18px 18px 12px;
+  min-height: 200px;
+}
+
+.viewer-stage img {
+  /* La carte occupe la hauteur disponible sans jamais forcer de défilement. */
+  max-height: calc(100dvh - 190px);
+  max-width: 100%;
+  border-radius: 10px;
+  display: block;
+}
+
+.viewer-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+}
+
+.viewer-label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viewer-label strong {
+  font-family: var(--font-display-stack);
+  font-size: 0.9375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewer-label span {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cibles larges : on navigue au pouce, souvent d'une seule main. */
+.viewer-nav {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.viewer-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.viewer-nav:not(:disabled):hover {
+  border-color: var(--border-strong);
+  background: var(--bg-sunken);
+}
+
+.viewer-close {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 0.9375rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* La vignette devient un bouton : elle ne doit pas en prendre l'apparence. */
+button.frame {
+  border: 0;
+  padding: 0;
+  width: 100%;
+  cursor: zoom-in;
+  font: inherit;
+  color: inherit;
 }

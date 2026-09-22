@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { assetUrl, imageUrl } from "@/lib/images";
+
+import { CardViewer } from "./card-viewer";
 import type { CardResume, SerieDetail, SetDetail, SetResume } from "@/lib/tcgdex";
 
 /**
@@ -121,6 +123,8 @@ const FILTER_THRESHOLD = 40;
 function SetPanel({ set }: { set: SetResume }) {
   const [cards, setCards] = useState<Cards>({ status: "idle" });
   const [search, setSearch] = useState("");
+  // Index dans la liste *filtrée* : c'est celle que l'utilisateur parcourt.
+  const [viewing, setViewing] = useState<number | null>(null);
   const logo = assetUrl(set.logo);
 
   /** Chargé au premier dépliage seulement : rouvrir ne redemande rien. */
@@ -202,31 +206,45 @@ function SetPanel({ set }: { set: SetResume }) {
             {visible.length === 0 ? (
               <p className="hint">Aucune carte ne correspond.</p>
             ) : (
-              <div className="grid">
-                {visible.map((card) => {
-                  const src = imageUrl(card.image);
-                  return (
-                    <article className="card" key={card.id}>
-                      <div className="frame">
-                        {src ? (
-                          <img
-                            src={src}
-                            alt={card.name}
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ) : null}
-                      </div>
-                      <div className="meta">
-                        <span className="name" title={card.name}>
-                          {card.name}
-                        </span>
-                        <span className="num">{card.localId}</span>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+              <>
+                <div className="grid">
+                  {visible.map((card, position) => {
+                    const src = imageUrl(card.image);
+                    return (
+                      <article className="card" key={card.id}>
+                        <button
+                          type="button"
+                          className="frame"
+                          aria-label={`Agrandir ${card.name}`}
+                          onClick={() => setViewing(position)}
+                        >
+                          {src ? (
+                            <img
+                              src={src}
+                              alt={card.name}
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : null}
+                        </button>
+                        <div className="meta">
+                          <span className="name" title={card.name}>
+                            {card.name}
+                          </span>
+                          <span className="num">{card.localId}</span>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                <CardViewer
+                  cards={visible}
+                  index={viewing}
+                  onNavigate={setViewing}
+                  onClose={() => setViewing(null)}
+                />
+              </>
             )}
           </>
         ) : null}
