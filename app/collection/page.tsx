@@ -9,10 +9,10 @@ import {
   valuate,
   type ValuedItem,
 } from "@/lib/collection";
-import { isDatabaseConfigured } from "@/lib/db";
+import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
-import { addItemAction, deleteItemAction } from "./actions";
+import { addItemAction, deleteItemAction, migrateAction } from "./actions";
 import { ItemForm } from "./item-form";
 
 // L'inventaire dépend de la session : jamais de rendu statique ici.
@@ -37,6 +37,39 @@ function Setup({ missing }: { missing: string[] }) {
         <p className="hint">
           Settings → Environment Variables, puis redéploie. Le détail est dans
           le README.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+function Migrate() {
+  return (
+    <main className="page narrow">
+      <div className="panel form">
+        <h2>Base à initialiser</h2>
+        <p className="hint">
+          La connexion fonctionne, mais la table de l&apos;inventaire n&apos;existe
+          pas encore. Ce bouton l&apos;applique. Il est sans risque et peut être
+          rejoué : rien n&apos;est jamais supprimé.
+        </p>
+        <form action={migrateAction}>
+          <button type="submit">Initialiser la base</button>
+        </form>
+      </div>
+    </main>
+  );
+}
+
+function DatabaseError({ message }: { message: string }) {
+  return (
+    <main className="page narrow">
+      <div className="panel">
+        <h2>Base injoignable</h2>
+        <p className="hint">{message}</p>
+        <p className="hint">
+          Vérifie <code>DATABASE_URL</code> dans les variables
+          d&apos;environnement Vercel, puis redéploie.
         </p>
       </div>
     </main>
@@ -72,6 +105,18 @@ export default async function CollectionPage() {
   if (missing.length > 0) return <Setup missing={missing} />;
 
   if (!(await isAuthenticated())) redirect("/login?next=/collection");
+
+  try {
+    if (!(await isSchemaReady())) return <Migrate />;
+  } catch (error) {
+    return (
+      <DatabaseError
+        message={
+          error instanceof Error ? error.message : "Erreur de connexion inconnue."
+        }
+      />
+    );
+  }
 
   const items = await valuate(await listItems());
   const summary = summarize(items);

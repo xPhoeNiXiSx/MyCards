@@ -6,12 +6,11 @@
  *   npm test
  */
 
-import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
 import { PGlite } from "@electric-sql/pglite";
 
-import { setQueryRunner } from "../lib/db";
+import { runMigrations, isSchemaReady, setQueryRunner } from "../lib/db";
 import {
   createItem,
   deleteItem,
@@ -38,11 +37,15 @@ async function main() {
     return result.rows as never[];
   });
 
-  await pg.exec(await readFile("db/schema.sql", "utf8"));
-  ok("le schéma s'applique");
+  assert.equal(await isSchemaReady(), false);
+  ok("une base vide est détectée comme non initialisée");
 
-  // Rejouer le schéma ne doit rien casser : les déploiements le relancent.
-  await pg.exec(await readFile("db/schema.sql", "utf8"));
+  await runMigrations();
+  assert.equal(await isSchemaReady(), true);
+  ok("le schéma s'applique depuis l'application");
+
+  // Rejouer le schéma ne doit rien casser : le bouton reste cliquable.
+  await runMigrations();
   ok("le schéma est idempotent");
 
   const etb: ItemInput = {

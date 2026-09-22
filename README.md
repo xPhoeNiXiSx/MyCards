@@ -27,9 +27,9 @@ npm run typecheck  # tsc --noEmit
 npm test           # couche données, sur un Postgres en mémoire (PGlite)
 ```
 
-Les tests appliquent le vrai `db/schema.sql` et rejouent les requêtes de
-production contre un Postgres embarqué : seul le pilote change. Pas besoin de
-base ni de réseau pour les lancer.
+Les tests appliquent le vrai schéma, par le même code que la production, et
+rejouent les requêtes réelles contre un Postgres embarqué : seul le pilote
+change. Pas besoin de base ni de réseau pour les lancer.
 
 ## Configuration
 
@@ -51,10 +51,16 @@ Générer un secret : `openssl rand -base64 32`.
 
 1. Vercel → onglet **Storage** → **Create Database** → **Neon** (offre gratuite)
 2. Vercel injecte `DATABASE_URL` dans le projet
-3. Appliquer le schéma : coller le contenu de `db/schema.sql` dans l'éditeur
-   SQL de Neon et l'exécuter
+3. Redéployer, se connecter, puis cliquer **Initialiser la base** sur
+   `/collection`
 
-Le schéma est idempotent : le rejouer ne casse rien.
+Aucun SQL à exécuter à la main. Le schéma vit dans `lib/schema.ts` et l'app
+l'applique elle-même, parce que la base n'est joignable que depuis les
+fonctions serveur — ni depuis un poste de développement, ni depuis un agent.
+
+Même mécanique pour les évolutions futures : ajouter une instruction
+idempotente dans `SCHEMA_STATEMENTS`, déployer, recliquer le bouton. Rien
+n'est jamais supprimé, le rejeu est sans effet.
 
 ## Architecture
 
@@ -71,7 +77,7 @@ Le schéma est idempotent : le rejouer ne casse rien.
 | `lib/pricing.ts`       | Lecture des cotes Cardmarket exposées par TCGdex              |
 | `lib/money.ts`         | Montants en centimes, formatage et saisie en euros            |
 | `lib/auth.ts`          | Session par mot de passe unique                               |
-| `db/schema.sql`        | Schéma Postgres, idempotent                                   |
+| `lib/schema.ts`        | Schéma Postgres, idempotent, appliqué par l'app elle-même      |
 
 L'appel à TCGdex passe par une route serveur plutôt que directement depuis le
 navigateur : pas de dépendance au CORS, une seule réponse mise en cache (1 h)

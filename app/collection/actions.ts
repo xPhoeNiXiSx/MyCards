@@ -11,6 +11,7 @@ import {
   type ItemInput,
   type ItemKind,
 } from "@/lib/collection";
+import { runMigrations } from "@/lib/db";
 import { parseEuros } from "@/lib/money";
 
 const KINDS: ItemKind[] = ["single", "sealed", "other"];
@@ -118,5 +119,15 @@ export async function deleteItemAction(form: FormData): Promise<void> {
   if (typeof id !== "string" || id === "") return;
 
   await deleteItem(id);
+  revalidatePath("/collection");
+}
+
+/**
+ * Applique le schéma depuis l'application elle-même : la base n'est joignable
+ * que par les fonctions serveur, jamais depuis un poste de développement.
+ */
+export async function migrateAction(): Promise<void> {
+  await requireSession();
+  await runMigrations();
   revalidatePath("/collection");
 }
