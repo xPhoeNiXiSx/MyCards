@@ -1,10 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!--
-    MyCards — silhouette de carte et son liseré intérieur.
-    Proportions 40 x 56, soit le rapport d'une vraie carte (63 x 88 mm), et
-    peu de marge autour : à 16 px chaque pixel perdu en marge compte.
-    Le liseré est un évidement (fill-rule evenodd) et non un trait peint en
-    couleur de fond : il reste visible sur un onglet clair comme sur un sombre.
-  -->
-  <path fill="#e08a68" fill-rule="evenodd" d="M18 4 h28 a6 6 0 0 1 6 6 v44 a6 6 0 0 1 -6 6 h-28 a6 6 0 0 1 -6 -6 v-44 a6 6 0 0 1 6 -6 z M20.5 11 h23 a3.5 3.5 0 0 1 3.5 3.5 v35 a3.5 3.5 0 0 1 -3.5 3.5 h-23 a3.5 3.5 0 0 1 -3.5 -3.5 v-35 a3.5 3.5 0 0 1 3.5 -3.5 z M23 14.5 h18 a2.5 2.5 0 0 1 2.5 2.5 v30 a2.5 2.5 0 0 1 -2.5 2.5 h-18 a2.5 2.5 0 0 1 -2.5 -2.5 v-30 a2.5 2.5 0 0 1 2.5 -2.5 z"/>
-</svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Favicon MyCards, fourni par l'utilisateur : le « D » en réserve sur une
+  pastille sombre. Laissé tel quel — il porte son propre fond, donc il reste
+  lisible sur un onglet clair comme sur un onglet sombre.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><style>.cls-1{fill:#fff;}</style></defs><rect width="400" height="400" rx="52" ry="52"/><path class="cls-1" d="M298.38,110.73c-22.21-28.03-49.73-42.05-82.52-42.05H70.67c7.66,11.38,11.51,24.47,11.51,39.27v183.68c0,6.09-3.84,19.04-11.51,38.88,1.32.27,2.44.46,3.37.59.93.14,1.78.21,2.58.21h29.75c8.52,0,18.03-.07,28.58-.21v-161.89c0-3.84,3.11-6.95,6.95-6.95h109.04c3.84,0,6.95,3.1,6.95,6.95v152.05c14.2-7.22,27.44-18.68,39.73-34.39,21.15-27.5,31.74-56.34,31.74-86.49,0-33.59-10.33-63.48-30.95-89.66ZM241.28,173.57h-89.75c-3.01,0-5.45,2.44-5.45,5.45v148.35c0,1.35.5,2.6,1.32,3.55.21,0,.42-.01.62-.01,15.87-.25,29.76-.39,41.66-.39h29.75c9.45,0,18.54-1.5,27.31-4.53v-146.97c0-3.01-2.44-5.45-5.45-5.45Z"/></svg>

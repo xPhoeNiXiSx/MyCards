@@ -132,14 +132,14 @@ a {
   gap: 9px;
 }
 
+/* Le logotype est un SVG en `currentColor` : la teinte se règle ici, et
+   nulle part ailleurs. Le texte clair le rend lisible sur le fond sombre. */
 .wordmark svg {
-  color: var(--accent);
+  color: var(--fg);
+  height: 22px;
+  width: auto;
   flex: none;
-}
-
-/* Seule la seconde moitié du nom porte l'accent. */
-.wordmark .name > span {
-  color: var(--accent);
+  display: block;
 }
 
 .masthead p {

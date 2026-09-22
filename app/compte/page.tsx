@@ -1,5 +1,5 @@
 import { logoutAction } from "../login/actions";
-import { Logo } from "../logo";
+import { Wordmark } from "../wordmark";
 import { TabBar } from "../tab-bar";
 
 export const dynamic = "force-dynamic";
@@ -9,10 +9,7 @@ export default function ComptePage() {
     <main className="page narrow">
       <header className="masthead">
         <h1 className="wordmark">
-          <Logo />
-          <span className="name">
-            My<span>Cards</span>
-          </span>
+          <Wordmark />
         </h1>
         <p>Mon compte</p>
       </header>

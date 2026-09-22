@@ -91,6 +91,8 @@ n'est jamais supprimé, le rejeu est sans effet.
 | `app/collection/`      | Inventaire : liste, totaux, formulaires, actions serveur      |
 | `app/compte/`          | Compte : session, déconnexion, futurs réglages                 |
 | `app/tab-bar.tsx`      | Barre d'onglets fixée en bas, icônes seules                    |
+| `app/wordmark.tsx`     | Logotype, en `currentColor` — la teinte se règle en CSS        |
+| `app/icon.svg`         | Favicon                                                       |
 | `app/login/`           | Connexion par mot de passe                                    |
 | `proxy.ts`             | Ferme toute l'application derrière la session                  |
 | `lib/session.ts`       | Signature et vérification du cookie, sans `next/headers`      |

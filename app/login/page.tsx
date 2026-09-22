@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Logo } from "../logo";
+import { Wordmark } from "../wordmark";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
@@ -15,10 +15,7 @@ export default async function LoginPage({
       <header className="masthead">
         <h1 className="wordmark">
           <Link href="/">
-            <Logo />
-            <span className="name">
-              My<span>Cards</span>
-            </span>
+            <Wordmark />
           </Link>
         </h1>
       </header>
