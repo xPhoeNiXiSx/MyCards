@@ -90,6 +90,11 @@ d'environnement `TCGDEX_SET_ID`.
 
 ## Déploiement
 
+Les fonctions serveur sont épinglées sur **Francfort** (`fra1`, voir
+`vercel.json`), la même région que la base Neon. Sans ça elles tourneraient à
+Washington par défaut et chaque requête SQL ferait un aller-retour
+transatlantique. Les données ne quittent pas l'UE.
+
 Le repo est connecté à Vercel via l'intégration GitHub. Aucune commande
 manuelle :
 
