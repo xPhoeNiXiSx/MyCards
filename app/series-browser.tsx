@@ -13,6 +13,12 @@ import { CardViewer } from "./card-viewer";
  * compte environ 150 sets et plusieurs dizaines de milliers de cartes.
  */
 
+type Counts =
+  | { status: "off" }
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; bySet: Record<string, number> };
+
 type Catalogue =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -34,6 +40,8 @@ export function SeriesBrowser() {
   const [rarities, setRarities] = useState<string[]>([]);
   /** `null` = toutes les raretés. Le filtre vaut pour tout l'écran. */
   const [rarity, setRarity] = useState<string | null>(null);
+  /** Cartes de la rareté choisie, par set. `null` tant que rien n'est filtré. */
+  const [counts, setCounts] = useState<Counts>({ status: "off" });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,6 +69,35 @@ export function SeriesBrowser() {
     return () => controller.abort();
   }, []);
 
+  // Quelles collections contiennent la rareté choisie, et combien.
+  useEffect(() => {
+    if (!rarity) {
+      setCounts({ status: "off" });
+      return;
+    }
+
+    const controller = new AbortController();
+    setCounts({ status: "loading" });
+
+    fetch(`/api/rarities?rarity=${encodeURIComponent(rarity)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body?.error ?? `HTTP ${response.status}`);
+        setCounts({ status: "ready", bySet: body as Record<string, number> });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setCounts({
+          status: "error",
+          message: error instanceof Error ? error.message : "Erreur inconnue.",
+        });
+      });
+
+    return () => controller.abort();
+  }, [rarity]);
+
   if (catalogue.status === "loading") {
     return (
       <div className="acc-list">
@@ -83,7 +120,19 @@ export function SeriesBrowser() {
     );
   }
 
-  const totalSets = catalogue.series.reduce(
+  // Une collection sans carte de la rareté choisie n'a rien à montrer : elle
+  // disparaît de la liste, et une série vidée de ses collections avec elle.
+  const series =
+    counts.status === "ready"
+      ? catalogue.series
+          .map((serie) => ({
+            ...serie,
+            sets: serie.sets.filter((set) => (counts.bySet[set.id] ?? 0) > 0),
+          }))
+          .filter((serie) => serie.sets.length > 0)
+      : catalogue.series;
+
+  const totalSets = series.reduce(
     (count, serie) => count + serie.sets.length,
     0,
   );
@@ -109,24 +158,38 @@ export function SeriesBrowser() {
         ) : null}
 
         <p className="catalogue-meta">
-          {plural(catalogue.series.length, "série")} ·{" "}
-          {plural(totalSets, "collection")}
+          {counts.status === "loading"
+            ? "Recherche…"
+            : `${plural(series.length, "série")} · ${plural(totalSets, "collection")}`}
         </p>
       </div>
 
-      {rarity ? (
+      {counts.status === "error" ? (
         <p className="filter-note">
-          Les collections restent toutes listées : savoir lesquelles contiennent
-          du « {rarity} » demanderait de les interroger une par une. Ouvre-en
-          une pour voir ses cartes de cette rareté.
+          Le tri par rareté a échoué ({counts.message}) : toutes les collections
+          restent affichées.
         </p>
       ) : null}
 
-      <div className="acc-list">
-        {catalogue.series.map((serie) => (
-          <SeriePanel key={serie.id} serie={serie} rarity={rarity} />
-        ))}
-      </div>
+      {counts.status === "ready" && totalSets === 0 ? (
+        <div className="panel">
+          <h2>Aucune collection</h2>
+          <p className="hint">
+            Aucune carte « {rarity} » dans le catalogue.
+          </p>
+        </div>
+      ) : (
+        <div className="acc-list">
+          {series.map((serie) => (
+            <SeriePanel
+              key={serie.id}
+              serie={serie}
+              rarity={rarity}
+              counts={counts.status === "ready" ? counts.bySet : undefined}
+            />
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -134,9 +197,11 @@ export function SeriesBrowser() {
 function SeriePanel({
   serie,
   rarity,
+  counts,
 }: {
   serie: SerieDetail;
   rarity: string | null;
+  counts?: Record<string, number>;
 }) {
   return (
     <details className="acc">
@@ -146,7 +211,12 @@ function SeriePanel({
       </summary>
       <div className="acc-body">
         {serie.sets.map((set) => (
-          <SetPanel key={set.id} set={set} rarity={rarity} />
+          <SetPanel
+            key={set.id}
+            set={set}
+            rarity={rarity}
+            count={counts?.[set.id]}
+          />
         ))}
       </div>
     </details>
@@ -162,7 +232,16 @@ type Cards =
 /** Au-delà de ce nombre de cartes, un champ de recherche devient utile. */
 const FILTER_THRESHOLD = 40;
 
-function SetPanel({ set, rarity }: { set: SetResume; rarity: string | null }) {
+function SetPanel({
+  set,
+  rarity,
+  count,
+}: {
+  set: SetResume;
+  rarity: string | null;
+  /** Nombre de cartes de la rareté choisie, connu avant même d'ouvrir. */
+  count?: number;
+}) {
   const [open, setOpen] = useState(false);
   const [cards, setCards] = useState<Cards>({ status: "idle" });
   const [search, setSearch] = useState("");
@@ -225,9 +304,7 @@ function SetPanel({ set, rarity }: { set: SetResume; rarity: string | null }) {
         {logo ? <img className="acc-logo" src={logo} alt="" /> : null}
         <span className="acc-title">{set.name}</span>
         <span className="acc-meta">
-          {cards.status === "ready" && rarity
-            ? plural(cards.cards.length, "carte")
-            : plural(set.cardCount.official, "carte")}
+          {plural(count ?? set.cardCount.official, "carte")}
         </span>
       </summary>
 

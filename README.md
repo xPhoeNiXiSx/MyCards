@@ -128,9 +128,12 @@ filtrer, et il accepte `set` et `rarity` ensemble : le filtre passe donc par
 `/cards?set=eq:<set>&rarity=eq:<rareté>`. Les 42 raretés viennent de
 `/rarities`.
 
-Le filtre est global à l'écran, mais les collections restent toutes listées :
-savoir lesquelles contiennent une rareté donnée demanderait de les interroger
-une par une.
+Le filtre masque les collections qui ne contiennent aucune carte de la rareté
+choisie, et les séries qui s'en trouvent vidées. Une seule requête suffit :
+`/cards?rarity=eq:X` renvoie les cartes de cette rareté tous sets confondus,
+et leur identifiant est préfixé du set. Le regroupement se fait côté serveur,
+pour n'envoyer au navigateur qu'une poignée de compteurs au lieu de milliers
+de cartes.
 
 ## Application sur mobile
 

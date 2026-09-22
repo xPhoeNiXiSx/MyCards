@@ -201,3 +201,33 @@ export async function fetchCardsOfSet(
 
   return get<CardResume[]>(`/cards?${query}`);
 }
+
+/**
+ * Combien de cartes de cette rareté chaque set contient.
+ *
+ * Une seule requête suffit : `/cards?rarity=eq:X` renvoie les cartes de cette
+ * rareté tous sets confondus, et leur identifiant est préfixé du set
+ * (`sv04.5-212`). Le regroupement se fait ici, côté serveur, pour n'envoyer au
+ * navigateur qu'une poignée de compteurs plutôt que des milliers de cartes.
+ */
+export async function fetchRarityCounts(
+  rarity: string,
+): Promise<Record<string, number>> {
+  const cards = await get<CardResume[]>(
+    `/cards?rarity=eq:${encodeURIComponent(rarity)}`,
+  );
+
+  const counts: Record<string, number> = {};
+
+  for (const card of cards) {
+    // Le numéro local est après le dernier tiret : un identifiant de set peut
+    // lui-même en contenir (`sv03.5`, `swsh12-tg`).
+    const cut = card.id.lastIndexOf("-");
+    if (cut <= 0) continue;
+
+    const setId = card.id.slice(0, cut);
+    counts[setId] = (counts[setId] ?? 0) + 1;
+  }
+
+  return counts;
+}

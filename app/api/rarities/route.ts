@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 
-import { fetchRarities } from "@/lib/tcgdex";
+import { fetchRarities, fetchRarityCounts } from "@/lib/tcgdex";
 
-/** La liste des raretés, pour alimenter le filtre. */
-export async function GET() {
+/**
+ * Sans paramètre : la liste des raretés, pour alimenter le filtre.
+ * Avec `?rarity=` : le nombre de cartes de cette rareté par set, qui sert à
+ * n'afficher que les collections concernées.
+ */
+export async function GET(request: Request) {
+  const rarity = new URL(request.url).searchParams.get("rarity");
+
   try {
+    if (rarity) return json(await fetchRarityCounts(rarity));
     return json(await fetchRarities());
   } catch (error) {
     const message =
