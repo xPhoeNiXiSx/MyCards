@@ -116,7 +116,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px 0 14px;
+  padding: calc(22px + env(safe-area-inset-top, 0px)) 0 14px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
@@ -248,7 +248,9 @@ a {
   flex: 1 1 260px;
   min-width: 0;
   font: inherit;
-  font-size: 0.9375rem;
+  /* 16 px : en dessous, iOS zoome à la mise au point du champ, et ce zoom
+     fait défiler la page horizontalement. */
+  font-size: 1rem;
   color: var(--fg);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -468,7 +470,9 @@ code {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  /* Le tableau défile dans son cadre : un nom long ne doit ni rogner les
+     colonnes ni pousser la page entière. */
+  overflow-x: auto;
 }
 
 table {
@@ -600,7 +604,8 @@ th.num {
 .form input,
 .form select {
   font: inherit;
-  font-size: 0.9375rem;
+  /* 16 px : voir `.filter input`. Un champ plus petit fait zoomer iOS. */
+  font-size: 1rem;
   color: var(--fg);
   background: var(--bg);
   border: 1px solid var(--border);
@@ -904,7 +909,7 @@ button[type="submit"]:disabled {
 
 @media (max-width: 720px) {
   .masthead {
-    padding-top: 16px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
   }
 
   .summary {
@@ -1077,6 +1082,7 @@ button[type="submit"]:disabled {
 
 .title-text {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Le champ et son aperçu sur une seule ligne. */

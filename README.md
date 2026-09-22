@@ -121,6 +121,19 @@ TCGdex ne donne pas les collections dans la liste des séries : le catalogue
 fait une requête par série, en parallèle, mise en cache une heure côté
 serveur.
 
+## Application sur mobile
+
+`app/manifest.ts` déclare `display: standalone` : posée sur l'écran d'accueil
+iOS, l'application s'ouvre sans la barre d'adresse et la navigation y reste.
+Next émet la balise standardisée `mobile-web-app-capable` ; la variante
+préfixée `apple-` est ajoutée à la main pour les iOS antérieurs à 16.4.
+
+Les champs de saisie sont à 16 px, pas moins : en dessous, iOS zoome à la mise
+au point et ce zoom fait défiler la page horizontalement.
+
+Le manifeste et les icônes sont exclus du filtre de session : iOS les récupère
+au moment de l'ajout à l'écran d'accueil.
+
 ## Déploiement
 
 Les fonctions serveur sont épinglées sur **Francfort** (`fra1`, voir

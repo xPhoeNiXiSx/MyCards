@@ -41,6 +41,6 @@ export const config = {
    * ouvertes : elles ne révèlent rien et la page de connexion en a besoin.
    */
   matcher: [
-    "/((?!_next/static|_next/image|icon.svg|apple-icon.png|favicon.ico).*)",
+    "/((?!_next/static|_next/image|icon.svg|apple-icon.png|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png).*)",
   ],
 };
