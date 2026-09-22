@@ -122,6 +122,16 @@ TCGdex ne donne pas les collections dans la liste des séries : le catalogue
 fait une requête par série, en parallèle, mise en cache une heure côté
 serveur.
 
+**Filtre par rareté** — la liste des cartes d'un set ne porte pas la rareté,
+et `/sets/{id}` ignore les paramètres de filtre. C'est `/cards` qui sait
+filtrer, et il accepte `set` et `rarity` ensemble : le filtre passe donc par
+`/cards?set=eq:<set>&rarity=eq:<rareté>`. Les 42 raretés viennent de
+`/rarities`.
+
+Le filtre est global à l'écran, mais les collections restent toutes listées :
+savoir lesquelles contiennent une rareté donnée demanderait de les interroger
+une par une.
+
 ## Application sur mobile
 
 `app/manifest.ts` déclare `display: standalone` : posée sur l'écran d'accueil

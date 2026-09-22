@@ -1321,3 +1321,52 @@ button.frame {
   font: inherit;
   color: inherit;
 }
+
+/* --- Barre de filtres --------------------------------------------------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 16px 0 14px;
+}
+
+.rarity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.rarity select {
+  font: inherit;
+  /* 16 px : en dessous, iOS zoome à l'ouverture du sélecteur. */
+  font-size: 1rem;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.toolbar .catalogue-meta {
+  margin: 0;
+  margin-left: auto;
+}
+
+.filter-note {
+  margin: 0 0 14px;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+}

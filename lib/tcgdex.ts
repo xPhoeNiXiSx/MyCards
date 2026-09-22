@@ -176,3 +176,25 @@ export async function fetchCatalogue(): Promise<SerieDetail[]> {
 
   return resolved.reverse();
 }
+
+/** Les 42 raretés du jeu, dans la langue de l'API. */
+export async function fetchRarities(): Promise<string[]> {
+  return get<string[]>("/rarities");
+}
+
+/**
+ * Cartes d'un set, filtrées par rareté.
+ *
+ * `/sets/{id}` ignore les paramètres de filtre — il renvoie le set entier.
+ * C'est `/cards` qui sait filtrer, et il accepte les deux critères ensemble.
+ */
+export async function fetchCardsOfSet(
+  setId: string,
+  rarity: string,
+): Promise<CardResume[]> {
+  const query = new URLSearchParams({
+    set: `eq:${setId}`,
+    rarity: `eq:${rarity}`,
+  });
+  return get<CardResume[]>(`/cards?${query.toString()}`);
+}

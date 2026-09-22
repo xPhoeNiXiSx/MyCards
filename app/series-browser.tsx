@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { assetUrl, imageUrl } from "@/lib/images";
+import type { CardResume, SerieDetail, SetDetail, SetResume } from "@/lib/tcgdex";
 
 import { CardViewer } from "./card-viewer";
-import type { CardResume, SerieDetail, SetDetail, SetResume } from "@/lib/tcgdex";
 
 /**
  * Catalogue complet en accordéon à deux niveaux : série, puis set, puis les
@@ -31,6 +31,9 @@ function plural(count: number, word: string): string {
 
 export function SeriesBrowser() {
   const [catalogue, setCatalogue] = useState<Catalogue>({ status: "loading" });
+  const [rarities, setRarities] = useState<string[]>([]);
+  /** `null` = toutes les raretés. Le filtre vaut pour tout l'écran. */
+  const [rarity, setRarity] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,6 +51,12 @@ export function SeriesBrowser() {
           message: error instanceof Error ? error.message : "Erreur inconnue.",
         });
       });
+
+    // Le filtre n'est pas vital : son échec ne doit pas emporter la page.
+    fetch("/api/rarities", { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((body) => setRarities(Array.isArray(body) ? body : []))
+      .catch(() => undefined);
 
     return () => controller.abort();
   }, []);
@@ -81,21 +90,54 @@ export function SeriesBrowser() {
 
   return (
     <>
-      <p className="catalogue-meta">
-        {plural(catalogue.series.length, "série")} ·{" "}
-        {plural(totalSets, "collection")}
-      </p>
+      <div className="toolbar">
+        {rarities.length > 0 ? (
+          <label className="rarity">
+            <span>Rareté</span>
+            <select
+              value={rarity ?? ""}
+              onChange={(event) => setRarity(event.target.value || null)}
+            >
+              <option value="">Toutes</option>
+              {rarities.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        <p className="catalogue-meta">
+          {plural(catalogue.series.length, "série")} ·{" "}
+          {plural(totalSets, "collection")}
+        </p>
+      </div>
+
+      {rarity ? (
+        <p className="filter-note">
+          Les collections restent toutes listées : savoir lesquelles contiennent
+          du « {rarity} » demanderait de les interroger une par une. Ouvre-en
+          une pour voir ses cartes de cette rareté.
+        </p>
+      ) : null}
 
       <div className="acc-list">
         {catalogue.series.map((serie) => (
-          <SeriePanel key={serie.id} serie={serie} />
+          <SeriePanel key={serie.id} serie={serie} rarity={rarity} />
         ))}
       </div>
     </>
   );
 }
 
-function SeriePanel({ serie }: { serie: SerieDetail }) {
+function SeriePanel({
+  serie,
+  rarity,
+}: {
+  serie: SerieDetail;
+  rarity: string | null;
+}) {
   return (
     <details className="acc">
       <summary>
@@ -104,7 +146,7 @@ function SeriePanel({ serie }: { serie: SerieDetail }) {
       </summary>
       <div className="acc-body">
         {serie.sets.map((set) => (
-          <SetPanel key={set.id} set={set} />
+          <SetPanel key={set.id} set={set} rarity={rarity} />
         ))}
       </div>
     </details>
@@ -120,30 +162,47 @@ type Cards =
 /** Au-delà de ce nombre de cartes, un champ de recherche devient utile. */
 const FILTER_THRESHOLD = 40;
 
-function SetPanel({ set }: { set: SetResume }) {
+function SetPanel({ set, rarity }: { set: SetResume; rarity: string | null }) {
+  const [open, setOpen] = useState(false);
   const [cards, setCards] = useState<Cards>({ status: "idle" });
   const [search, setSearch] = useState("");
-  // Index dans la liste *filtrée* : c'est celle que l'utilisateur parcourt.
   const [viewing, setViewing] = useState<number | null>(null);
+
+  /** Rareté pour laquelle les cartes en mémoire ont été chargées. */
+  const loadedFor = useRef<string | null | undefined>(undefined);
   const logo = assetUrl(set.logo);
 
-  /** Chargé au premier dépliage seulement : rouvrir ne redemande rien. */
-  async function load() {
-    if (cards.status !== "idle") return;
-    setCards({ status: "loading" });
+  useEffect(() => {
+    if (!open) return;
+    // Déjà chargé pour cette rareté : rouvrir ne redemande rien.
+    if (loadedFor.current === rarity) return;
 
-    try {
-      const response = await fetch(`/api/sets/${encodeURIComponent(set.id)}`);
-      const body = await response.json();
-      if (!response.ok) throw new Error(body?.error ?? `HTTP ${response.status}`);
-      setCards({ status: "ready", cards: (body as SetDetail).cards ?? [] });
-    } catch (error) {
-      setCards({
-        status: "error",
-        message: error instanceof Error ? error.message : "Erreur inconnue.",
+    const controller = new AbortController();
+    loadedFor.current = rarity;
+    setCards({ status: "loading" });
+    setViewing(null);
+
+    const query = rarity ? `?rarity=${encodeURIComponent(rarity)}` : "";
+
+    fetch(`/api/sets/${encodeURIComponent(set.id)}${query}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body?.error ?? `HTTP ${response.status}`);
+        setCards({ status: "ready", cards: (body as SetDetail).cards ?? [] });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        loadedFor.current = undefined;
+        setCards({
+          status: "error",
+          message: error instanceof Error ? error.message : "Erreur inconnue.",
+        });
       });
-    }
-  }
+
+    return () => controller.abort();
+  }, [open, rarity, set.id]);
 
   const visible = useMemo(() => {
     if (cards.status !== "ready") return [];
@@ -159,14 +218,17 @@ function SetPanel({ set }: { set: SetResume }) {
   return (
     <details
       className="acc nested"
-      onToggle={(event) => {
-        if (event.currentTarget.open) void load();
-      }}
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary>
         {logo ? <img className="acc-logo" src={logo} alt="" /> : null}
         <span className="acc-title">{set.name}</span>
-        <span className="acc-meta">{plural(set.cardCount.official, "carte")}</span>
+        <span className="acc-meta">
+          {cards.status === "ready" && rarity
+            ? plural(cards.cards.length, "carte")
+            : plural(set.cardCount.official, "carte")}
+        </span>
       </summary>
 
       <div className="acc-body">
@@ -204,7 +266,11 @@ function SetPanel({ set }: { set: SetResume }) {
             ) : null}
 
             {visible.length === 0 ? (
-              <p className="hint">Aucune carte ne correspond.</p>
+              <p className="hint">
+                {rarity
+                  ? `Aucune carte « ${rarity} » dans cette collection.`
+                  : "Aucune carte ne correspond."}
+              </p>
             ) : (
               <>
                 <div className="grid">
