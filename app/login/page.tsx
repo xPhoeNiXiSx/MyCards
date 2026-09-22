@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Logo } from "../logo";
 import { LoginForm } from "./login-form";
 import { SiteNav } from "../site-nav";
 
@@ -15,7 +16,10 @@ export default async function LoginPage({
       <header className="masthead">
         <h1 className="wordmark">
           <Link href="/">
-            My<span>Cards</span>
+            <Logo />
+            <span className="name">
+              My<span>Cards</span>
+            </span>
           </Link>
         </h1>
       </header>

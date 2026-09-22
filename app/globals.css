@@ -120,13 +120,25 @@ a {
   font-weight: 700;
   letter-spacing: -0.03em;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
 .wordmark a {
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
-.wordmark span {
+.wordmark svg {
+  color: var(--accent);
+  flex: none;
+}
+
+/* Seule la seconde moitié du nom porte l'accent. */
+.wordmark .name > span {
   color: var(--accent);
 }
 

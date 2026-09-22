@@ -12,6 +12,7 @@ import {
 import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
+import { Logo } from "../logo";
 import { SiteNav } from "../site-nav";
 
 import { addItemAction, deleteItemAction, migrateAction } from "./actions";
@@ -157,7 +158,10 @@ export default async function CollectionPage() {
       <header className="masthead">
         <h1 className="wordmark">
           <Link href="/">
-            My<span>Cards</span>
+            <Logo />
+            <span className="name">
+              My<span>Cards</span>
+            </span>
           </Link>
         </h1>
         <p>Inventaire — {summary.itemCount} ligne{summary.itemCount > 1 ? "s" : ""}</p>
