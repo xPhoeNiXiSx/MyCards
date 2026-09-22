@@ -81,14 +81,33 @@ function DatabaseError({ message }: { message: string }) {
   );
 }
 
+function shortDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+}
+
 function ValueCell({ item }: { item: ValuedItem }) {
   if (item.totalValueCents === null) {
     return (
-      <span className="muted" title="Aucune cote connue pour cet article">
+      <span
+        className="muted"
+        title={
+          item.cardId
+            ? "Cette carte n'est pas encore cotée sur Cardmarket. Saisis une valeur pour la valoriser."
+            : "Aucune valeur saisie pour cet article."
+        }
+      >
         —
       </span>
     );
   }
+
+  const day = shortDate(
+    item.valueSource === "manual" ? item.manualValueDate : item.quoteUpdated,
+  );
 
   const label =
     item.valueSource === "manual"
@@ -98,7 +117,10 @@ function ValueCell({ item }: { item: ValuedItem }) {
   return (
     <span title={label}>
       {formatCents(item.totalValueCents)}
-      <em className="source">{item.valueSource === "manual" ? "saisie" : "cote"}</em>
+      <em className="source">
+        {item.valueSource === "manual" ? "saisie" : "cote"}
+        {day ? ` ${day}` : ""}
+      </em>
     </span>
   );
 }

@@ -116,11 +116,22 @@ Une valeur saisie à la main est toujours prioritaire sur la cote automatique.
 Une ligne sans valeur connue est comptée comme non valorisée plutôt que comme
 valant zéro.
 
-La forme exacte du champ `pricing` de TCGdex n'est pas encore figée, donc
-`lib/pricing.ts` parcourt l'objet et retient la première valeur numérique
-correspondant à une notion de prix connue, tendance d'abord. La route
-`/api/debug/pricing?id=<carte>` renvoie le payload brut à côté de ce qui en est
-extrait, pour resserrer ce lecteur.
+`lib/pricing.ts` lit l'objet `cardmarket` de TCGdex, plat et en euros, et
+retient le premier prix disponible dans l'ordre `trend`, `avg7`, `avg30`,
+`avg`, `avg1`, `low`. `trend` est la référence de marché de Cardmarket : plus
+stable qu'un prix bas isolé, plus réactif qu'une moyenne 30 jours. Les
+variantes holo (`trend-holo`…) ne servent qu'à défaut de valeur standard, et
+une devise autre que l'euro est refusée plutôt que convertie en silence.
+
+**Le set anniversaire n'est pas encore coté** : au 22 septembre 2026, aucune
+de ses cartes n'a de prix Cardmarket (`cardmarket: null`), le set ayant six
+jours. Les cotes apparaîtront d'elles-mêmes, sans changement de code. En
+attendant, ces cartes se valorisent à la main comme le scellé.
+
+Deux routes de diagnostic :
+
+- `/api/debug/pricing` — une carte du set, son `pricing` brut et ce qui en est lu
+- `/api/debug/prices` — combien de cartes d'un set portent réellement une cote
 
 ## Suite
 

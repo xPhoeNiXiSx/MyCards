@@ -1,5 +1,5 @@
 import { query } from "@/lib/db";
-import { readQuote } from "@/lib/pricing";
+import { readQuote, type Quote } from "@/lib/pricing";
 import { fetchCard } from "@/lib/tcgdex";
 
 export type ItemKind = "single" | "sealed" | "other";
@@ -35,6 +35,8 @@ export type ValuedItem = Item & {
   valueSource: ValueSource;
   /** Champ TCGdex retenu, quand la cote vient du marché. */
   quoteField: string | null;
+  /** Date du relevé Cardmarket, au format ISO. */
+  quoteUpdated: string | null;
   totalPurchaseCents: number;
   totalValueCents: number | null;
   gainCents: number | null;
@@ -166,10 +168,8 @@ export async function deleteItem(id: string): Promise<void> {
  * cache une heure par `fetch`. Une cote indisponible n'est jamais bloquante,
  * la ligne bascule simplement en « non valorisée ».
  */
-async function fetchQuotes(
-  cardIds: string[],
-): Promise<Map<string, { cents: number; field: string }>> {
-  const quotes = new Map<string, { cents: number; field: string }>();
+async function fetchQuotes(cardIds: string[]): Promise<Map<string, Quote>> {
+  const quotes = new Map<string, Quote>();
 
   const results = await Promise.allSettled(
     cardIds.map(async (cardId) => {
@@ -200,7 +200,8 @@ export async function valuate(items: Item[]): Promise<ValuedItem[]> {
     ),
   ];
 
-  const quotes = cardIds.length > 0 ? await fetchQuotes(cardIds) : new Map();
+  const quotes =
+    cardIds.length > 0 ? await fetchQuotes(cardIds) : new Map<string, Quote>();
 
   return items.map((item) => {
     const quote = item.cardId ? quotes.get(item.cardId) : undefined;
@@ -208,6 +209,7 @@ export async function valuate(items: Item[]): Promise<ValuedItem[]> {
     let currentUnitCents: number | null = null;
     let valueSource: ValueSource = "none";
     let quoteField: string | null = null;
+    let quoteUpdated: string | null = null;
 
     if (item.manualValueCents !== null) {
       currentUnitCents = item.manualValueCents;
@@ -216,6 +218,7 @@ export async function valuate(items: Item[]): Promise<ValuedItem[]> {
       currentUnitCents = quote.cents;
       valueSource = "market";
       quoteField = quote.field;
+      quoteUpdated = quote.updated ?? null;
     }
 
     const totalPurchaseCents = item.purchasePriceCents * item.quantity;
@@ -227,6 +230,7 @@ export async function valuate(items: Item[]): Promise<ValuedItem[]> {
       currentUnitCents,
       valueSource,
       quoteField,
+      quoteUpdated,
       totalPurchaseCents,
       totalValueCents,
       gainCents:
