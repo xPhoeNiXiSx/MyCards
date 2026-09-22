@@ -12,6 +12,7 @@ import {
   type ItemKind,
 } from "@/lib/collection";
 import { runMigrations } from "@/lib/db";
+import { parseImageUrl } from "@/lib/images";
 import { parseEuros } from "@/lib/money";
 
 const KINDS: ItemKind[] = ["single", "sealed", "other"];
@@ -62,6 +63,11 @@ function parse(form: FormData): ItemInput | string {
 
   const manualDate = date(form, "manualValueDate");
 
+  const image = parseImageUrl(text(form, "imageUrl"));
+  if (image === null) {
+    return "L'adresse de l'image doit commencer par http:// ou https://.";
+  }
+
   return {
     kind,
     name,
@@ -77,6 +83,7 @@ function parse(form: FormData): ItemInput | string {
       manual === undefined
         ? null
         : (manualDate ?? new Date().toISOString().slice(0, 10)),
+    imageUrl: image ?? null,
     notes: text(form, "notes"),
   };
 }

@@ -21,6 +21,7 @@ import {
   valuate,
   type ItemInput,
 } from "../lib/collection";
+import { parseImageUrl } from "../lib/images";
 import { formatCents, parseEuros, percentChange } from "../lib/money";
 import { readQuote } from "../lib/pricing";
 import { newToken, safeEquals, verifyToken } from "../lib/session";
@@ -59,6 +60,7 @@ async function main() {
     purchaseDate: "2026-09-17",
     manualValueCents: 6200,
     manualValueDate: "2026-09-22",
+    imageUrl: "https://exemple.test/etb.jpg",
     notes: null,
   };
 
@@ -67,6 +69,7 @@ async function main() {
   assert.equal(created.quantity, 2);
   assert.equal(created.purchaseDate, "2026-09-17");
   assert.equal(created.manualValueCents, 6200);
+  assert.equal(created.imageUrl, "https://exemple.test/etb.jpg");
   ok("insertion et relecture des colonnes");
 
   const fetched = await getItem(created.id);
@@ -82,6 +85,7 @@ async function main() {
     purchasePriceCents: 1200,
     manualValueCents: null,
     manualValueDate: null,
+    imageUrl: null,
   });
 
   const items = await listItems();
@@ -97,6 +101,11 @@ async function main() {
   assert.equal(sealed.totalValueCents, 12400); // 62,00 × 2
   assert.equal(sealed.gainCents, 2420);
   ok("valorisation manuelle et plus-value");
+
+  // Le scellé n'a que l'URL saisie ; la carte sans URL ni fiche n'a rien.
+  assert.equal(sealed.image, "https://exemple.test/etb.jpg");
+  assert.equal(single.image, null);
+  ok("le visuel saisi est retenu, l'absence n'invente rien");
 
   assert.equal(single.valueSource, "none");
   assert.equal(single.totalValueCents, null);
@@ -229,6 +238,21 @@ async function main() {
   assert.equal(safeEquals("abc", "abd"), false);
   assert.equal(safeEquals("abc", "abcd"), false);
   ok("comparaison à temps constant");
+
+  // --- Adresses d'images ------------------------------------------------
+
+  assert.equal(parseImageUrl(null), undefined);
+  assert.equal(parseImageUrl("  "), undefined);
+  assert.equal(parseImageUrl("https://exemple.test/a.png"), "https://exemple.test/a.png");
+  assert.equal(parseImageUrl("http://exemple.test/a.png"), "http://exemple.test/a.png");
+  ok("les adresses http et https sont acceptées");
+
+  // Le champ finit dans un `src` : tout autre schéma est refusé.
+  assert.equal(parseImageUrl("javascript:alert(1)"), null);
+  assert.equal(parseImageUrl("data:image/png;base64,AAAA"), null);
+  assert.equal(parseImageUrl("file:///etc/passwd"), null);
+  assert.equal(parseImageUrl("pas une url"), null);
+  ok("tout autre schéma est refusé");
 
   await pg.close();
 

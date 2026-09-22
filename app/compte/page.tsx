@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { migrateAction } from "../collection/actions";
 import { logoutAction } from "../login/actions";
 import { Wordmark } from "../wordmark";
 import { TabBar } from "../tab-bar";
@@ -27,6 +28,18 @@ export default function ComptePage() {
         </p>
         <form action={logoutAction} className="form">
           <button type="submit">Se déconnecter</button>
+        </form>
+      </div>
+
+      <div className="panel">
+        <h2>Base de données</h2>
+        <p className="hint">
+          À lancer après une mise à jour qui ajoute des champs. L&apos;opération
+          est sans risque et peut être rejouée : elle ne crée que ce qui manque
+          et ne supprime jamais rien.
+        </p>
+        <form action={migrateAction} className="form">
+          <button type="submit">Appliquer les migrations</button>
         </form>
       </div>
 

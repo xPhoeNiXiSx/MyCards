@@ -982,3 +982,40 @@ button.link.danger:hover {
     margin-left: auto;
   }
 }
+
+/* --- Vignettes ---------------------------------------------------------- */
+
+/* Proportions d'une carte : le scellé y entre aussi sans déformer, et les
+   lignes gardent la même hauteur qu'elles portent une image ou non. */
+.thumb {
+  width: 34px;
+  aspect-ratio: 245 / 342;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+  flex: none;
+  display: block;
+}
+
+.thumb.empty {
+  border: 1px dashed var(--border);
+  background: none;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.title-text {
+  min-width: 0;
+}
+
+/* Le champ et son aperçu sur une seule ligne. */
+.with-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

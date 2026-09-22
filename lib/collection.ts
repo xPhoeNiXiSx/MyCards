@@ -1,6 +1,7 @@
 import { query } from "@/lib/db";
-import { readQuote, type Quote } from "@/lib/pricing";
-import { fetchCard } from "@/lib/tcgdex";
+import { imageUrl } from "@/lib/images";
+import { readQuote } from "@/lib/pricing";
+import { fetchCard, type CardDetail } from "@/lib/tcgdex";
 
 export type ItemKind = "single" | "sealed" | "other";
 
@@ -21,6 +22,7 @@ export type Item = {
   purchaseDate: string | null;
   manualValueCents: number | null;
   manualValueDate: string | null;
+  imageUrl: string | null;
   notes: string | null;
 };
 
@@ -40,6 +42,8 @@ export type ValuedItem = Item & {
   totalPurchaseCents: number;
   totalValueCents: number | null;
   gainCents: number | null;
+  /** Visuel à afficher : l'URL saisie, sinon celui de la carte chez TCGdex. */
+  image: string | null;
 };
 
 export type Summary = {
@@ -64,6 +68,7 @@ type Row = {
   purchase_date: string | Date | null;
   manual_value_cents: number | null;
   manual_value_date: string | Date | null;
+  image_url: string | null;
   notes: string | null;
 };
 
@@ -87,13 +92,14 @@ function toItem(row: Row): Item {
     manualValueCents:
       row.manual_value_cents === null ? null : Number(row.manual_value_cents),
     manualValueDate: toIsoDate(row.manual_value_date),
+    imageUrl: row.image_url,
     notes: row.notes,
   };
 }
 
 const COLUMNS = `id, kind, name, card_id, set_name, quantity,
                  purchase_price_cents, purchase_date,
-                 manual_value_cents, manual_value_date, notes`;
+                 manual_value_cents, manual_value_date, image_url, notes`;
 
 export async function listItems(): Promise<Item[]> {
   const rows = await query<Row>(
@@ -114,8 +120,8 @@ export async function createItem(input: ItemInput): Promise<Item> {
   const rows = await query<Row>(
     `insert into items (kind, name, card_id, set_name, quantity,
                         purchase_price_cents, purchase_date,
-                        manual_value_cents, manual_value_date, notes)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                        manual_value_cents, manual_value_date, image_url, notes)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      returning ${COLUMNS}`,
     [
       input.kind,
@@ -127,6 +133,7 @@ export async function createItem(input: ItemInput): Promise<Item> {
       input.purchaseDate,
       input.manualValueCents,
       input.manualValueDate,
+      input.imageUrl,
       input.notes,
     ],
   );
@@ -138,7 +145,8 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
     `update items
         set kind = $2, name = $3, card_id = $4, set_name = $5, quantity = $6,
             purchase_price_cents = $7, purchase_date = $8,
-            manual_value_cents = $9, manual_value_date = $10, notes = $11,
+            manual_value_cents = $9, manual_value_date = $10,
+            image_url = $11, notes = $12,
             updated_at = now()
       where id = $1`,
     [
@@ -152,6 +160,7 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
       input.purchaseDate,
       input.manualValueCents,
       input.manualValueDate,
+      input.imageUrl,
       input.notes,
     ],
   );
@@ -162,49 +171,51 @@ export async function deleteItem(id: string): Promise<void> {
 }
 
 /**
- * Récupère les cotes marché des cartes à l'unité.
+ * Récupère les fiches des cartes à l'unité, pour leur cote et leur visuel.
  *
  * TCGdex n'expose pas de requête groupée : c'est un appel par carte, mis en
- * cache une heure par `fetch`. Une cote indisponible n'est jamais bloquante,
- * la ligne bascule simplement en « non valorisée ».
+ * cache une heure par `fetch`. Une fiche indisponible n'est jamais bloquante,
+ * la ligne perd simplement sa cote et son image automatiques.
  */
-async function fetchQuotes(cardIds: string[]): Promise<Map<string, Quote>> {
-  const quotes = new Map<string, Quote>();
+async function fetchCards(cardIds: string[]): Promise<Map<string, CardDetail>> {
+  const cards = new Map<string, CardDetail>();
 
   const results = await Promise.allSettled(
-    cardIds.map(async (cardId) => {
-      const card = await fetchCard(cardId);
-      return { cardId, quote: readQuote(card.pricing) };
-    }),
+    cardIds.map(async (cardId) => ({ cardId, card: await fetchCard(cardId) })),
   );
 
   for (const result of results) {
     if (result.status === "rejected") {
-      console.warn("[collection] cote indisponible", result.reason);
+      console.warn("[collection] carte indisponible", result.reason);
       continue;
     }
-    const { cardId, quote } = result.value;
-    if (quote) quotes.set(cardId, quote);
+    cards.set(result.value.cardId, result.value.card);
   }
 
-  return quotes;
+  return cards;
 }
 
-/** Applique la valeur manuelle si elle existe, sinon la cote marché. */
+/**
+ * Applique la valeur manuelle si elle existe, sinon la cote marché, et
+ * résout le visuel de chaque ligne.
+ */
 export async function valuate(items: Item[]): Promise<ValuedItem[]> {
+  // Toutes les cartes identifiées, même valorisées à la main : leur fiche
+  // porte aussi le visuel.
   const cardIds = [
     ...new Set(
       items
-        .filter((item) => item.manualValueCents === null && item.cardId)
+        .filter((item) => item.cardId)
         .map((item) => item.cardId as string),
     ),
   ];
 
-  const quotes =
-    cardIds.length > 0 ? await fetchQuotes(cardIds) : new Map<string, Quote>();
+  const cards =
+    cardIds.length > 0 ? await fetchCards(cardIds) : new Map<string, CardDetail>();
 
   return items.map((item) => {
-    const quote = item.cardId ? quotes.get(item.cardId) : undefined;
+    const card = item.cardId ? cards.get(item.cardId) : undefined;
+    const quote = card ? readQuote(card.pricing) : undefined;
 
     let currentUnitCents: number | null = null;
     let valueSource: ValueSource = "none";
@@ -235,6 +246,8 @@ export async function valuate(items: Item[]): Promise<ValuedItem[]> {
       totalValueCents,
       gainCents:
         totalValueCents === null ? null : totalValueCents - totalPurchaseCents,
+      // L'URL saisie prime : elle est le choix explicite de l'utilisateur.
+      image: item.imageUrl ?? imageUrl(card?.image) ?? null,
     };
   });
 }

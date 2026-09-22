@@ -40,6 +40,11 @@ export const SCHEMA_STATEMENTS: string[] = [
      updated_at           timestamptz not null default now()
    )`,
 
+  // Image choisie à la main. Pour une carte identifiée, TCGdex fournit déjà
+  // un visuel : ce champ ne sert qu'à le remplacer ou à couvrir le scellé,
+  // que TCGdex ne référence pas.
+  `alter table items add column if not exists image_url text`,
+
   `create index if not exists items_kind_idx on items (kind)`,
 
   `create index if not exists items_card_id_idx on items (card_id)

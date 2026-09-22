@@ -24,3 +24,29 @@ export function assetUrl(
   if (!base) return undefined;
   return `${base}.${ext}`;
 }
+
+/**
+ * Valide une URL d'image saisie à la main.
+ *
+ * Seuls `http` et `https` sont acceptés : le champ finit dans le `src` d'une
+ * balise `img`, et rien ne justifie d'y laisser passer un autre schéma.
+ *
+ * Renvoie `undefined` si le champ est vide, `null` si la saisie est
+ * inexploitable — même convention que les montants.
+ */
+export function parseImageUrl(
+  input: string | null,
+): string | undefined | null {
+  if (input === null) return undefined;
+
+  const trimmed = input.trim();
+  if (trimmed === "") return undefined;
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}

@@ -78,8 +78,9 @@ l'applique elle-même, parce que la base n'est joignable que depuis les
 fonctions serveur — ni depuis un poste de développement, ni depuis un agent.
 
 Même mécanique pour les évolutions futures : ajouter une instruction
-idempotente dans `SCHEMA_STATEMENTS`, déployer, recliquer le bouton. Rien
-n'est jamais supprimé, le rejeu est sans effet.
+idempotente dans `SCHEMA_STATEMENTS`, déployer, puis lancer **Appliquer les
+migrations** depuis la page **Mon compte**. Rien n'est jamais supprimé, le
+rejeu est sans effet.
 
 ## Architecture
 
@@ -136,6 +137,12 @@ Les montants sont stockés **en centimes**, jamais en flottant.
   une heure.
 - **Scellé et divers** — la valeur actuelle est saisie à la main, avec sa date
   de relevé. TCGdex ne couvre pas les produits scellés.
+
+**Visuels** — une carte identifiée affiche celui de TCGdex sans rien saisir.
+Le scellé n'étant pas référencé par TCGdex, son image se renseigne par une
+adresse, dans le formulaire. Une adresse saisie prime toujours sur le visuel
+automatique, et seuls `http` et `https` sont acceptés : le champ finit dans le
+`src` d'une balise `img`.
 
 Une valeur saisie à la main est toujours prioritaire sur la cote automatique.
 Une ligne sans valeur connue est comptée comme non valorisée plutôt que comme

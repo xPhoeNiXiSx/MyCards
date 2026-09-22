@@ -76,8 +76,11 @@ function DatabaseError({ message }: { message: string }) {
         <h2>Base injoignable</h2>
         <p className="hint">{message}</p>
         <p className="hint">
-          Vérifie <code>DATABASE_URL</code> dans les variables
-          d&apos;environnement Vercel, puis redéploie.
+          Si le message parle d&apos;une colonne inconnue, une migration reste à
+          appliquer : ouvre <strong>Mon compte</strong> et lance{" "}
+          <strong>Appliquer les migrations</strong>. Sinon, vérifie{" "}
+          <code>DATABASE_URL</code> dans les variables d&apos;environnement
+          Vercel, puis redéploie.
         </p>
       </div>
       <TabBar />
@@ -149,7 +152,21 @@ export default async function CollectionPage() {
     );
   }
 
-  const items = await valuate(await listItems());
+  let items;
+  try {
+    items = await valuate(await listItems());
+  } catch (error) {
+    // Typiquement une colonne ajoutée par une mise à jour et pas encore
+    // appliquée : le message doit dire quoi faire, pas seulement ce qui casse.
+    return (
+      <DatabaseError
+        message={
+          error instanceof Error ? error.message : "Erreur de lecture inconnue."
+        }
+      />
+    );
+  }
+
   const summary = summarize(items);
   const change = percentChange(
     summary.totalPurchaseCents,
@@ -226,11 +243,20 @@ export default async function CollectionPage() {
               {items.map((item) => (
                 <tr key={item.id}>
                   <td className="title-cell">
-                    <Link href={`/collection/${item.id}`}>{item.name}</Link>
-                    <span className="muted block">
-                      {KIND_LABELS[item.kind]}
-                      {item.setName ? ` · ${item.setName}` : ""}
-                    </span>
+                    <div className="title-row">
+                      {item.image ? (
+                        <img className="thumb" src={item.image} alt="" />
+                      ) : (
+                        <span className="thumb empty" aria-hidden="true" />
+                      )}
+                      <div className="title-text">
+                        <Link href={`/collection/${item.id}`}>{item.name}</Link>
+                        <span className="muted block">
+                          {KIND_LABELS[item.kind]}
+                          {item.setName ? ` · ${item.setName}` : ""}
+                        </span>
+                      </div>
+                    </div>
                   </td>
                   <td className="num" data-label="Quantité">
                     {item.quantity}

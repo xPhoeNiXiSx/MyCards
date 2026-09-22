@@ -24,6 +24,7 @@ export function ItemForm({ action, item, submitLabel }: Props) {
   // Le type pilote l'affichage : l'identifiant TCGdex n'a de sens que sur une
   // carte, et la cote automatique n'existe que dans ce cas.
   const [kind, setKind] = useState<ItemKind>(item?.kind ?? "single");
+  const [image, setImage] = useState(item?.imageUrl ?? "");
   const isCard = kind === "single";
 
   return (
@@ -110,6 +111,29 @@ export function ItemForm({ action, item, submitLabel }: Props) {
           </small>
         </label>
       </div>
+
+      <label>
+        Image (adresse)
+        <div className="with-preview">
+          <input
+            name="imageUrl"
+            inputMode="url"
+            value={image}
+            onChange={(event) => setImage(event.target.value)}
+            placeholder="https://…"
+          />
+          {/* Aperçu immédiat : une adresse qui ne charge pas se voit tout de
+              suite, plutôt qu'après enregistrement. */}
+          {image.trim() !== "" ? (
+            <img className="thumb" src={image} alt="" />
+          ) : null}
+        </div>
+        <small>
+          {isCard
+            ? "Vide = le visuel de la carte chez TCGdex."
+            : "TCGdex ne référence pas le scellé : colle l'adresse d'une image."}
+        </small>
+      </label>
 
       <details className="more" open={Boolean(item?.notes || item?.setName)}>
         <summary>Plus d&apos;options</summary>
