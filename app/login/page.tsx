@@ -13,12 +13,14 @@ export default async function LoginPage({
   return (
     <main className="page narrow">
       <header className="masthead">
-        <h1 className="wordmark">
+        <div className="wordmark">
           <Link href="/">
             <Wordmark />
           </Link>
-        </h1>
+        </div>
       </header>
+
+      <h1 className="page-title">Connexion</h1>
       <LoginForm next={next ?? ""} />
     </main>
   );

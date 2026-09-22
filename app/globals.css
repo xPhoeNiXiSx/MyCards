@@ -148,6 +148,26 @@ a {
   color: var(--fg-muted);
 }
 
+/* Le titre de l'écran, juste sous la marque. C'est lui le h1 : le logotype
+   est une marque, pas le sujet de la page. */
+.page-title {
+  margin: 22px 0 0;
+  font-size: clamp(1.5rem, 6.5vw, 1.875rem);
+  text-wrap: balance;
+}
+
+/* Lien de retour, à droite de la marque. */
+.back {
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.back:hover {
+  color: var(--fg);
+}
+
 .section-title {
   margin: 36px 0 14px;
   font-size: 1.0625rem;
@@ -156,7 +176,7 @@ a {
 /* --- Galerie du set ---------------------------------------------------- */
 
 .hero {
-  padding: 32px 0 26px;
+  padding: 24px 0 26px;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -939,7 +959,7 @@ button.link.danger:hover {
   }
 
   .hero {
-    padding: 24px 0 20px;
+    padding: 18px 0 20px;
     gap: 18px;
   }
 

@@ -24,6 +24,7 @@ export const dynamic = "force-dynamic";
 function Setup({ missing }: { missing: string[] }) {
   return (
     <main className="page narrow">
+      <h1 className="page-title">Mon inventaire</h1>
       <div className="panel">
         <h2>Configuration incomplète</h2>
         <p className="hint">
@@ -50,6 +51,7 @@ function Setup({ missing }: { missing: string[] }) {
 function Migrate() {
   return (
     <main className="page narrow">
+      <h1 className="page-title">Mon inventaire</h1>
       <div className="panel form">
         <h2>Base à initialiser</h2>
         <p className="hint">
@@ -69,6 +71,7 @@ function Migrate() {
 function DatabaseError({ message }: { message: string }) {
   return (
     <main className="page narrow">
+      <h1 className="page-title">Mon inventaire</h1>
       <div className="panel">
         <h2>Base injoignable</h2>
         <p className="hint">{message}</p>
@@ -156,13 +159,14 @@ export default async function CollectionPage() {
   return (
     <main className="page">
       <header className="masthead">
-        <h1 className="wordmark">
+        <div className="wordmark">
           <Link href="/">
             <Wordmark />
           </Link>
-        </h1>
-        <p>Inventaire — {summary.itemCount} ligne{summary.itemCount > 1 ? "s" : ""}</p>
+        </div>
       </header>
+
+      <h1 className="page-title">Mon inventaire</h1>
 
       <section className="summary">
         <div className="summary-main">

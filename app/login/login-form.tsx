@@ -12,7 +12,6 @@ export function LoginForm({ next }: { next: string }) {
 
   return (
     <form action={action} className="panel form">
-      <h2>Connexion</h2>
       <p className="hint">
         L&apos;inventaire est privé. La galerie d&apos;accueil, elle, reste
         accessible à tous.

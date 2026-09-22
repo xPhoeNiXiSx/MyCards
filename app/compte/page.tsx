@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { logoutAction } from "../login/actions";
 import { Wordmark } from "../wordmark";
 import { TabBar } from "../tab-bar";
@@ -8,11 +10,14 @@ export default function ComptePage() {
   return (
     <main className="page narrow">
       <header className="masthead">
-        <h1 className="wordmark">
-          <Wordmark />
-        </h1>
-        <p>Mon compte</p>
+        <div className="wordmark">
+          <Link href="/">
+            <Wordmark />
+          </Link>
+        </div>
       </header>
+
+      <h1 className="page-title">Mon compte</h1>
 
       <div className="panel">
         <h2>Session</h2>

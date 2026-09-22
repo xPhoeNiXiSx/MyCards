@@ -6,11 +6,12 @@ export default function HomePage() {
   return (
     <main className="page">
       <header className="masthead">
-        <h1 className="wordmark">
+        <div className="wordmark">
           <Wordmark />
-        </h1>
-        <p>Données : TCGdex — édition française</p>
+        </div>
       </header>
+
+      <h1 className="page-title">Collection</h1>
       <SetGallery />
       <TabBar />
     </main>

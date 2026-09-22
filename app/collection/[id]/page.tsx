@@ -5,6 +5,7 @@ import { isAuthenticated } from "@/lib/auth";
 import { getItem } from "@/lib/collection";
 
 import { TabBar } from "../../tab-bar";
+import { Wordmark } from "../../wordmark";
 import { updateItemAction } from "../actions";
 import { ItemForm } from "../item-form";
 
@@ -24,12 +25,17 @@ export default async function EditItemPage({
   return (
     <main className="page narrow">
       <header className="masthead">
-        <h1 className="wordmark">
-          <Link href="/collection">← Inventaire</Link>
-        </h1>
+        <div className="wordmark">
+          <Link href="/">
+            <Wordmark />
+          </Link>
+        </div>
+        <Link href="/collection" className="back">
+          ← Inventaire
+        </Link>
       </header>
 
-      <h2 className="section-title">{item.name}</h2>
+      <h1 className="page-title">{item.name}</h1>
       <div className="panel">
         <ItemForm action={updateItemAction} item={item} submitLabel="Enregistrer" />
       </div>
