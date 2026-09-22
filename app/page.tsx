@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { SetGallery } from "./set-gallery";
 
 export default function HomePage() {
@@ -7,7 +9,11 @@ export default function HomePage() {
         <h1 className="wordmark">
           My<span>Cards</span>
         </h1>
-        <p>Données : TCGdex — édition française</p>
+        <p>
+          <Link href="/collection" className="nav-link">
+            Mon inventaire
+          </Link>
+        </p>
       </header>
       <SetGallery />
     </main>

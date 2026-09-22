@@ -29,6 +29,12 @@ export type SetDetail = SetResume & {
   cards: CardResume[];
 };
 
+export type CardDetail = CardResume & {
+  rarity?: string;
+  set?: { id: string; name: string };
+  pricing?: unknown;
+};
+
 export type SetPayload = {
   set: SetDetail;
   /** Set jumeau (la sous-collection « Classique »), s'il a été trouvé. */
@@ -105,4 +111,9 @@ export async function fetchAnniversarySet(): Promise<SetPayload> {
       cardCount: companion.cardCount,
     },
   };
+}
+
+/** Fiche complète d'une carte, cote comprise. */
+export async function fetchCard(id: string): Promise<CardDetail> {
+  return get<CardDetail>(`/cards/${encodeURIComponent(id)}`);
 }
