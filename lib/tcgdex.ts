@@ -117,3 +117,13 @@ export async function fetchAnniversarySet(): Promise<SetPayload> {
 export async function fetchCard(id: string): Promise<CardDetail> {
   return get<CardDetail>(`/cards/${encodeURIComponent(id)}`);
 }
+
+/** Catalogue complet des sets, en résumé. */
+export async function fetchSets(): Promise<SetResume[]> {
+  return get<SetResume[]>("/sets");
+}
+
+/** Fiche d'un set désigné par son identifiant. */
+export async function fetchSet(id: string): Promise<SetDetail> {
+  return get<SetDetail>(`/sets/${encodeURIComponent(id)}`);
+}
