@@ -5,6 +5,11 @@ import { fetchCard, type CardDetail } from "@/lib/tcgdex";
 
 export type ItemKind = "single" | "sealed" | "other";
 
+/** `owned` = dans la collection. `wanted` = sur la liste d'achats. */
+export type ItemStatus = "owned" | "wanted";
+
+export const STATUSES: ItemStatus[] = ["owned", "wanted"];
+
 export const KIND_LABELS: Record<ItemKind, string> = {
   single: "Carte à l'unité",
   sealed: "Scellé",
@@ -13,6 +18,7 @@ export const KIND_LABELS: Record<ItemKind, string> = {
 
 export type Item = {
   id: string;
+  status: ItemStatus;
   kind: ItemKind;
   name: string;
   cardId: string | null;
@@ -59,6 +65,7 @@ export type Summary = {
 
 type Row = {
   id: string;
+  status: ItemStatus;
   kind: ItemKind;
   name: string;
   card_id: string | null;
@@ -82,6 +89,7 @@ function toIsoDate(value: string | Date | null): string | null {
 function toItem(row: Row): Item {
   return {
     id: row.id,
+    status: row.status,
     kind: row.kind,
     name: row.name,
     cardId: row.card_id,
@@ -97,13 +105,17 @@ function toItem(row: Row): Item {
   };
 }
 
-const COLUMNS = `id, kind, name, card_id, set_name, quantity,
+const COLUMNS = `id, status, kind, name, card_id, set_name, quantity,
                  purchase_price_cents, purchase_date,
                  manual_value_cents, manual_value_date, image_url, notes`;
 
-export async function listItems(): Promise<Item[]> {
+/** Les articles d'un statut donné, du plus récent au plus ancien. */
+export async function listItems(
+  status: ItemStatus = "owned",
+): Promise<Item[]> {
   const rows = await query<Row>(
-    `select ${COLUMNS} from items order by created_at desc`,
+    `select ${COLUMNS} from items where status = $1 order by created_at desc`,
+    [status],
   );
   return rows.map(toItem);
 }
@@ -118,12 +130,13 @@ export async function getItem(id: string): Promise<Item | undefined> {
 
 export async function createItem(input: ItemInput): Promise<Item> {
   const rows = await query<Row>(
-    `insert into items (kind, name, card_id, set_name, quantity,
+    `insert into items (status, kind, name, card_id, set_name, quantity,
                         purchase_price_cents, purchase_date,
                         manual_value_cents, manual_value_date, image_url, notes)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      returning ${COLUMNS}`,
     [
+      input.status,
       input.kind,
       input.name,
       input.cardId,
@@ -143,14 +156,15 @@ export async function createItem(input: ItemInput): Promise<Item> {
 export async function updateItem(id: string, input: ItemInput): Promise<void> {
   await query(
     `update items
-        set kind = $2, name = $3, card_id = $4, set_name = $5, quantity = $6,
-            purchase_price_cents = $7, purchase_date = $8,
-            manual_value_cents = $9, manual_value_date = $10,
-            image_url = $11, notes = $12,
+        set status = $2, kind = $3, name = $4, card_id = $5, set_name = $6,
+            quantity = $7, purchase_price_cents = $8, purchase_date = $9,
+            manual_value_cents = $10, manual_value_date = $11,
+            image_url = $12, notes = $13,
             updated_at = now()
       where id = $1`,
     [
       id,
+      input.status,
       input.kind,
       input.name,
       input.cardId,
@@ -328,4 +342,27 @@ export function bestGain(items: ValuedItem[]): ValuedItem | undefined {
   return items
     .filter((item) => item.gainCents !== null)
     .sort((a, b) => (b.gainCents ?? 0) - (a.gainCents ?? 0))[0];
+}
+
+/**
+ * Fait passer un article visé dans la collection.
+ *
+ * Seuls le prix payé et la date changent : le nom, l'identifiant et le reste
+ * suivent la ligne, ce qui est tout l'intérêt d'un statut plutôt que de deux
+ * tables.
+ */
+export async function markAsOwned(
+  id: string,
+  purchasePriceCents: number,
+  purchaseDate: string | null,
+): Promise<void> {
+  await query(
+    `update items
+        set status = 'owned',
+            purchase_price_cents = $2,
+            purchase_date = $3,
+            updated_at = now()
+      where id = $1 and status = 'wanted'`,
+    [id, purchasePriceCents, purchaseDate],
+  );
 }

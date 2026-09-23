@@ -69,6 +69,23 @@ function IconInventory() {
   );
 }
 
+function IconWanted() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M6.2 4.5h11.6l-1.3 15a1.6 1.6 0 0 1-1.6 1.4H9.1a1.6 1.6 0 0 1-1.6-1.4Z" />
+        <path d="M9 7.6V6.1a3 3 0 0 1 6 0v1.5" />
+      </g>
+    </svg>
+  );
+}
+
 function IconAccount() {
   return (
     <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
@@ -104,6 +121,12 @@ const TABS: Tab[] = [
     label: "Mon inventaire",
     icon: <IconInventory />,
     matches: (pathname) => pathname.startsWith("/collection"),
+  },
+  {
+    href: "/liste",
+    label: "Ma liste",
+    icon: <IconWanted />,
+    matches: (pathname) => pathname.startsWith("/liste"),
   },
   {
     href: "/compte",

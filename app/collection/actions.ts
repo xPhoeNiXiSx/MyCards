@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/auth";
 import {
+  STATUSES,
   createItem,
   deleteItem,
   updateItem,
@@ -68,7 +69,11 @@ function parse(form: FormData): ItemInput | string {
     return "L'adresse de l'image doit commencer par http:// ou https://.";
   }
 
+  const rawStatus = text(form, "status");
+  const status = STATUSES.find((candidate) => candidate === rawStatus) ?? "owned";
+
   return {
+    status,
     kind,
     name,
     cardId: text(form, "cardId"),

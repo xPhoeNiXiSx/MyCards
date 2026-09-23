@@ -30,6 +30,9 @@ export function ItemForm({ action, item, submitLabel }: Props) {
   return (
     <form action={formAction} className="form">
       {item ? <input type="hidden" name="id" value={item.id} /> : null}
+      {/* Modifier un article visé ne doit pas le faire entrer dans la
+          collection : seul le bouton d'achat fait cette bascule. */}
+      <input type="hidden" name="status" value={item?.status ?? "owned"} />
 
       <div className="row">
         <label className="narrow">

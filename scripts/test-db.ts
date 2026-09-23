@@ -15,6 +15,7 @@ import {
   bestGain,
   breakdown,
   createItem,
+  markAsOwned,
   deleteItem,
   getItem,
   listItems,
@@ -53,6 +54,7 @@ async function main() {
   ok("le schéma est idempotent");
 
   const etb: ItemInput = {
+    status: "owned",
     kind: "sealed",
     name: "Coffret dresseur d'élite 30 ans",
     cardId: null,
@@ -152,6 +154,51 @@ async function main() {
   assert.equal(updated?.quantity, 3);
   assert.equal(updated?.manualValueCents, 7000);
   ok("mise à jour");
+
+  // --- Liste d'achats ---------------------------------------------------
+
+  const vise = await createItem({
+    ...etb,
+    status: "wanted",
+    name: "Display Écarlate et Violet",
+    quantity: 1,
+    // Un article visé n'a ni prix payé ni valeur : il n'est pas encore à toi.
+    purchasePriceCents: 0,
+    purchaseDate: null,
+    manualValueCents: null,
+    manualValueDate: null,
+    imageUrl: null,
+  });
+
+  assert.equal(vise.status, "wanted");
+  ok("un article peut être créé comme visé");
+
+  // Les deux listes sont étanches.
+  assert.equal(
+    (await listItems("owned")).some((item) => item.id === vise.id),
+    false,
+  );
+  assert.deepEqual(
+    (await listItems("wanted")).map((item) => item.id),
+    [vise.id],
+  );
+  ok("visé et possédé ne se mélangent pas");
+
+  await markAsOwned(vise.id, 13500, "2026-09-23");
+  const achete = await getItem(vise.id);
+  assert.equal(achete?.status, "owned");
+  assert.equal(achete?.purchasePriceCents, 13500);
+  assert.equal(achete?.purchaseDate, "2026-09-23");
+  // Ce qui avait été saisi survit à la bascule.
+  assert.equal(achete?.name, "Display Écarlate et Violet");
+  ok("l'achat bascule la ligne sans rien perdre");
+
+  // Rejouer l'achat sur une ligne déjà possédée ne doit rien écraser.
+  await markAsOwned(vise.id, 99900, "2026-01-01");
+  assert.equal((await getItem(vise.id))?.purchasePriceCents, 13500);
+  ok("l'achat ne s'applique qu'à un article encore visé");
+
+  await deleteItem(vise.id);
 
   await deleteItem(created.id);
   assert.equal(await getItem(created.id), undefined);

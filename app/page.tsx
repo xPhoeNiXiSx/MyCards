@@ -175,16 +175,6 @@ export default async function DashboardPage() {
             ))}
           </div>
 
-          <div className="shortcuts">
-            <Link href="/collection" className="shortcut">
-              <strong>Mes articles</strong>
-              <span>Voir et modifier l&apos;inventaire</span>
-            </Link>
-            <Link href="/catalogue" className="shortcut">
-              <strong>Catalogue</strong>
-              <span>Toutes les collections Pokémon</span>
-            </Link>
-          </div>
         </>
       )}
 

@@ -1479,35 +1479,114 @@ button.frame {
   color: var(--fg-muted);
 }
 
-.shortcuts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-top: 26px;
+
+/* --- Liste d'achats ----------------------------------------------------- */
+
+.wanted {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.shortcut {
+.wanted li {
+  display: flex;
+  align-items: center;
+  gap: 13px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
-  text-decoration: none;
+  padding: 13px 15px;
+  min-width: 0;
+}
+
+.wanted-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
-.shortcut:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.shortcut strong {
+.wanted-text strong {
   font-family: var(--font-display-stack);
   font-size: 0.9375rem;
+  overflow-wrap: anywhere;
 }
 
-.shortcut span {
+.wanted-text .muted {
+  font-size: 0.75rem;
+}
+
+.wanted-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex: none;
+}
+
+.buy-button {
+  font: inherit;
+  font-family: var(--font-display-stack);
   font-size: 0.8125rem;
-  color: var(--fg-muted);
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--fg);
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.buy-button:hover {
+  opacity: 0.88;
+}
+
+/* Action secondaire, discrète à côté de l'achat. */
+button.link {
+  font: inherit;
+  font-size: 0.75rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--fg-faint);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+button.link.danger:hover {
+  color: var(--negative);
+}
+
+/* Cinq onglets : les cibles se resserrent, on récupère la place sur les côtés. */
+.tabbar ul {
+  max-width: 620px;
+}
+
+/* Sous 420 px, les deux actions d'une modale ne tiennent pas côte à côte.
+   Empilées, l'action principale passe au-dessus — mais le focus reste sur
+   « Annuler », qui vient toujours en premier dans le document. */
+@media (max-width: 420px) {
+  .confirm {
+    padding: 20px;
+  }
+
+  .confirm-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .confirm-actions button,
+  .confirm-actions form {
+    width: 100%;
+  }
+
+  .confirm-actions button[type="submit"] {
+    align-self: stretch;
+  }
 }

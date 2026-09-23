@@ -17,6 +17,7 @@ Deux écrans :
 - **`/catalogue`** — toutes les séries Pokémon et leurs collections
 - **`/collection`** — l'inventaire : articles possédés, prix d'achat, valeur
   actuelle et plus-value
+- **`/liste`** — les articles visés, et le passage à l'achat
 
 ## Design
 
@@ -95,6 +96,7 @@ rejeu est sans effet.
 | `app/api/series/route.ts` | Catalogue : séries et leurs collections                    |
 | `app/api/sets/[id]/route.ts` | Cartes d'une collection                                |
 | `app/collection/`      | Inventaire : liste, totaux, formulaires, actions serveur      |
+| `app/liste/`           | Liste d'achats : articles visés, bascule à l'achat             |
 | `app/compte/`          | Compte : session, déconnexion, futurs réglages                 |
 | `app/tab-bar.tsx`      | Barre d'onglets fixée en bas, icônes seules                    |
 | `app/wordmark.tsx`     | Logotype, en `currentColor` — la teinte se règle en CSS        |
@@ -164,6 +166,18 @@ manuelle :
 - push sur `main` → déploiement en production
 - push sur une autre branche → URL de preview dédiée
 - pull request → Vercel commente la PR avec le lien de preview
+
+## Liste d'achats
+
+Un article visé et un article possédé sont le même objet à deux moments de sa
+vie : une seule table `items`, distinguée par `status` (`owned` / `wanted`).
+L'achat n'est donc qu'une bascule qui renseigne le prix payé et la date — rien
+n'est ressaisi, et l'identifiant comme le visuel suivent la ligne.
+
+Une ligne visée ne porte que le nécessaire : type, nom, et l'identifiant
+TCGdex pour une carte. Le prix d'achat et la valeur n'existent pas encore.
+Les cartes visées affichent tout de même leur cote du jour, puisque c'est ce
+qu'on veut savoir avant d'acheter.
 
 ## Valorisation
 

@@ -45,6 +45,13 @@ export const SCHEMA_STATEMENTS: string[] = [
   // que TCGdex ne référence pas.
   `alter table items add column if not exists image_url text`,
 
+  // Un article visé et un article possédé sont le même objet à deux moments
+  // de sa vie : un statut plutôt qu'une seconde table, et l'achat n'est
+  // qu'une bascule qui préserve ce qui avait été saisi.
+  `alter table items add column if not exists status text not null default 'owned'`,
+
+  `create index if not exists items_status_idx on items (status)`,
+
   `create index if not exists items_kind_idx on items (kind)`,
 
   `create index if not exists items_card_id_idx on items (card_id)
