@@ -179,6 +179,19 @@ TCGdex pour une carte. Le prix d'achat et la valeur n'existent pas encore.
 Les cartes visées affichent tout de même leur cote du jour, puisque c'est ce
 qu'on veut savoir avant d'acheter.
 
+## Types de scellé
+
+Un article scellé porte un sous-type — blister, tripack, display, coffret
+dresseur d'élite… — qui sert de libellé dans la liste et alimente le filtre de
+l'inventaire. Le filtre passe par l'URL (`?type=blister`) : la page est rendue
+côté serveur, et une liste filtrée reste partageable et retrouvable par
+l'historique. Seuls les types réellement présents sont proposés, et le filtre
+porte aussi sur les totaux — un total qui ne correspondrait pas aux lignes
+affichées en dessous ne voudrait rien dire.
+
+Le sous-type ne vaut que pour le scellé : il est effacé si l'article change de
+type.
+
 ## Regroupement
 
 L'inventaire affiche une ligne par produit : les achats d'un même article sont

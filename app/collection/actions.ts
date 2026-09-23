@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
 import {
   STATUSES,
+  isSealedType,
   createItem,
   deleteItem,
   updateItem,
@@ -78,9 +79,14 @@ function parse(form: FormData): ItemInput | string {
   const rawStatus = text(form, "status");
   const status = STATUSES.find((candidate) => candidate === rawStatus) ?? "owned";
 
+  const rawSealed = text(form, "sealedType");
+
   return {
     status,
     kind,
+    // Le sous-type ne vaut que pour le scellé : sur une carte, il n'a pas de
+    // sens et ne doit pas survivre à un changement de type.
+    sealedType: kind === "sealed" && isSealedType(rawSealed) ? rawSealed : null,
     name,
     cardId: text(form, "cardId"),
     setName: text(form, "setName"),

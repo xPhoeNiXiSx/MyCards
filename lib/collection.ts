@@ -10,6 +10,29 @@ export type ItemStatus = "owned" | "wanted";
 
 export const STATUSES: ItemStatus[] = ["owned", "wanted"];
 
+/**
+ * Sous-types de scellé. Liste volontairement courte : elle doit couvrir ce
+ * qu'on achète couramment sans devenir un catalogue à faire défiler.
+ */
+export const SEALED_TYPES = {
+  booster: "Booster à l'unité",
+  blister: "Blister",
+  tripack: "Tripack",
+  etb: "Coffret dresseur d'élite (ETB)",
+  display: "Display",
+  coffret: "Coffret / collection spéciale",
+  bundle: "Bundle / multipack",
+  autre: "Autre scellé",
+} as const;
+
+export type SealedType = keyof typeof SEALED_TYPES;
+
+export const SEALED_TYPE_KEYS = Object.keys(SEALED_TYPES) as SealedType[];
+
+export function isSealedType(value: unknown): value is SealedType {
+  return typeof value === "string" && value in SEALED_TYPES;
+}
+
 export const KIND_LABELS: Record<ItemKind, string> = {
   single: "Carte à l'unité",
   sealed: "Scellé",
@@ -20,6 +43,8 @@ export type Item = {
   id: string;
   status: ItemStatus;
   kind: ItemKind;
+  /** Renseigné pour le scellé uniquement. */
+  sealedType: SealedType | null;
   name: string;
   cardId: string | null;
   setName: string | null;
@@ -78,6 +103,7 @@ type Row = {
   id: string;
   status: ItemStatus;
   kind: ItemKind;
+  sealed_type: string | null;
   name: string;
   card_id: string | null;
   set_name: string | null;
@@ -102,6 +128,7 @@ function toItem(row: Row): Item {
     id: row.id,
     status: row.status,
     kind: row.kind,
+    sealedType: isSealedType(row.sealed_type) ? row.sealed_type : null,
     name: row.name,
     cardId: row.card_id,
     setName: row.set_name,
@@ -116,7 +143,7 @@ function toItem(row: Row): Item {
   };
 }
 
-const COLUMNS = `id, status, kind, name, card_id, set_name, quantity,
+const COLUMNS = `id, status, kind, sealed_type, name, card_id, set_name, quantity,
                  purchase_price_cents, purchase_date,
                  manual_value_cents, manual_value_date, image_url, notes`;
 
@@ -141,14 +168,15 @@ export async function getItem(id: string): Promise<Item | undefined> {
 
 export async function createItem(input: ItemInput): Promise<Item> {
   const rows = await query<Row>(
-    `insert into items (status, kind, name, card_id, set_name, quantity,
-                        purchase_price_cents, purchase_date,
+    `insert into items (status, kind, sealed_type, name, card_id, set_name,
+                        quantity, purchase_price_cents, purchase_date,
                         manual_value_cents, manual_value_date, image_url, notes)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      returning ${COLUMNS}`,
     [
       input.status,
       input.kind,
+      input.sealedType,
       input.name,
       input.cardId,
       input.setName,
@@ -167,16 +195,17 @@ export async function createItem(input: ItemInput): Promise<Item> {
 export async function updateItem(id: string, input: ItemInput): Promise<void> {
   await query(
     `update items
-        set status = $2, kind = $3, name = $4, card_id = $5, set_name = $6,
-            quantity = $7, purchase_price_cents = $8, purchase_date = $9,
-            manual_value_cents = $10, manual_value_date = $11,
-            image_url = $12, notes = $13,
+        set status = $2, kind = $3, sealed_type = $4, name = $5, card_id = $6,
+            set_name = $7, quantity = $8, purchase_price_cents = $9,
+            purchase_date = $10, manual_value_cents = $11,
+            manual_value_date = $12, image_url = $13, notes = $14,
             updated_at = now()
       where id = $1`,
     [
       id,
       input.status,
       input.kind,
+      input.sealedType,
       input.name,
       input.cardId,
       input.setName,
@@ -390,6 +419,7 @@ export async function markAsOwned(
 export type ItemGroup = {
   key: string;
   kind: ItemKind;
+  sealedType: SealedType | null;
   name: string;
   setName: string | null;
   image: string | null;
@@ -414,7 +444,7 @@ function groupKey(item: Item): string {
 
   // L'identifiant de carte prime : deux cartes homonymes de sets différents
   // ne sont pas le même produit.
-  return `${item.kind}|${item.cardId ?? ""}|${name}`;
+  return `${item.kind}|${item.sealedType ?? ""}|${item.cardId ?? ""}|${name}`;
 }
 
 /**
@@ -432,6 +462,7 @@ export function groupItems(items: ValuedItem[]): ItemGroup[] {
     const group = groups.get(key) ?? {
       key,
       kind: item.kind,
+      sealedType: item.sealedType,
       name: item.name,
       setName: item.setName,
       image: item.image,
@@ -464,4 +495,12 @@ export function groupItems(items: ValuedItem[]): ItemGroup[] {
         ? 0
         : Math.round(group.purchaseCents / group.quantity),
   }));
+}
+
+/** Le libellé à afficher : le sous-type de scellé s'il existe, sinon le type. */
+export function itemLabel(item: {
+  kind: ItemKind;
+  sealedType: SealedType | null;
+}): string {
+  return item.sealedType ? SEALED_TYPES[item.sealedType] : KIND_LABELS[item.kind];
 }

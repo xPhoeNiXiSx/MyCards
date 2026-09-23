@@ -2,7 +2,11 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
-import { KIND_LABELS, type ItemKind } from "@/lib/collection";
+import {
+  KIND_LABELS,
+  SEALED_TYPES,
+  type ItemKind,
+} from "@/lib/collection";
 
 import { addWantedAction, type ActionState } from "./actions";
 
@@ -53,6 +57,19 @@ export function WantedForm() {
           />
         </label>
       </div>
+
+      {kind === "sealed" ? (
+        <label>
+          Type de scellé
+          <select name="sealedType" defaultValue="autre">
+            {Object.entries(SEALED_TYPES).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       {kind === "single" ? (
         <label>

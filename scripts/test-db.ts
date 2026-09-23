@@ -15,6 +15,7 @@ import {
   bestGain,
   breakdown,
   groupItems,
+  itemLabel,
   createItem,
   markAsOwned,
   deleteItem,
@@ -57,6 +58,7 @@ async function main() {
   const etb: ItemInput = {
     status: "owned",
     kind: "sealed",
+    sealedType: "etb",
     name: "Coffret dresseur d'élite 30 ans",
     cardId: null,
     setName: "Célébration 30 ans",
@@ -177,6 +179,24 @@ async function main() {
     [0],
   );
   ok("aucune part calculée sur un total nul");
+
+  // --- Sous-type de scellé ----------------------------------------------
+
+  assert.equal(created.sealedType, "etb");
+  assert.equal(itemLabel(created), "Coffret dresseur d'élite (ETB)");
+  // Une carte n'a pas de sous-type : elle garde son libellé de type.
+  assert.equal(itemLabel({ kind: "single", sealedType: null }), "Carte à l'unité");
+  ok("le sous-type de scellé sert de libellé");
+
+  // Deux scellés homonymes de sous-types différents restent distincts.
+  const varies = groupItems(
+    await valuate([
+      { ...etb, id: "x", name: "Nuit noire", sealedType: "blister" },
+      { ...etb, id: "y", name: "Nuit noire", sealedType: "tripack" },
+    ]),
+  );
+  assert.equal(varies.length, 2);
+  ok("le sous-type distingue deux produits de même nom");
 
   // --- Regroupement par produit ----------------------------------------
 

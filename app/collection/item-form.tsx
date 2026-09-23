@@ -2,7 +2,12 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
-import { KIND_LABELS, type Item, type ItemKind } from "@/lib/collection";
+import {
+  KIND_LABELS,
+  SEALED_TYPES,
+  type Item,
+  type ItemKind,
+} from "@/lib/collection";
 
 import type { ActionState } from "./actions";
 
@@ -35,6 +40,7 @@ export function ItemForm({ action, item, submitLabel }: Props) {
     setImage("");
   }, [state.nonce]);
   const isCard = kind === "single";
+  const isSealed = kind === "sealed";
 
   return (
     <form ref={formRef} action={formAction} className="form">
@@ -82,6 +88,20 @@ export function ItemForm({ action, item, submitLabel }: Props) {
           />
         </label>
       </div>
+
+      {isSealed ? (
+        <label>
+          Type de scellé
+          <select name="sealedType" defaultValue={item?.sealedType ?? "autre"}>
+            {Object.entries(SEALED_TYPES).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <small>Sert à filtrer la liste.</small>
+        </label>
+      ) : null}
 
       {isCard ? (
         <label>

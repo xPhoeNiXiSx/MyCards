@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/auth";
-import { createItem, markAsOwned, type ItemKind } from "@/lib/collection";
+import {
+  createItem,
+  isSealedType,
+  markAsOwned,
+  type ItemKind,
+} from "@/lib/collection";
 import { parseEuros } from "@/lib/money";
 
 const KINDS: ItemKind[] = ["single", "sealed", "other"];
@@ -40,9 +45,12 @@ export async function addWantedAction(
   const kind = KINDS.find((candidate) => candidate === rawKind);
   if (!kind) return { error: "Type d'article invalide." };
 
+  const rawSealed = text(form, "sealedType");
+
   await createItem({
     status: "wanted",
     kind,
+    sealedType: kind === "sealed" && isSealedType(rawSealed) ? rawSealed : null,
     name,
     cardId: kind === "single" ? text(form, "cardId") : null,
     setName: null,

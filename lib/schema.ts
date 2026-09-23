@@ -52,6 +52,10 @@ export const SCHEMA_STATEMENTS: string[] = [
 
   `create index if not exists items_status_idx on items (status)`,
 
+  // Sous-type du scellé : blister, display, coffret… « Scellé » seul ne
+  // permet pas de filtrer, et c'est justement ce qu'on veut faire.
+  `alter table items add column if not exists sealed_type text`,
+
   `create index if not exists items_kind_idx on items (kind)`,
 
   `create index if not exists items_card_id_idx on items (card_id)

@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 
 import { isAuthConfigured, isAuthenticated } from "@/lib/auth";
 import {
-  KIND_LABELS,
+  SEALED_TYPE_KEYS,
   groupItems,
+  isSealedType,
+  itemLabel,
   listItems,
   summarize,
   valuate,
@@ -19,6 +21,7 @@ import { TabBar } from "../tab-bar";
 
 import { migrateAction } from "./actions";
 import { AddFab } from "./add-fab";
+import { TypeFilter } from "./type-filter";
 
 // L'inventaire dépend de la session : jamais de rendu statique ici.
 export const dynamic = "force-dynamic";
@@ -111,7 +114,13 @@ function GroupValue({ group }: { group: ItemGroup }) {
   );
 }
 
-export default async function CollectionPage() {
+export default async function CollectionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
+  const { type } = await searchParams;
+  const filter = isSealedType(type) ? type : null;
   const missing: string[] = [];
   if (!isAuthConfigured()) missing.push("APP_PASSWORD", "AUTH_SECRET");
   if (!isDatabaseConfigured()) missing.push("DATABASE_URL");
@@ -149,8 +158,19 @@ export default async function CollectionPage() {
     );
   }
 
-  const summary = summarize(items);
-  const groups = groupItems(items);
+  // Les types présents, dans l'ordre de la liste de référence.
+  const available = SEALED_TYPE_KEYS.filter((key) =>
+    items.some((item) => item.sealedType === key),
+  );
+
+  // Le filtre porte aussi sur les totaux : un total qui ne correspond pas aux
+  // lignes affichées juste en dessous ne veut rien dire.
+  const shown = filter
+    ? items.filter((item) => item.sealedType === filter)
+    : items;
+
+  const summary = summarize(shown);
+  const groups = groupItems(shown);
   // Comparé au prix d'achat des seules lignes valorisées : rapporter une
   // valeur partielle à l'investissement total donnerait un pourcentage faux.
   const change = percentChange(
@@ -169,6 +189,14 @@ export default async function CollectionPage() {
       </header>
 
       <h1 className="page-title">Mon inventaire</h1>
+
+      <div className="toolbar">
+        <TypeFilter available={available} current={filter} />
+      </div>
+
+      <div className="toolbar">
+        <TypeFilter available={available} current={filter} />
+      </div>
 
       <section className="summary">
         <div className="summary-main">
@@ -247,7 +275,7 @@ export default async function CollectionPage() {
                           <span className="group-name">{group.name}</span>
                         )}
                         <span className="muted block">
-                          {[KIND_LABELS[group.kind], group.setName]
+                          {[itemLabel(group), group.setName]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
