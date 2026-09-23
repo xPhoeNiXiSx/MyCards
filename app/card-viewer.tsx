@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 
 import { imageUrl } from "@/lib/images";
 import type { CardResume } from "@/lib/tcgdex";
+
+import { OwnedContext } from "./owned-context";
+import { QuickAdd } from "./quick-add";
 
 /**
  * Visionneuse plein écran, avec navigation d'une carte à l'autre.
@@ -16,14 +19,18 @@ export function CardViewer({
   index,
   onNavigate,
   onClose,
+  setNameOf,
 }: {
   cards: CardResume[];
+  /** Nom de l'extension d'une carte, enregistré avec l'article ajouté. */
+  setNameOf: (card: CardResume) => string | null;
   /** `null` quand la visionneuse est fermée. */
   index: number | null;
   onNavigate: (index: number) => void;
   onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const owned = useContext(OwnedContext);
   const open = index !== null;
 
   useEffect(() => {
@@ -51,6 +58,7 @@ export function CardViewer({
 
   const card = index === null ? undefined : cards[index];
   const src = imageUrl(card?.image, "high");
+  const count = card ? (owned.counts[card.id] ?? 0) : 0;
 
   return (
     <dialog ref={dialog} className="viewer" onClose={onClose}>
@@ -80,6 +88,11 @@ export function CardViewer({
               <span>
                 {card.localId} · {index + 1} / {cards.length}
               </span>
+              {count > 0 ? (
+                <span className="owned-pill">
+                  Déjà ×{count} dans l&apos;inventaire
+                </span>
+              ) : null}
             </div>
 
             <button
@@ -92,6 +105,10 @@ export function CardViewer({
               ›
             </button>
           </div>
+
+          {/* Remonté à chaque carte : une confirmation ou un prix saisi ne
+              doivent pas déborder sur la suivante. */}
+          <QuickAdd key={card.id} card={card} setName={setNameOf(card)} />
 
           <button
             type="button"

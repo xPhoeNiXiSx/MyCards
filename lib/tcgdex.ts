@@ -231,3 +231,22 @@ export async function fetchRarityCounts(
 
   return counts;
 }
+
+/**
+ * Cartes dont le nom contient `name`, tous sets confondus, éventuellement
+ * limitées à une rareté.
+ *
+ * Le filtre `name=` de TCGdex est « large » par défaut : il cherche la
+ * sous-chaîne, sans tenir compte de la casse. Même construction manuelle de
+ * la requête que `fetchCardsOfSet`, pour la même raison.
+ */
+export async function searchCards(
+  name: string,
+  rarity?: string | null,
+): Promise<CardResume[]> {
+  const query =
+    `name=${encodeURIComponent(name)}` +
+    (rarity ? `&rarity=eq:${encodeURIComponent(rarity)}` : "");
+
+  return get<CardResume[]>(`/cards?${query}`);
+}
