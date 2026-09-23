@@ -194,10 +194,6 @@ export default async function CollectionPage({
         <TypeFilter available={available} current={filter} />
       </div>
 
-      <div className="toolbar">
-        <TypeFilter available={available} current={filter} />
-      </div>
-
       <section className="summary">
         <div className="summary-main">
           <span className="summary-label">Valeur actuelle</span>
