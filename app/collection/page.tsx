@@ -16,6 +16,8 @@ import {
   type ItemGroup,
 } from "@/lib/collection";
 import { setIdOf } from "@/lib/card-number";
+import { CHECKS, isCheckKey, matchesCheck } from "@/lib/dashboard";
+import { parisToday } from "@/lib/history";
 import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
@@ -141,10 +143,13 @@ function GroupValue({ group }: { group: ItemGroup }) {
 export default async function CollectionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; vue?: string }>;
+  searchParams: Promise<{ type?: string; vue?: string; verifier?: string }>;
 }) {
-  const { type, vue } = await searchParams;
+  const { type, vue, verifier } = await searchParams;
   const filter = isItemCategory(type) ? type : null;
+  // Arrivée depuis « À vérifier » du tableau de bord : seules les lignes
+  // concernées, pour les corriger sans les chercher.
+  const check = isCheckKey(verifier) ? verifier : null;
   const gallery = vue === "images";
   const missing: string[] = [];
   if (!isAuthConfigured()) missing.push("APP_PASSWORD", "AUTH_SECRET");
@@ -194,17 +199,26 @@ export default async function CollectionPage({
 
   // Le filtre porte aussi sur les totaux : un total qui ne correspond pas aux
   // lignes affichées juste en dessous ne veut rien dire.
-  const shown = filter
-    ? items.filter((item) => itemCategory(item) === filter)
-    : items;
+  const today = parisToday();
+  const shown = items.filter(
+    (item) =>
+      (!filter || itemCategory(item) === filter) &&
+      (!check || matchesCheck(item, check, today)),
+  );
 
   /** Conserve la vue courante en changeant de filtre, et inversement. */
-  const link = (next: { type?: string | null; vue?: string | null }) => {
+  const link = (next: {
+    type?: string | null;
+    vue?: string | null;
+    verifier?: string | null;
+  }) => {
     const params = new URLSearchParams();
     const category = next.type === undefined ? filter : next.type;
     const view = next.vue === undefined ? (gallery ? "images" : null) : next.vue;
     if (category) params.set("type", category);
     if (view) params.set("vue", view);
+    const pending = next.verifier === undefined ? check : next.verifier;
+    if (pending) params.set("verifier", pending);
     const query = params.toString();
     return query ? `/collection?${query}` : "/collection";
   };
@@ -275,6 +289,17 @@ export default async function CollectionPage({
           </div>
         </div>
       </section>
+
+      {check ? (
+        <div className="check-filter" role="status">
+          <span>{CHECKS.find((entry) => entry.key === check)?.label}</span>
+          <Link
+            href={link({ verifier: null })}
+          >
+            Tout afficher
+          </Link>
+        </div>
+      ) : null}
 
       {available.length > 1 ? (
         <div className="chips">

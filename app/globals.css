@@ -2151,3 +2151,314 @@ button.link.danger:hover {
   color: var(--fg);
   font-variant-numeric: tabular-nums;
 }
+
+/* --- Tableau de bord : évolution ---------------------------------------- */
+
+/* Dans le bloc de la valeur, sous les chiffres : la courbe raconte le même
+   chiffre dans le temps, elle n'a pas à vivre ailleurs. */
+.evolution {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.evolution-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.evolution-change {
+  font-family: var(--font-display-stack);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.range {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.range .chip {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.evolution-plot {
+  position: relative;
+  height: 150px;
+}
+
+.evolution-plot svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.evolution-plot .grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolution-plot .value-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolution-plot .value-area {
+  fill: var(--accent-soft);
+  opacity: 0.7;
+}
+
+.evolution-plot .invested-line {
+  fill: none;
+  stroke: var(--fg-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.value-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--surface);
+}
+
+.axis-label {
+  position: absolute;
+  left: 0;
+  font-family: var(--font-display-stack);
+  font-size: 0.6875rem;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  padding: 0 4px 0 0;
+  line-height: 1;
+}
+
+/* Posées juste au-dessus des lignes de repère haute et basse (8 % et 92 %). */
+.axis-label.top {
+  top: calc(8% - 14px);
+}
+
+.axis-label.bottom {
+  top: calc(92% + 4px);
+}
+
+.evolution-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 0.6875rem;
+  color: var(--fg-faint);
+}
+
+.evolution-foot .legend {
+  display: flex;
+  gap: 14px;
+  color: var(--fg-muted);
+}
+
+.evolution-foot .key::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  vertical-align: middle;
+  margin-right: 6px;
+  border-top: 2px solid var(--accent);
+}
+
+.evolution-foot .key.invested::before {
+  border-top: 2px dashed var(--fg-muted);
+}
+
+.evolution-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--fg-faint);
+  line-height: 1.45;
+}
+
+/* --- Tableau de bord : indicateurs illustrés ---------------------------- */
+
+.kpi-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.kpi-link:hover {
+  border-color: var(--border-strong);
+}
+
+.kpi-thumb {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.kpi-thumb .thumb {
+  width: 34px;
+}
+
+.kpi-thumb > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* --- Tableau de bord : à vérifier --------------------------------------- */
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--fg);
+  font-size: 0.875rem;
+}
+
+.check:hover {
+  border-color: var(--border-strong);
+}
+
+.check-count {
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--font-display-stack);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.check-go {
+  color: var(--accent);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+/* --- Tableau de bord : hausses et baisses ------------------------------- */
+
+.movers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.movers-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.movers-title {
+  font-family: var(--font-body-stack);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--fg-muted);
+  margin-bottom: 4px;
+}
+
+.mover {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 4px 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.mover .thumb {
+  width: 30px;
+}
+
+.mover-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mover-name {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mover:hover .mover-name {
+  color: var(--accent);
+}
+
+.mover-gain {
+  font-family: var(--font-display-stack);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.movers .hint {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+/* Filtre « À vérifier » actif : dit ce qu'on regarde, et comment en sortir. */
+.check-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+.check-filter a {
+  color: var(--fg);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}

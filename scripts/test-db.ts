@@ -32,6 +32,14 @@ import {
   type ItemInput,
 } from "../lib/collection";
 import type { CardDetail } from "../lib/tcgdex";
+import {
+  buildChart,
+  categoryBreakdown,
+  matchesCheck,
+  movers,
+  pendingChecks,
+} from "../lib/dashboard";
+import { investedSeries, parisToday, recordSnapshot, valueSeries } from "../lib/history";
 import { findByNumber, normalizeCardNumber, setIdOf } from "../lib/card-number";
 import { parseImageUrl } from "../lib/images";
 import { formatCents, parseEuros, percentChange } from "../lib/money";
@@ -600,6 +608,120 @@ async function main() {
   assert.equal(parseImageUrl("file:///etc/passwd"), null);
   assert.equal(parseImageUrl("pas une url"), null);
   ok("tout autre schéma est refusé");
+
+  // --- Historique ---------------------------------------------------------
+
+  await query(`delete from items`);
+  const base = { ...etb, manualValueCents: null, manualValueDate: null, imageUrl: null };
+  await createItem({ ...base, quantity: 1, purchasePriceCents: 1000, purchaseDate: "2026-01-10" });
+  await createItem({ ...base, quantity: 2, purchasePriceCents: 500, purchaseDate: "2026-03-05" });
+  await createItem({ ...base, quantity: 1, purchasePriceCents: 300, purchaseDate: "2026-01-10" });
+  // Sans date : compté au jour de sa saisie, aujourd'hui.
+  await createItem({ ...base, quantity: 1, purchasePriceCents: 200, purchaseDate: null });
+  // Un article visé n'a rien coûté.
+  await createItem({ ...base, status: "wanted", purchasePriceCents: 9999, purchaseDate: "2026-02-01" });
+
+  const today = parisToday();
+  assert.deepEqual(await investedSeries(), [
+    { day: "2026-01-10", cents: 1300 },
+    { day: "2026-03-05", cents: 2300 },
+    { day: today, cents: 2500 },
+  ]);
+  ok("l'investi cumulé se reconstitue depuis les dates d'achat");
+
+  const releve = summarize(await valuate(await listItems()));
+  await recordSnapshot(releve);
+  await recordSnapshot({ ...releve, totalValueCents: 4242 });
+  assert.deepEqual(await valueSeries(), [{ day: today, cents: 4242 }]);
+  ok("un relevé par jour, le dernier de la journée fait foi");
+
+  await query(
+    `insert into value_snapshots (day, value_cents, purchase_cents, valued_purchase_cents, unvalued_count)
+     values ('2026-09-01', 3000, 2500, 2500, 0)`,
+  );
+  assert.equal((await valueSeries())[0].day, "2026-09-01");
+  ok("les relevés sont rendus dans l'ordre chronologique");
+
+  // --- Courbe --------------------------------------------------------------
+
+  const investi = [
+    { day: "2026-01-10", cents: 1300 },
+    { day: "2026-03-05", cents: 2300 },
+    { day: "2026-09-20", cents: 2500 },
+  ];
+  const valeurs = [
+    { day: "2026-09-10", cents: 2600 },
+    { day: "2026-09-20", cents: 2900 },
+    { day: "2026-09-23", cents: 3100 },
+  ];
+
+  const mois = buildChart(investi, valeurs, "30j", "2026-09-23");
+  assert.equal(mois.start, "2026-08-25");
+  // L'investi part de son niveau d'avant la période, et va jusqu'à aujourd'hui.
+  assert.deepEqual(mois.invested, [
+    { day: "2026-08-25", cents: 2300 },
+    { day: "2026-09-20", cents: 2500 },
+    { day: "2026-09-23", cents: 2500 },
+  ]);
+  assert.equal(mois.value.length, 3);
+  assert.equal(mois.valueChange, 500);
+  assert.equal(mois.min, 2300);
+  assert.equal(mois.max, 3100);
+  ok("courbe sur 30 jours : investi reporté, valeur et écart de la période");
+
+  const semaine = buildChart(investi, valeurs, "7j", "2026-09-23");
+  assert.equal(semaine.start, "2026-09-17");
+  assert.deepEqual(semaine.value.map((point) => point.day), ["2026-09-20", "2026-09-23"]);
+  ok("courbe sur 7 jours : seuls les relevés de la période");
+
+  const tout = buildChart(investi, valeurs, "tout", "2026-09-23");
+  assert.equal(tout.start, "2026-01-10");
+  assert.equal(tout.invested[0].cents, 1300);
+  ok("courbe complète : depuis le premier achat");
+
+  const unSeul = buildChart(investi, [{ day: "2026-09-23", cents: 2500 }], "30j", "2026-09-23");
+  assert.equal(unSeul.valueChange, null);
+  ok("un seul relevé : pas d'écart annoncé");
+
+  const plat = buildChart([], [{ day: "2026-09-23", cents: 2500 }], "7j", "2026-09-23");
+  assert.ok(plat.max > plat.min);
+  assert.deepEqual(plat.invested, []);
+  ok("une courbe plate garde une hauteur");
+
+  // --- Tableau de bord -------------------------------------------------------
+
+  const lignes = await valuate([
+    { ...base, id: "d1", kind: "single", sealedType: null, name: "A", purchasePriceCents: 1000, manualValueCents: 1500, manualValueDate: "2026-01-01" },
+    { ...base, id: "d2", kind: "single", sealedType: null, name: "B", purchasePriceCents: 1000, manualValueCents: 800, manualValueDate: "2026-09-01" },
+    { ...base, id: "d3", kind: "single", sealedType: null, name: "C", purchasePriceCents: 0, grader: "psa", grade: "10" },
+    { ...base, id: "d4", name: "ETB", sealedType: "etb", purchasePriceCents: 4000, manualValueCents: 5000, manualValueDate: "2026-09-01" },
+  ]);
+  const [a, b, c, d] = lignes;
+
+  assert.equal(matchesCheck(a, "cote-ancienne", "2026-09-23"), true);
+  assert.equal(matchesCheck(b, "cote-ancienne", "2026-09-23"), false);
+  assert.equal(matchesCheck(c, "sans-cote", "2026-09-23"), true);
+  assert.equal(matchesCheck(c, "gradee", "2026-09-23"), true);
+  assert.equal(matchesCheck(c, "sans-prix", "2026-09-23"), true);
+  assert.equal(matchesCheck(d, "sans-cote", "2026-09-23"), false);
+  assert.deepEqual(
+    pendingChecks(lignes, "2026-09-23").map((check) => [check.key, check.count]),
+    [["sans-cote", 1], ["gradee", 1], ["cote-ancienne", 1], ["sans-prix", 1]],
+  );
+  assert.deepEqual(pendingChecks([d], "2026-09-23"), []);
+  ok("à vérifier : chaque règle, et rien quand tout va bien");
+
+  const categories = categoryBreakdown(lignes);
+  assert.deepEqual(categories.map((part) => [part.category, part.valueCents, part.share]), [
+    ["etb", 10000, 68],
+    ["single", 4600, 32],
+  ]);
+  ok("répartition par catégorie, triée par valeur");
+
+  const mouvements = movers(groupItems(lignes));
+  assert.deepEqual(mouvements.gains.map((group) => group.name), ["ETB", "A"]);
+  assert.deepEqual(mouvements.losses.map((group) => group.name), ["B"]);
+  ok("hausses et baisses : sans les lignes non cotées");
 
   await pg.close();
 

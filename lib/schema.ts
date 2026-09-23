@@ -78,4 +78,16 @@ export const SCHEMA_STATEMENTS: string[] = [
 
   `create index if not exists login_failures_ip_idx
      on login_failures (ip, failed_at)`,
+
+  // Un relevé par jour de la valeur de l'inventaire, pour la courbe du
+  // tableau de bord. La cote d'hier n'est disponible nulle part ailleurs :
+  // ce qui n'est pas relevé le jour même est perdu.
+  `create table if not exists value_snapshots (
+     day                   date primary key,
+     value_cents           bigint not null,
+     purchase_cents        bigint not null,
+     valued_purchase_cents bigint not null,
+     unvalued_count        integer not null,
+     recorded_at           timestamptz not null default now()
+   )`,
 ];

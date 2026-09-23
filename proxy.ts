@@ -7,10 +7,11 @@ import { SESSION_COOKIE, isAuthConfigured, verifyToken } from "@/lib/session";
  * Fermer au niveau du proxy plutôt que page par page évite qu'une route
  * ajoutée plus tard soit publique par oubli — le défaut devient « fermé ».
  *
- * Seule exception, la page de connexion elle-même, sans quoi il n'y aurait
- * aucun moyen d'entrer.
+ * Exceptions : la page de connexion elle-même, sans quoi il n'y aurait aucun
+ * moyen d'entrer, et le relevé quotidien, appelé par le cron Vercel qui n'a
+ * pas de session. Cette route vérifie elle-même son secret (`CRON_SECRET`).
  */
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/api/cron/snapshot"];
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

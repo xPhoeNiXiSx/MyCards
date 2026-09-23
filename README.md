@@ -19,7 +19,8 @@ inconnu ne puisse pas bloquer le propriétaire en échouant exprès.
 
 Quatre écrans :
 
-- **`/`** — le tableau de bord : valeur, plus-value, indicateurs, répartition
+- **`/`** — le tableau de bord : valeur, plus-value, évolution dans le temps,
+  indicateurs, points à vérifier, hausses et baisses, répartition
 - **`/catalogue`** — toutes les séries Pokémon et leurs collections
 - **`/collection`** — l'inventaire : articles possédés, prix d'achat, valeur
   actuelle et plus-value
@@ -68,6 +69,7 @@ Environment Variables) et dans un `.env.local` pour le développement :
 | `DATABASE_URL`  | Chaîne de connexion Postgres (Neon)                          |
 | `APP_PASSWORD`  | Mot de passe unique d'accès à l'inventaire                   |
 | `AUTH_SECRET`   | Clé de signature du cookie de session — une valeur aléatoire |
+| `CRON_SECRET`   | Secret du relevé quotidien, envoyé par le cron Vercel — une valeur aléatoire |
 
 Tant qu'elles manquent, `/collection` affiche un écran expliquant ce qui
 manque plutôt que de planter. La page d'accueil, elle, n'en dépend pas.
@@ -292,8 +294,34 @@ Langue et gradation font partie de la clé de regroupement : une japonaise et
 une française, ou une gradée et la même brute, sont deux produits. L'état,
 non : s'il diffère d'un achat à l'autre, il n'est pas affiché sur le groupe.
 
+## Tableau de bord
+
+De haut en bas :
+
+- **Valeur actuelle et évolution** — la courbe montre deux séries sur 7 jours,
+  30 jours ou depuis le début. **L'investi** se reconstitue depuis les dates
+  d'achat (un article sans date compte au jour de sa saisie) et remonte donc
+  jusqu'au premier achat. **La valeur** ne se reconstitue pas : personne ne
+  fournit la cote d'hier. Elle est relevée une fois par jour dans
+  `value_snapshots`, à chaque affichage du tableau de bord et chaque nuit par
+  le cron Vercel (`vercel.json`, `/api/cron/snapshot`), et sa courbe commence
+  au premier relevé.
+- **Indicateurs** — la meilleure plus-value et le dernier ajout portent leur
+  vignette et ouvrent la fiche de l'article.
+- **À vérifier** — ce qui fausse les totaux : lignes sans cote, cartes
+  gradées sans valeur saisie, cotes saisies il y a plus de 3 mois, articles
+  sans prix d'achat. Chaque ligne ouvre l'inventaire filtré
+  (`/collection?verifier=…`). Le bloc disparaît quand tout est en ordre.
+- **Hausses et baisses** — les trois plus fortes plus-values et moins-values,
+  par produit.
+- **Répartition par catégorie** — au grain des puces de l'inventaire, avec
+  leurs couleurs.
+
+Le relevé nocturne échappe à la session, un cron ne se connectant pas : la
+route exige à la place l'en-tête `Authorization: Bearer <CRON_SECRET>` que
+Vercel envoie de lui-même, et refuse tout si `CRON_SECRET` n'est pas définie.
+
 ## Suite
 
-- Historique de valorisation, pour suivre l'évolution dans le temps
 - Automatiser la cote du scellé via une API tierce
 - Ajouter un article directement depuis la galerie d'accueil
