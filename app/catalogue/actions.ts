@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { isAuthenticated } from "@/lib/auth";
 import { createItem } from "@/lib/collection";
 import { parseEuros } from "@/lib/money";
+import { saveSetting } from "@/lib/settings";
 
 export type QuickAddInput = {
   cardId: string;
@@ -71,4 +72,32 @@ export async function quickAddAction(
   revalidatePath("/collection");
   revalidatePath("/");
   return { ok: true, id: item.id, quantity };
+}
+
+/**
+ * Enregistre les extensions à afficher dans le catalogue. `null` revient à la
+ * sélection par défaut.
+ */
+export async function saveCatalogueSetsAction(
+  ids: string[] | null,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isAuthenticated())) {
+    return { ok: false, error: "Session expirée : reconnecte-toi." };
+  }
+  if (ids !== null && !(Array.isArray(ids) && ids.every((id) => typeof id === "string"))) {
+    return { ok: false, error: "Sélection invalide." };
+  }
+
+  try {
+    await saveSetting("catalogueSets", ids === null ? null : [...new Set(ids)]);
+  } catch (error) {
+    console.error("[catalogue] sélection non enregistrée", error);
+    return {
+      ok: false,
+      error:
+        "Enregistrement impossible. Si l'erreur persiste, applique les migrations depuis la page Compte.",
+    };
+  }
+  revalidatePath("/catalogue");
+  return { ok: true };
 }

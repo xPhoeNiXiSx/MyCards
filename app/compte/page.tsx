@@ -1,13 +1,23 @@
 import Link from "next/link";
 
+import { getSettingsOrDefaults } from "@/lib/settings";
+
 import { migrateAction } from "../collection/actions";
+import { saveCatalogueSettingsAction } from "./actions";
 import { logoutAction } from "../login/actions";
 import { Wordmark } from "../wordmark";
 import { TabBar } from "../tab-bar";
 
 export const dynamic = "force-dynamic";
 
-export default function ComptePage() {
+export default async function ComptePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ enregistre?: string }>;
+}) {
+  const { enregistre } = await searchParams;
+  const settings = await getSettingsOrDefaults();
+
   return (
     <main className="page narrow">
       <header className="masthead">
@@ -44,11 +54,33 @@ export default function ComptePage() {
       </div>
 
       <div className="panel">
-        <h2>Réglages</h2>
-        <p className="hint">
-          Aucun réglage pour l&apos;instant. C&apos;est ici qu&apos;ils
-          arriveront — devise, format des dates, sources de cotes.
-        </p>
+        <h2>Catalogue</h2>
+        <form action={saveCatalogueSettingsAction} className="form">
+          <label className="check-row">
+            <input
+              type="checkbox"
+              name="hidePocket"
+              defaultChecked={settings.hidePocket}
+            />
+            <span>
+              Masquer Pokémon TCG Pocket
+              <small>
+                Les extensions du jeu mobile, qui n&apos;existent pas en cartes
+                physiques. Elles disparaissent aussi de la recherche.
+              </small>
+            </span>
+          </label>
+          <p className="hint">
+            Les extensions affichées se choisissent dans le catalogue, avec le
+            bouton « Choisir les extensions ».
+          </p>
+          {enregistre ? (
+            <p className="success" role="status">
+              Réglages enregistrés.
+            </p>
+          ) : null}
+          <button type="submit">Enregistrer</button>
+        </form>
       </div>
 
       <TabBar />

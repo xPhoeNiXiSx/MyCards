@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { setIdOf } from "@/lib/card-number";
+import { defaultSelection, isPocketSerie, selectSeries } from "@/lib/catalogue";
 import { assetUrl, imageUrl } from "@/lib/images";
 import type { CardResume, SerieDetail, SetDetail, SetResume } from "@/lib/tcgdex";
 
 import { CardViewer } from "./card-viewer";
+import { saveCatalogueSetsAction } from "./catalogue/actions";
 import { OwnedContext, type Owned } from "./owned-context";
+import { SetChooser } from "./set-chooser";
 
 /**
  * Catalogue complet en accordéon à deux niveaux : série, puis set, puis les
@@ -51,10 +54,18 @@ type Search =
 
 export function SeriesBrowser({
   owned: initialOwned = {},
+  hidePocket = true,
+  savedSets = null,
 }: {
   /** Exemplaires déjà possédés, par carte : lus en base par la page. */
   owned?: Record<string, number>;
+  /** Réglage du compte : masquer la série Pokémon TCG Pocket. */
+  hidePocket?: boolean;
+  /** Extensions choisies. `null` : sélection par défaut. */
+  savedSets?: string[] | null;
 }) {
+  const [saved, setSaved] = useState(savedSets);
+  const [choosing, setChoosing] = useState(false);
   const [catalogue, setCatalogue] = useState<Catalogue>({ status: "loading" });
   const [ownedCounts, setOwnedCounts] = useState(initialOwned);
   const addOwned = useCallback((cardId: string, quantity: number) => {
@@ -190,23 +201,70 @@ export function SeriesBrowser({
     );
   }
 
+  // Pocket (le jeu mobile) masqué partout si le réglage le demande : liste,
+  // choix des extensions et recherche.
+  const pocketSets = new Set(
+    catalogue.series
+      .filter((serie) => hidePocket && isPocketSerie(serie))
+      .flatMap((serie) => serie.sets.map((set) => set.id)),
+  );
+  const available = catalogue.series.filter(
+    (serie) => !(hidePocket && isPocketSerie(serie)),
+  );
+  const availableSets = available.reduce(
+    (count, serie) => count + serie.sets.length,
+    0,
+  );
+
+  // Seules les extensions choisies s'affichent : la liste complète compte
+  // plus d'une centaine de collections, dont la plupart n'intéressent pas.
+  const selection =
+    saved ?? defaultSelection(available, Object.keys(ownedCounts));
+  const chosen = selectSeries(available, new Set(selection));
+
   // Une collection sans carte de la rareté choisie n'a rien à montrer : elle
   // disparaît de la liste, et une série vidée de ses collections avec elle.
-  const series =
+  const byRarity = (list: SerieDetail[]) =>
     counts.status === "ready"
-      ? catalogue.series
+      ? list
           .map((serie) => ({
             ...serie,
             sets: serie.sets.filter((set) => (counts.bySet[set.id] ?? 0) > 0),
           }))
           .filter((serie) => serie.sets.length > 0)
-      : catalogue.series;
+      : list;
+  const series = byRarity(chosen);
 
   const totalSets = series.reduce(
     (count, serie) => count + serie.sets.length,
     0,
   );
   const searching = query.trim().length >= MIN_QUERY;
+
+  if (choosing) {
+    return (
+      <SetChooser
+        series={available}
+        initial={selection}
+        isDefault={saved === null}
+        onCancel={() => setChoosing(false)}
+        onSave={async (ids) => {
+          const result = await saveCatalogueSetsAction(ids);
+          if (!result.ok) return result.error ?? "Enregistrement impossible.";
+          setSaved(ids);
+          setChoosing(false);
+          return null;
+        }}
+        onReset={async () => {
+          const result = await saveCatalogueSetsAction(null);
+          if (!result.ok) return result.error ?? "Enregistrement impossible.";
+          setSaved(null);
+          setChoosing(false);
+          return null;
+        }}
+      />
+    );
+  }
 
   return (
     <OwnedContext.Provider value={owned}>
@@ -240,11 +298,20 @@ export function SeriesBrowser({
         ) : null}
 
         {searching ? null : (
-          <p className="catalogue-meta">
-            {counts.status === "loading"
-              ? "Recherche…"
-              : `${plural(series.length, "série")} · ${plural(totalSets, "collection")}`}
-          </p>
+          <div className="catalogue-meta">
+            <span>
+              {counts.status === "loading"
+                ? "Recherche…"
+                : `${plural(totalSets, "collection")} affichée${totalSets > 1 ? "s" : ""} sur ${availableSets}`}
+            </span>
+            <button
+              type="button"
+              className="choose-sets"
+              onClick={() => setChoosing(true)}
+            >
+              Choisir les extensions
+            </button>
+          </div>
         )}
       </div>
 
@@ -258,16 +325,32 @@ export function SeriesBrowser({
       {searching ? (
         <SearchResults
           query={query.trim()}
-          series={series}
+          series={byRarity(available)}
+          hiddenSets={pocketSets}
           search={needle === query.trim() ? search : { status: "loading" }}
           rarity={rarity}
           counts={counts.status === "ready" ? counts.bySet : undefined}
         />
+      ) : chosen.length === 0 ? (
+        <div className="panel">
+          <h2>Aucune extension choisie</h2>
+          <p className="hint">
+            Choisis les extensions à afficher. La recherche, elle, porte
+            toujours sur tout le catalogue.
+          </p>
+          <button
+            type="button"
+            className="choose-sets"
+            onClick={() => setChoosing(true)}
+          >
+            Choisir les extensions
+          </button>
+        </div>
       ) : counts.status === "ready" && totalSets === 0 ? (
         <div className="panel">
           <h2>Aucune collection</h2>
           <p className="hint">
-            Aucune carte « {rarity} » dans le catalogue.
+            Aucune carte « {rarity} » dans les extensions affichées.
           </p>
         </div>
       ) : (
@@ -294,12 +377,15 @@ export function SeriesBrowser({
 function SearchResults({
   query,
   series,
+  hiddenSets,
   search,
   rarity,
   counts,
 }: {
   query: string;
   series: SerieDetail[];
+  /** Extensions masquées par les réglages (Pocket) : leurs cartes aussi. */
+  hiddenSets: Set<string>;
   search: Search;
   rarity: string | null;
   counts?: Record<string, number>;
@@ -328,12 +414,14 @@ function SearchResults({
     if (search.status !== "ready") return [];
     const rank = (card: CardResume) =>
       bySet.get(setIdOf(card.id) ?? "")?.rank ?? Number.MAX_SAFE_INTEGER;
-    return [...search.cards].sort(
+    return search.cards
+      .filter((card) => !hiddenSets.has(setIdOf(card.id) ?? ""))
+      .sort(
       (a, b) =>
         rank(a) - rank(b) ||
         a.localId.localeCompare(b.localId, "fr", { numeric: true }),
     );
-  }, [search, bySet]);
+  }, [search, bySet, hiddenSets]);
 
   const setNameOf = useCallback(
     (card: CardResume) => bySet.get(setIdOf(card.id) ?? "")?.name ?? null,

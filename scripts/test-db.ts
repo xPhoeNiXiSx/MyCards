@@ -33,6 +33,8 @@ import {
   type ItemInput,
 } from "../lib/collection";
 import type { CardDetail } from "../lib/tcgdex";
+import { defaultSelection, isPocketSerie, selectSeries } from "../lib/catalogue";
+import { DEFAULT_SETTINGS, getSettings, saveSetting } from "../lib/settings";
 import {
   buildChart,
   categoryBreakdown,
@@ -655,6 +657,54 @@ async function main() {
   assert.equal(possedees["30th-015"], 1);
   assert.equal(Object.keys(possedees).length, 2);
   ok("exemplaires possédés par carte, sans les articles visés");
+
+  // --- Réglages ---------------------------------------------------------------
+
+  assert.deepEqual(await getSettings(), DEFAULT_SETTINGS);
+  ok("sans réglage enregistré, les valeurs par défaut s'appliquent");
+
+  await saveSetting("hidePocket", false);
+  await saveSetting("catalogueSets", ["sv03", "30th"]);
+  assert.deepEqual(await getSettings(), { hidePocket: false, catalogueSets: ["sv03", "30th"] });
+  await saveSetting("catalogueSets", ["me02"]);
+  assert.deepEqual((await getSettings()).catalogueSets, ["me02"]);
+  ok("les réglages s'enregistrent et se remplacent");
+
+  await saveSetting("catalogueSets", null);
+  assert.equal((await getSettings()).catalogueSets, null);
+  ok("effacer la sélection revient au choix par défaut");
+
+  // --- Extensions affichées --------------------------------------------------
+
+  const catalogueTest = [
+    { id: "me", name: "Méga-Évolution", sets: [{ id: "me01" }, { id: "me02" }] },
+    { id: "tcgp", name: "Pokémon TCG Pocket", sets: [{ id: "A1" }] },
+    { id: "sv", name: "Écarlate et Violet", sets: [{ id: "sv03" }, { id: "sv03.5" }] },
+  ];
+  assert.equal(isPocketSerie(catalogueTest[1]), true);
+  assert.equal(isPocketSerie({ id: "autre", name: "Pokémon TCG Pocket" }), true);
+  assert.equal(isPocketSerie(catalogueTest[0]), false);
+  ok("la série Pocket est reconnue");
+
+  assert.deepEqual(defaultSelection(catalogueTest, ["sv03.5-025", "me01-001"]), [
+    "me01",
+    "me02",
+    "sv03.5",
+  ]);
+  assert.deepEqual(defaultSelection([], []), []);
+  ok("par défaut : la série la plus récente et les extensions possédées");
+
+  assert.deepEqual(
+    selectSeries(catalogueTest, new Set(["me02", "sv03"])).map((serie) => [
+      serie.id,
+      serie.sets.map((set) => set.id),
+    ]),
+    [
+      ["me", ["me02"]],
+      ["sv", ["sv03"]],
+    ],
+  );
+  ok("seules les extensions choisies, et leurs séries, sont gardées");
 
   // --- Courbe --------------------------------------------------------------
 

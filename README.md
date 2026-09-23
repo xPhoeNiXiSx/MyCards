@@ -132,6 +132,16 @@ environ 150 collections et plusieurs dizaines de milliers de cartes. Une
 collection déjà ouverte garde ses cartes en mémoire, la refermer et la rouvrir
 ne redemande rien.
 
+**Seules les extensions choisies s'affichent.** Le bouton « Choisir les
+extensions » ouvre la liste complète, avec une case par extension et une par
+série. Tant que rien n'est choisi, le catalogue montre la série la plus
+récente et les extensions dont une carte est dans l'inventaire. Le choix est
+enregistré en base (`app_settings`), il suit donc d'un appareil à l'autre.
+
+La série **Pokémon TCG Pocket** (le jeu mobile, identifiant `tcgp` chez
+TCGdex) est masquée par défaut, dans la liste, le choix des extensions et la
+recherche. Le réglage se trouve dans la page Compte.
+
 Un champ de recherche en tête du catalogue cherche à la fois les extensions
 (par leur nom ou celui de leur série, sur le catalogue déjà chargé) et les
 cartes de tout le catalogue par leur nom (`/api/search`, qui interroge

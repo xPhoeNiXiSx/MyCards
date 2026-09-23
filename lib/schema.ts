@@ -79,6 +79,15 @@ export const SCHEMA_STATEMENTS: string[] = [
   `create index if not exists login_failures_ip_idx
      on login_failures (ip, failed_at)`,
 
+  // Réglages de l'application, une ligne par réglage. Une table clé-valeur
+  // plutôt qu'une colonne par réglage : en ajouter un ne demande pas de
+  // migration, et il n'y a qu'un utilisateur.
+  `create table if not exists app_settings (
+     key         text primary key,
+     value       jsonb not null,
+     updated_at  timestamptz not null default now()
+   )`,
+
   // Un relevé par jour de la valeur de l'inventaire, pour la courbe du
   // tableau de bord. La cote d'hier n'est disponible nulle part ailleurs :
   // ce qui n'est pas relevé le jour même est perdu.

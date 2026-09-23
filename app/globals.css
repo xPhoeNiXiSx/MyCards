@@ -2629,3 +2629,152 @@ button.link.danger:hover {
 .quick-add .error {
   margin: 0;
 }
+
+/* --- Catalogue : extensions affichées ----------------------------------- */
+
+.catalogue-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  flex: 1 1 100%;
+}
+
+.choose-sets {
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.choose-sets:hover {
+  border-color: var(--accent);
+}
+
+.panel .choose-sets {
+  margin-top: 12px;
+}
+
+.chooser {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.chooser-head h2 {
+  font-size: 1.125rem;
+}
+
+.chooser-head .hint {
+  margin: 4px 0 0;
+}
+
+/* La case de la série se loge avant le titre, à la place d'honneur. */
+.chooser .acc > summary input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.chooser-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 12px 12px;
+}
+
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.9375rem;
+  color: var(--fg);
+}
+
+.check-row:hover {
+  background: var(--surface-hover);
+}
+
+.check-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.check-row > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.check-row small {
+  font-size: 0.75rem;
+  color: var(--fg-faint);
+}
+
+/* `.form label` empile ses enfants en colonne : la case reste à côté. */
+.form label.check-row {
+  flex-direction: row;
+  font-size: 0.9375rem;
+  color: var(--fg);
+}
+
+/* En bas d'écran, au-dessus de la barre d'onglets : les boutons restent à
+   portée de pouce quelle que soit la longueur de la liste. */
+.chooser-actions {
+  position: sticky;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.chooser-save {
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #1a0f0a;
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.chooser-secondary {
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.chooser-save:disabled,
+.chooser-secondary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
