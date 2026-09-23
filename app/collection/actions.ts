@@ -6,7 +6,11 @@ import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
 import {
   STATUSES,
+  isCondition,
+  isGrader,
+  isLanguage,
   isSealedType,
+  parseGrade,
   createItem,
   deleteItem,
   updateItem,
@@ -81,6 +85,23 @@ function parse(form: FormData): ItemInput | string {
 
   const rawSealed = text(form, "sealedType");
 
+  const rawLanguage = text(form, "language");
+  const language = isLanguage(rawLanguage) ? rawLanguage : null;
+
+  // État et gradation ne concernent que les cartes : un changement de type
+  // les efface plutôt que de laisser un « PSA 10 » sur un coffret.
+  const isCard = kind === "single";
+  const rawGrader = isCard ? text(form, "grader") : null;
+  const grader = isGrader(rawGrader) ? rawGrader : null;
+  const grade = isCard ? parseGrade(text(form, "grade")) : undefined;
+  if (grade === null) return "La note doit aller de 1 à 10, demi-points admis.";
+  if (grader && grade === undefined) return "Indique la note de la gradation.";
+  if (!grader && grade !== undefined) return "Indique qui a gradé la carte.";
+
+  const rawCondition = isCard ? text(form, "condition") : null;
+  // Une carte gradée est dans son boîtier : sa note remplace l'état.
+  const condition = !grader && isCondition(rawCondition) ? rawCondition : null;
+
   return {
     status,
     kind,
@@ -102,6 +123,10 @@ function parse(form: FormData): ItemInput | string {
         : (manualDate ?? new Date().toISOString().slice(0, 10)),
     imageUrl: image ?? null,
     notes: text(form, "notes"),
+    language,
+    condition,
+    grader,
+    grade: grade ?? null,
   };
 }
 

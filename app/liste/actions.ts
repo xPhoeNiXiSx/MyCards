@@ -62,6 +62,10 @@ export async function addWantedAction(
     manualValueDate: null,
     imageUrl: null,
     notes: null,
+    language: null,
+    condition: null,
+    grader: null,
+    grade: null,
   });
 
   revalidatePath("/liste");

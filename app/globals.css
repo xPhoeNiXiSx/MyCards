@@ -32,6 +32,11 @@
   --negative: #ef8b7d;
   --negative-soft: #2f1e1b;
 
+  /* Réservé à la note de gradation : l'or n'a pas d'autre usage. */
+  --gold: #d9b45a;
+  --gold-soft: #2e2716;
+  --gold-border: #5a4a22;
+
   --radius-sm: 8px;
   --radius: 14px;
   --radius-lg: 20px;
@@ -1967,4 +1972,493 @@ button.link.danger:hover {
 .form input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.55;
   cursor: pointer;
+}
+
+/* --- Pastilles d'édition ------------------------------------------------ */
+
+/* Gradation, langue, état. Une seule pastille dorée possible, la note : c'est
+   elle qui change la valeur d'une carte, elle doit se voir la première. */
+.badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-display-stack);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--fg-muted);
+  background: var(--surface-hover);
+  border: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+
+.badge.grade {
+  color: var(--gold);
+  background: var(--gold-soft);
+  border-color: var(--gold-border);
+}
+
+.badge.outline {
+  background: transparent;
+}
+
+.tile-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tile-cell .badges {
+  margin-left: 0;
+}
+
+/* --- Recherche d'une carte par extension et numéro ---------------------- */
+
+.finder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-sunken);
+}
+
+.finder-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.finder-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+
+/* Une rangée qui défile, comme les puces de filtre : empilés, les raccourcis
+   repousseraient le numéro hors de l'écran. */
+.set-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.set-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.set-chip {
+  flex: 0 0 auto;
+  font-family: var(--font-display-stack);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.set-chip:hover {
+  border-color: var(--border-strong);
+}
+
+.set-chip.on {
+  color: var(--fg);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.with-suffix {
+  position: relative;
+  display: block;
+}
+
+.with-suffix .suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-display-stack);
+  color: var(--fg-faint);
+  pointer-events: none;
+}
+
+.form .with-suffix input {
+  padding-right: 64px;
+}
+
+.form .with-suffix input:disabled {
+  opacity: 0.5;
+}
+
+.found {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.found img,
+.found-empty {
+  width: 84px;
+  aspect-ratio: 245 / 342;
+  border-radius: 6px;
+  object-fit: contain;
+  display: block;
+}
+
+.found-empty {
+  background: var(--bg-sunken);
+}
+
+.found > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.found strong {
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.found-quote {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Tableau de bord : évolution ---------------------------------------- */
+
+/* Dans le bloc de la valeur, sous les chiffres : la courbe raconte le même
+   chiffre dans le temps, elle n'a pas à vivre ailleurs. */
+.evolution {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.evolution-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.evolution-change {
+  font-family: var(--font-display-stack);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.range {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.range .chip {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.evolution-plot {
+  position: relative;
+  height: 150px;
+}
+
+.evolution-plot svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.evolution-plot .grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolution-plot .value-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolution-plot .value-area {
+  fill: var(--accent-soft);
+  opacity: 0.7;
+}
+
+.evolution-plot .invested-line {
+  fill: none;
+  stroke: var(--fg-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.value-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--surface);
+}
+
+.axis-label {
+  position: absolute;
+  left: 0;
+  font-family: var(--font-display-stack);
+  font-size: 0.6875rem;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  padding: 0 4px 0 0;
+  line-height: 1;
+}
+
+/* Posées juste au-dessus des lignes de repère haute et basse (8 % et 92 %). */
+.axis-label.top {
+  top: calc(8% - 14px);
+}
+
+.axis-label.bottom {
+  top: calc(92% + 4px);
+}
+
+.evolution-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 0.6875rem;
+  color: var(--fg-faint);
+}
+
+.evolution-foot .legend {
+  display: flex;
+  gap: 14px;
+  color: var(--fg-muted);
+}
+
+.evolution-foot .key::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  vertical-align: middle;
+  margin-right: 6px;
+  border-top: 2px solid var(--accent);
+}
+
+.evolution-foot .key.invested::before {
+  border-top: 2px dashed var(--fg-muted);
+}
+
+.evolution-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--fg-faint);
+  line-height: 1.45;
+}
+
+/* --- Tableau de bord : indicateurs illustrés ---------------------------- */
+
+.kpi-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.kpi-link:hover {
+  border-color: var(--border-strong);
+}
+
+.kpi-thumb {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.kpi-thumb .thumb {
+  width: 34px;
+}
+
+.kpi-thumb > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* --- Tableau de bord : à vérifier --------------------------------------- */
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--fg);
+  font-size: 0.875rem;
+}
+
+.check:hover {
+  border-color: var(--border-strong);
+}
+
+.check-count {
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--font-display-stack);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.check-go {
+  color: var(--accent);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+/* --- Tableau de bord : hausses et baisses ------------------------------- */
+
+.movers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.movers-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.movers-title {
+  font-family: var(--font-body-stack);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--fg-muted);
+  margin-bottom: 4px;
+}
+
+.mover {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 4px 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.mover .thumb {
+  width: 30px;
+}
+
+.mover-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mover-name {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mover:hover .mover-name {
+  color: var(--accent);
+}
+
+.mover-gain {
+  font-family: var(--font-display-stack);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.movers .hint {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+/* Filtre « À vérifier » actif : dit ce qu'on regarde, et comment en sortir. */
+.check-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+.check-filter a {
+  color: var(--fg);
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }

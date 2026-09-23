@@ -2,8 +2,8 @@
 
 **En ligne :** https://my-cards-alpha.vercel.app
 
-Suivi de collection Pokémon. Première étape : la collection anniversaire
-**30 ans** affichée sur la page d'accueil, en français.
+Suivi de collection Pokémon, en français : ce qu'on possède, ce que ça a
+coûté, ce que ça vaut, et ce qu'on cherche encore.
 
 **L'application entière est privée.** Toute route autre que la page de
 connexion redirige vers celle-ci tant que la session n'est pas ouverte — la
@@ -11,9 +11,16 @@ galerie et les routes API comprises. La fermeture se fait dans `proxy.ts`,
 en amont du rendu, pour qu'une route ajoutée plus tard soit fermée par défaut
 plutôt que publique par oubli.
 
-Deux écrans :
+La connexion est freinée : au-delà de 5 mots de passe faux en 15 minutes
+depuis une même adresse, elle est refusée jusqu'à la fin de la fenêtre
+(`lib/throttle.ts`). Les échecs sont comptés en base, une fonction serverless
+ne gardant rien en mémoire d'un appel à l'autre, et par adresse, pour qu'un
+inconnu ne puisse pas bloquer le propriétaire en échouant exprès.
 
-- **`/`** — le tableau de bord : valeur, plus-value, indicateurs, répartition
+Quatre écrans :
+
+- **`/`** — le tableau de bord : valeur, plus-value, évolution dans le temps,
+  indicateurs, points à vérifier, hausses et baisses, répartition
 - **`/catalogue`** — toutes les séries Pokémon et leurs collections
 - **`/collection`** — l'inventaire : articles possédés, prix d'achat, valeur
   actuelle et plus-value
@@ -21,14 +28,14 @@ Deux écrans :
 
 ## Design
 
-Direction « papier chaud et encre » : le mode clair évoque le carton d'une
-carte, le mode sombre l'encre. L'accent terracotta est réservé à la marque et
-aux repères actifs. Deux familles via `next/font` — **Inter** pour le texte,
+**Thème sombre uniquement** : pas de variante claire, pas de
+`prefers-color-scheme` à suivre, `:root` déclare `color-scheme: dark`.
+L'accent terracotta est réservé à la marque et aux repères actifs. Deux familles via `next/font` — **Inter** pour le texte,
 **Space Grotesk** pour les titres et tous les montants, parce que les chiffres
 sont le sujet de l'application.
 
-Tout est piloté par des variables CSS dans `app/globals.css`, redéfinies pour
-le thème sombre. `--font-body` et `--font-display` ont un repli déclaré dans
+Tout est piloté par des variables CSS dans `app/globals.css`, qui portent
+directement les valeurs sombres. `--font-body` et `--font-display` ont un repli déclaré dans
 `:root` : une `font-family` construite sur une variable absente est invalide
 *en entier* et ferait retomber la page en serif.
 
@@ -62,6 +69,7 @@ Environment Variables) et dans un `.env.local` pour le développement :
 | `DATABASE_URL`  | Chaîne de connexion Postgres (Neon)                          |
 | `APP_PASSWORD`  | Mot de passe unique d'accès à l'inventaire                   |
 | `AUTH_SECRET`   | Clé de signature du cookie de session — une valeur aléatoire |
+| `CRON_SECRET`   | Secret du relevé quotidien, envoyé par le cron Vercel — une valeur aléatoire |
 
 Tant qu'elles manquent, `/collection` affiche un écran expliquant ce qui
 manque plutôt que de planter. La page d'accueil, elle, n'en dépend pas.
@@ -88,7 +96,7 @@ rejeu est sans effet.
 
 | Chemin                 | Rôle                                                        |
 | ---------------------- | ----------------------------------------------------------- |
-| `app/page.tsx`         | Page d'accueil (statique)                                    |
+| `app/page.tsx`         | Tableau de bord : valeur, plus-value, répartition             |
 | `app/catalogue/`       | Le catalogue des collections                                  |
 | `app/db-screens.tsx`   | Écrans d'attente de la base, partagés par les pages qui la lisent |
 | `app/series-browser.tsx` | Catalogue en accordéon, cartes chargées à l'ouverture        |
@@ -110,6 +118,7 @@ rejeu est sans effet.
 | `lib/pricing.ts`       | Lecture des cotes Cardmarket exposées par TCGdex              |
 | `lib/money.ts`         | Montants en centimes, formatage et saisie en euros            |
 | `lib/auth.ts`          | Session par mot de passe unique                               |
+| `lib/throttle.ts`      | Limite des essais de connexion, par adresse                   |
 | `lib/schema.ts`        | Schéma Postgres, idempotent, appliqué par l'app elle-même      |
 
 L'appel à TCGdex passe par une route serveur plutôt que directement depuis le
@@ -216,7 +225,8 @@ moyen pondéré. Les achats individuels restent listés sous le nom et chacun
 ouvre sa fiche — deux achats à des dates ou des prix différents ne doivent pas
 disparaître dans une moyenne.
 
-Le regroupement se fait sur le type, l'identifiant TCGdex et le nom normalisé
+Le regroupement se fait sur le type, l'identifiant TCGdex, la langue, la
+gradation et le nom normalisé
 (accents, casse et espaces ignorés). L'identifiant prime : deux cartes
 homonymes de sets différents restent distinctes.
 
@@ -252,13 +262,66 @@ de ses cartes n'a de prix Cardmarket (`cardmarket: null`), le set ayant six
 jours. Les cotes apparaîtront d'elles-mêmes, sans changement de code. En
 attendant, ces cartes se valorisent à la main comme le scellé.
 
-Deux routes de diagnostic :
+### Retrouver une carte
 
-- `/api/debug/pricing` — une carte du set, son `pricing` brut et ce qui en est lu
-- `/api/debug/prices` — combien de cartes d'un set portent réellement une cote
+Pour une carte à l'unité, le formulaire propose de choisir l'extension (celles
+déjà présentes dans l'inventaire d'abord, puis les plus récentes, et la liste
+complète en dessous), puis de taper le numéro imprimé sur la carte. « 15 »,
+« 015 » et « 015/165 » désignent la même carte. La carte trouvée remplit le
+nom, l'identifiant TCGdex et l'extension, qui restent modifiables, et affiche
+sa rareté et sa cote. Tout passe par les routes serveur (`/api/series`,
+`/api/sets/[id]`, `/api/cards/[id]`) : TCGdex n'est jamais appelé depuis le
+navigateur.
+
+### Langue, état, gradation
+
+Facultatifs, dans « Plus d'options » du formulaire. La langue vaut pour tout
+article (français par défaut), l'état (échelle Cardmarket, Mint à Poor) et la
+gradation (PSA, PCA, CGC, BGS, SGC, Collect Aura, note de 1 à 10 par
+demi-points) pour les cartes seulement. Gradée, une carte n'a plus d'état :
+sa note le remplace.
+
+**Une carte gradée ne reprend jamais la cote automatique** : Cardmarket cote
+la carte brute, et l'appliquer à une PSA 10 la sous-évaluerait sans le dire.
+Sans valeur saisie, elle reste non valorisée, ce qui se voit.
+
+Dans l'inventaire, ces informations s'affichent en pastilles après le nom :
+dorée pour la note (« PSA 10 »), neutres pour la langue (« JP », jamais pour
+le français) et l'état (« NM »). En galerie, note et langue passent sous
+l'image, qui reste intacte.
+
+Langue et gradation font partie de la clé de regroupement : une japonaise et
+une française, ou une gradée et la même brute, sont deux produits. L'état,
+non : s'il diffère d'un achat à l'autre, il n'est pas affiché sur le groupe.
+
+## Tableau de bord
+
+De haut en bas :
+
+- **Valeur actuelle et évolution** — la courbe montre deux séries sur 7 jours,
+  30 jours ou depuis le début. **L'investi** se reconstitue depuis les dates
+  d'achat (un article sans date compte au jour de sa saisie) et remonte donc
+  jusqu'au premier achat. **La valeur** ne se reconstitue pas : personne ne
+  fournit la cote d'hier. Elle est relevée une fois par jour dans
+  `value_snapshots`, à chaque affichage du tableau de bord et chaque nuit par
+  le cron Vercel (`vercel.json`, `/api/cron/snapshot`), et sa courbe commence
+  au premier relevé.
+- **Indicateurs** — la meilleure plus-value et le dernier ajout portent leur
+  vignette et ouvrent la fiche de l'article.
+- **À vérifier** — ce qui fausse les totaux : lignes sans cote, cartes
+  gradées sans valeur saisie, cotes saisies il y a plus de 3 mois, articles
+  sans prix d'achat. Chaque ligne ouvre l'inventaire filtré
+  (`/collection?verifier=…`). Le bloc disparaît quand tout est en ordre.
+- **Hausses et baisses** — les trois plus fortes plus-values et moins-values,
+  par produit.
+- **Répartition par catégorie** — au grain des puces de l'inventaire, avec
+  leurs couleurs.
+
+Le relevé nocturne échappe à la session, un cron ne se connectant pas : la
+route exige à la place l'en-tête `Authorization: Bearer <CRON_SECRET>` que
+Vercel envoie de lui-même, et refuse tout si `CRON_SECRET` n'est pas définie.
 
 ## Suite
 
-- Historique de valorisation, pour suivre l'évolution dans le temps
 - Automatiser la cote du scellé via une API tierce
 - Ajouter un article directement depuis la galerie d'accueil

@@ -10,10 +10,14 @@ import assert from "node:assert/strict";
 
 import { PGlite } from "@electric-sql/pglite";
 
-import { runMigrations, isSchemaReady, setQueryRunner } from "../lib/db";
+import { runMigrations, isSchemaReady, query, setQueryRunner } from "../lib/db";
 import {
   bestGain,
   breakdown,
+  editionBadges,
+  editionLabel,
+  gradeLabel,
+  parseGrade,
   groupItems,
   itemLabel,
   createItem,
@@ -24,11 +28,28 @@ import {
   summarize,
   updateItem,
   valuate,
+  valuateWith,
   type ItemInput,
 } from "../lib/collection";
+import type { CardDetail } from "../lib/tcgdex";
+import {
+  buildChart,
+  categoryBreakdown,
+  matchesCheck,
+  movers,
+  pendingChecks,
+} from "../lib/dashboard";
+import { investedSeries, parisToday, recordSnapshot, valueSeries } from "../lib/history";
+import { findByNumber, normalizeCardNumber, setIdOf } from "../lib/card-number";
 import { parseImageUrl } from "../lib/images";
 import { formatCents, parseEuros, percentChange } from "../lib/money";
 import { readQuote } from "../lib/pricing";
+import {
+  MAX_FAILURES,
+  clearFailures,
+  lockedMinutes,
+  recordFailure,
+} from "../lib/throttle";
 import { newToken, safeEquals, verifyToken } from "../lib/session";
 
 const checks: string[] = [];
@@ -69,6 +90,10 @@ async function main() {
     manualValueDate: "2026-09-22",
     imageUrl: "https://exemple.test/etb.jpg",
     notes: null,
+    language: null,
+    condition: null,
+    grader: null,
+    grade: null,
   };
 
   const created = await createItem(etb);
@@ -237,6 +262,110 @@ async function main() {
 
   await deleteItem(second.id);
 
+  // --- Langue, état, gradation ------------------------------------------
+
+  const gradee = await createItem({
+    ...etb,
+    kind: "single",
+    sealedType: null,
+    name: "Pikachu",
+    cardId: "30th-023",
+    quantity: 1,
+    manualValueCents: null,
+    manualValueDate: null,
+    language: "ja",
+    condition: null,
+    grader: "psa",
+    grade: "9.5",
+  });
+  assert.deepEqual(await getItem(gradee.id), gradee);
+  assert.equal(gradee.language, "ja");
+  assert.equal(gradee.grader, "psa");
+  assert.equal(gradee.grade, "9.5");
+  ok("langue et gradation sont enregistrées et relues");
+  await deleteItem(gradee.id);
+
+  assert.equal(parseGrade("10"), "10");
+  assert.equal(parseGrade("9,5"), "9.5");
+  assert.equal(parseGrade(" 9.5 "), "9.5");
+  assert.equal(parseGrade(""), undefined);
+  assert.equal(parseGrade(null), undefined);
+  assert.equal(parseGrade("11"), null);
+  assert.equal(parseGrade("0"), null);
+  assert.equal(parseGrade("9.3"), null);
+  assert.equal(parseGrade("dix"), null);
+  ok("lecture des notes de gradation");
+
+  const brute = { language: null, condition: null, grader: null, grade: null };
+  assert.equal(editionLabel(brute), null);
+  assert.equal(editionLabel({ ...brute, language: "fr" }), null);
+  assert.equal(editionLabel({ ...brute, condition: "nm" }), "Near Mint");
+  assert.equal(
+    editionLabel({ ...brute, language: "ja", grader: "psa", grade: "9.5" }),
+    "PSA 9,5 · Japonais",
+  );
+  assert.equal(gradeLabel({ grader: "psa", grade: null }), null);
+  ok("libellé d'édition : gradation, sinon état, et langue étrangère");
+
+  assert.deepEqual(editionBadges(brute), { grade: null, language: null, condition: null });
+  assert.deepEqual(
+    editionBadges({ language: "ja", condition: "nm", grader: "psa", grade: "10" }),
+    // Gradée : la note remplace l'état, qui n'a plus de pastille.
+    { grade: "PSA 10", language: "JP", condition: null },
+  );
+  assert.deepEqual(
+    editionBadges({ language: "fr", condition: "ex", grader: null, grade: null }),
+    { grade: null, language: null, condition: "EX" },
+  );
+  ok("pastilles : note, langue hors français, état hors gradée");
+
+  // Une gradée et la même carte brute ne forment pas un seul produit ; une
+  // japonaise et une française non plus.
+  const pika = { ...etb, kind: "single" as const, sealedType: null, name: "Pikachu", cardId: "30th-023" };
+  const editions = groupItems(
+    await valuate([
+      { ...pika, id: "p1" },
+      { ...pika, id: "p2", grader: "psa", grade: "10" },
+      { ...pika, id: "p3", language: "ja" },
+      { ...pika, id: "p4", language: "fr" },
+    ]),
+  );
+  assert.equal(editions.length, 3);
+  ok("gradation et langue séparent les groupes, le français est le défaut");
+
+  // L'état n'est affiché pour un groupe que s'il est le même partout.
+  const etats = groupItems(
+    await valuate([
+      { ...pika, id: "e1", condition: "nm" },
+      { ...pika, id: "e2", condition: "ex" },
+    ]),
+  );
+  assert.equal(etats.length, 1);
+  assert.equal(etats[0].edition, null);
+  ok("un état qui diffère d'un achat à l'autre n'est pas affiché");
+
+  // La cote Cardmarket vaut pour une carte brute : une gradée sans valeur
+  // saisie reste non valorisée plutôt que d'hériter d'un chiffre faux.
+  const fiches = new Map([
+    ["30th-023", { pricing: { cardmarket: { trend: 2 } } } as unknown as CardDetail],
+  ]);
+  const sansValeur = { ...pika, manualValueCents: null, manualValueDate: null };
+  const [brutCote, gradeeCote, gradeeSaisie] = valuateWith(
+    [
+      { ...sansValeur, id: "g0" },
+      { ...sansValeur, id: "g1", grader: "psa", grade: "10" },
+      { ...sansValeur, id: "g2", grader: "psa", grade: "10", manualValueCents: 25000 },
+    ],
+    fiches,
+  );
+  assert.equal(brutCote.valueSource, "market");
+  assert.equal(brutCote.currentUnitCents, 200);
+  assert.equal(gradeeCote.valueSource, "none");
+  assert.equal(gradeeCote.totalValueCents, null);
+  assert.equal(gradeeSaisie.valueSource, "manual");
+  assert.equal(gradeeSaisie.currentUnitCents, 25000);
+  ok("une carte gradée ne reprend pas la cote d'une carte brute");
+
   await updateItem(created.id, { ...etb, quantity: 3, manualValueCents: 7000 });
   const updated = await getItem(created.id);
   assert.equal(updated?.quantity, 3);
@@ -292,6 +421,69 @@ async function main() {
   assert.equal(await getItem(created.id), undefined);
   assert.equal((await listItems()).length, 1);
   ok("suppression");
+
+  // --- Numéro de carte --------------------------------------------------
+
+  assert.equal(normalizeCardNumber("015/165"), "15");
+  assert.equal(normalizeCardNumber(" 015 "), "15");
+  assert.equal(normalizeCardNumber("15"), "15");
+  assert.equal(normalizeCardNumber("tg05"), "TG5");
+  assert.equal(normalizeCardNumber("SV045"), "SV45");
+  assert.equal(normalizeCardNumber("100a"), "100A");
+  ok("un numéro se lit avec ou sans zéros, avec ou sans total");
+
+  const setCartes = [
+    { id: "sv03-015", localId: "015" },
+    { id: "sv03-150", localId: "150" },
+    { id: "sv03-TG05", localId: "TG05" },
+  ];
+  assert.equal(findByNumber(setCartes, "15/197")?.id, "sv03-015");
+  assert.equal(findByNumber(setCartes, "150")?.id, "sv03-150");
+  assert.equal(findByNumber(setCartes, "tg5")?.id, "sv03-TG05");
+  assert.equal(findByNumber(setCartes, "16"), undefined);
+  assert.equal(findByNumber(setCartes, "  "), undefined);
+  ok("la carte d'un set se retrouve par son numéro, et seulement elle");
+
+  assert.equal(setIdOf("sv03-015"), "sv03");
+  assert.equal(setIdOf("sv03.5-025"), "sv03.5");
+  assert.equal(setIdOf("sansTiret"), null);
+  ok("le set se déduit de l'identifiant de carte");
+
+  // --- Limitation des connexions ---------------------------------------
+
+  const ip = "203.0.113.7";
+  assert.equal(await lockedMinutes(ip), 0);
+  for (let attempt = 1; attempt < MAX_FAILURES; attempt++) {
+    await recordFailure(ip);
+  }
+  assert.equal(await lockedMinutes(ip), 0);
+  ok("les premiers échecs ne bloquent pas");
+
+  await recordFailure(ip);
+  const attente = await lockedMinutes(ip);
+  assert.ok(attente >= 1 && attente <= 15, `attente : ${attente}`);
+  ok("au-delà de la limite, l'adresse est bloquée pour la fenêtre");
+
+  // Une autre adresse n'est pas touchée : un inconnu ne bloque pas le
+  // propriétaire en échouant exprès.
+  assert.equal(await lockedMinutes("198.51.100.1"), 0);
+  ok("le blocage est propre à une adresse");
+
+  // Des échecs hors de la fenêtre ne comptent plus.
+  await query(
+    `update login_failures set failed_at = now() - interval '16 minutes' where ip = $1`,
+    [ip],
+  );
+  assert.equal(await lockedMinutes(ip), 0);
+  ok("les échecs anciens ne comptent plus");
+
+  await recordFailure(ip);
+  await clearFailures(ip);
+  assert.equal(
+    (await query(`select 1 from login_failures where ip = $1`, [ip])).length,
+    0,
+  );
+  ok("une connexion réussie efface les échecs");
 
   // --- Montants ---------------------------------------------------------
 
@@ -416,6 +608,120 @@ async function main() {
   assert.equal(parseImageUrl("file:///etc/passwd"), null);
   assert.equal(parseImageUrl("pas une url"), null);
   ok("tout autre schéma est refusé");
+
+  // --- Historique ---------------------------------------------------------
+
+  await query(`delete from items`);
+  const base = { ...etb, manualValueCents: null, manualValueDate: null, imageUrl: null };
+  await createItem({ ...base, quantity: 1, purchasePriceCents: 1000, purchaseDate: "2026-01-10" });
+  await createItem({ ...base, quantity: 2, purchasePriceCents: 500, purchaseDate: "2026-03-05" });
+  await createItem({ ...base, quantity: 1, purchasePriceCents: 300, purchaseDate: "2026-01-10" });
+  // Sans date : compté au jour de sa saisie, aujourd'hui.
+  await createItem({ ...base, quantity: 1, purchasePriceCents: 200, purchaseDate: null });
+  // Un article visé n'a rien coûté.
+  await createItem({ ...base, status: "wanted", purchasePriceCents: 9999, purchaseDate: "2026-02-01" });
+
+  const today = parisToday();
+  assert.deepEqual(await investedSeries(), [
+    { day: "2026-01-10", cents: 1300 },
+    { day: "2026-03-05", cents: 2300 },
+    { day: today, cents: 2500 },
+  ]);
+  ok("l'investi cumulé se reconstitue depuis les dates d'achat");
+
+  const releve = summarize(await valuate(await listItems()));
+  await recordSnapshot(releve);
+  await recordSnapshot({ ...releve, totalValueCents: 4242 });
+  assert.deepEqual(await valueSeries(), [{ day: today, cents: 4242 }]);
+  ok("un relevé par jour, le dernier de la journée fait foi");
+
+  await query(
+    `insert into value_snapshots (day, value_cents, purchase_cents, valued_purchase_cents, unvalued_count)
+     values ('2026-09-01', 3000, 2500, 2500, 0)`,
+  );
+  assert.equal((await valueSeries())[0].day, "2026-09-01");
+  ok("les relevés sont rendus dans l'ordre chronologique");
+
+  // --- Courbe --------------------------------------------------------------
+
+  const investi = [
+    { day: "2026-01-10", cents: 1300 },
+    { day: "2026-03-05", cents: 2300 },
+    { day: "2026-09-20", cents: 2500 },
+  ];
+  const valeurs = [
+    { day: "2026-09-10", cents: 2600 },
+    { day: "2026-09-20", cents: 2900 },
+    { day: "2026-09-23", cents: 3100 },
+  ];
+
+  const mois = buildChart(investi, valeurs, "30j", "2026-09-23");
+  assert.equal(mois.start, "2026-08-25");
+  // L'investi part de son niveau d'avant la période, et va jusqu'à aujourd'hui.
+  assert.deepEqual(mois.invested, [
+    { day: "2026-08-25", cents: 2300 },
+    { day: "2026-09-20", cents: 2500 },
+    { day: "2026-09-23", cents: 2500 },
+  ]);
+  assert.equal(mois.value.length, 3);
+  assert.equal(mois.valueChange, 500);
+  assert.equal(mois.min, 2300);
+  assert.equal(mois.max, 3100);
+  ok("courbe sur 30 jours : investi reporté, valeur et écart de la période");
+
+  const semaine = buildChart(investi, valeurs, "7j", "2026-09-23");
+  assert.equal(semaine.start, "2026-09-17");
+  assert.deepEqual(semaine.value.map((point) => point.day), ["2026-09-20", "2026-09-23"]);
+  ok("courbe sur 7 jours : seuls les relevés de la période");
+
+  const tout = buildChart(investi, valeurs, "tout", "2026-09-23");
+  assert.equal(tout.start, "2026-01-10");
+  assert.equal(tout.invested[0].cents, 1300);
+  ok("courbe complète : depuis le premier achat");
+
+  const unSeul = buildChart(investi, [{ day: "2026-09-23", cents: 2500 }], "30j", "2026-09-23");
+  assert.equal(unSeul.valueChange, null);
+  ok("un seul relevé : pas d'écart annoncé");
+
+  const plat = buildChart([], [{ day: "2026-09-23", cents: 2500 }], "7j", "2026-09-23");
+  assert.ok(plat.max > plat.min);
+  assert.deepEqual(plat.invested, []);
+  ok("une courbe plate garde une hauteur");
+
+  // --- Tableau de bord -------------------------------------------------------
+
+  const lignes = await valuate([
+    { ...base, id: "d1", kind: "single", sealedType: null, name: "A", purchasePriceCents: 1000, manualValueCents: 1500, manualValueDate: "2026-01-01" },
+    { ...base, id: "d2", kind: "single", sealedType: null, name: "B", purchasePriceCents: 1000, manualValueCents: 800, manualValueDate: "2026-09-01" },
+    { ...base, id: "d3", kind: "single", sealedType: null, name: "C", purchasePriceCents: 0, grader: "psa", grade: "10" },
+    { ...base, id: "d4", name: "ETB", sealedType: "etb", purchasePriceCents: 4000, manualValueCents: 5000, manualValueDate: "2026-09-01" },
+  ]);
+  const [a, b, c, d] = lignes;
+
+  assert.equal(matchesCheck(a, "cote-ancienne", "2026-09-23"), true);
+  assert.equal(matchesCheck(b, "cote-ancienne", "2026-09-23"), false);
+  assert.equal(matchesCheck(c, "sans-cote", "2026-09-23"), true);
+  assert.equal(matchesCheck(c, "gradee", "2026-09-23"), true);
+  assert.equal(matchesCheck(c, "sans-prix", "2026-09-23"), true);
+  assert.equal(matchesCheck(d, "sans-cote", "2026-09-23"), false);
+  assert.deepEqual(
+    pendingChecks(lignes, "2026-09-23").map((check) => [check.key, check.count]),
+    [["sans-cote", 1], ["gradee", 1], ["cote-ancienne", 1], ["sans-prix", 1]],
+  );
+  assert.deepEqual(pendingChecks([d], "2026-09-23"), []);
+  ok("à vérifier : chaque règle, et rien quand tout va bien");
+
+  const categories = categoryBreakdown(lignes);
+  assert.deepEqual(categories.map((part) => [part.category, part.valueCents, part.share]), [
+    ["etb", 10000, 68],
+    ["single", 4600, 32],
+  ]);
+  ok("répartition par catégorie, triée par valeur");
+
+  const mouvements = movers(groupItems(lignes));
+  assert.deepEqual(mouvements.gains.map((group) => group.name), ["ETB", "A"]);
+  assert.deepEqual(mouvements.losses.map((group) => group.name), ["B"]);
+  ok("hausses et baisses : sans les lignes non cotées");
 
   await pg.close();
 

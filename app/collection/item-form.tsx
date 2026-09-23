@@ -1,27 +1,38 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  CONDITIONS,
+  GRADERS,
   KIND_LABELS,
+  LANGUAGES,
   SEALED_TYPES,
   type Item,
   type ItemKind,
 } from "@/lib/collection";
 
 import type { ActionState } from "./actions";
+import { CardFinder, type PickedCard } from "./card-finder";
 
 type Props = {
   action: (state: ActionState, form: FormData) => Promise<ActionState>;
   item?: Item;
   submitLabel: string;
+  /** Extensions déjà possédées, proposées en tête de la recherche. */
+  ownedSetIds?: string[];
 };
 
 function euros(cents: number | null): string {
   return cents === null ? "" : (cents / 100).toFixed(2).replace(".", ",");
 }
 
-export function ItemForm({ action, item, submitLabel }: Props) {
+export function ItemForm({
+  action,
+  item,
+  submitLabel,
+  ownedSetIds = [],
+}: Props) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     action,
     {},
@@ -30,7 +41,22 @@ export function ItemForm({ action, item, submitLabel }: Props) {
   // carte, et la cote automatique n'existe que dans ce cas.
   const [kind, setKind] = useState<ItemKind>(item?.kind ?? "single");
   const [image, setImage] = useState(item?.imageUrl ?? "");
+  // Gradée, la carte n'a plus d'état à saisir mais une note.
+  const [grader, setGrader] = useState(item?.grader ?? "");
   const formRef = useRef<HTMLFormElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const cardIdRef = useRef<HTMLInputElement>(null);
+  const setNameRef = useRef<HTMLInputElement>(null);
+  // Change à chaque ajout réussi : remonte la recherche, qui repart de zéro.
+  const [finderKey, setFinderKey] = useState(0);
+
+  // La carte trouvée remplit le nom, l'identifiant et l'extension. Les champs
+  // restent modifiables : la recherche propose, elle n'impose rien.
+  const pick = useCallback((card: PickedCard) => {
+    if (nameRef.current) nameRef.current.value = card.name;
+    if (cardIdRef.current) cardIdRef.current.value = card.id;
+    if (setNameRef.current) setNameRef.current.value = card.setName;
+  }, []);
 
   // Après un ajout réussi, vider les champs : les laisser remplis laisse
   // croire que rien n'a été enregistré, et invite à ressaisir le même article.
@@ -38,6 +64,8 @@ export function ItemForm({ action, item, submitLabel }: Props) {
     if (!state.nonce) return;
     formRef.current?.reset();
     setImage("");
+    setGrader("");
+    setFinderKey((key) => key + 1);
   }, [state.nonce]);
   const isCard = kind === "single";
   const isSealed = kind === "sealed";
@@ -68,6 +96,7 @@ export function ItemForm({ action, item, submitLabel }: Props) {
         <label className="grow">
           Nom
           <input
+            ref={nameRef}
             name="name"
             defaultValue={item?.name ?? ""}
             placeholder={
@@ -104,15 +133,28 @@ export function ItemForm({ action, item, submitLabel }: Props) {
       ) : null}
 
       {isCard ? (
-        <label>
-          Identifiant TCGdex
-          <input
-            name="cardId"
-            defaultValue={item?.cardId ?? ""}
-            placeholder="30c-015"
+        <>
+          <CardFinder
+            key={finderKey}
+            ownedSetIds={ownedSetIds}
+            initialCardId={item?.cardId}
+            onPick={pick}
           />
-          <small>Renseigné, la cote Cardmarket est récupérée toute seule.</small>
-        </label>
+
+          <label>
+            Identifiant TCGdex
+            <input
+              ref={cardIdRef}
+              name="cardId"
+              defaultValue={item?.cardId ?? ""}
+              placeholder="30c-015"
+            />
+            <small>
+              Rempli par la recherche. Renseigné, la cote Cardmarket est
+              récupérée toute seule.
+            </small>
+          </label>
+        </>
       ) : (
         <input type="hidden" name="cardId" value={item?.cardId ?? ""} />
       )}
@@ -178,13 +220,86 @@ export function ItemForm({ action, item, submitLabel }: Props) {
         </small>
       </label>
 
-      <details className="more" open={Boolean(item?.notes || item?.setName)}>
+      <details
+        className="more"
+        open={Boolean(
+          item?.notes ||
+            item?.setName ||
+            item?.language ||
+            item?.condition ||
+            item?.grader,
+        )}
+      >
         <summary>Plus d&apos;options</summary>
+
+        <div className="row">
+          <label>
+            Langue
+            <select name="language" defaultValue={item?.language ?? "fr"}>
+              {Object.entries(LANGUAGES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {isCard && grader === "" ? (
+            <label>
+              État
+              <select name="condition" defaultValue={item?.condition ?? ""}>
+                <option value="">Non précisé</option>
+                {Object.entries(CONDITIONS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+
+        {isCard ? (
+          <div className="row">
+            <label>
+              Gradation
+              <select
+                name="grader"
+                value={grader}
+                onChange={(event) => setGrader(event.target.value)}
+              >
+                <option value="">Non gradée</option>
+                {Object.entries(GRADERS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              {grader !== "" ? (
+                <small>La cote Cardmarket vaut pour une carte brute : saisis la valeur.</small>
+              ) : null}
+            </label>
+
+            {grader !== "" ? (
+              <label className="narrow">
+                Note
+                <input
+                  name="grade"
+                  inputMode="decimal"
+                  defaultValue={item?.grade?.replace(".", ",") ?? ""}
+                  placeholder="10"
+                  required
+                />
+              </label>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="row">
           <label className="grow">
             Extension
             <input
+              ref={setNameRef}
               name="setName"
               defaultValue={item?.setName ?? ""}
               placeholder="Célébration 30 ans"

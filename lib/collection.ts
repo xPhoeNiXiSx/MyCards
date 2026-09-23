@@ -33,6 +33,148 @@ export function isSealedType(value: unknown): value is SealedType {
   return typeof value === "string" && value in SEALED_TYPES;
 }
 
+/** Langue d'impression. Absente, la carte est supposée française. */
+export const LANGUAGES = {
+  fr: "Français",
+  en: "Anglais",
+  ja: "Japonais",
+  ko: "Coréen",
+  zh: "Chinois",
+  de: "Allemand",
+  it: "Italien",
+  es: "Espagnol",
+  pt: "Portugais",
+} as const;
+
+export type Language = keyof typeof LANGUAGES;
+
+/** Échelle Cardmarket, de la meilleure à la pire. */
+export const CONDITIONS = {
+  mt: "Mint",
+  nm: "Near Mint",
+  ex: "Excellent",
+  gd: "Good",
+  lp: "Light Played",
+  pl: "Played",
+  po: "Poor",
+} as const;
+
+export type Condition = keyof typeof CONDITIONS;
+
+export const GRADERS = {
+  psa: "PSA",
+  pca: "PCA",
+  cgc: "CGC",
+  bgs: "BGS",
+  sgc: "SGC",
+  ca: "Collect Aura",
+  autre: "Autre",
+} as const;
+
+export type Grader = keyof typeof GRADERS;
+
+export function isLanguage(value: unknown): value is Language {
+  return typeof value === "string" && value in LANGUAGES;
+}
+
+export function isCondition(value: unknown): value is Condition {
+  return typeof value === "string" && value in CONDITIONS;
+}
+
+export function isGrader(value: unknown): value is Grader {
+  return typeof value === "string" && value in GRADERS;
+}
+
+/**
+ * Note de gradation : de 1 à 10, demi-points admis (« 9,5 » ou « 9.5 »).
+ * Renvoie la note normalisée avec un point, `undefined` si vide, `null` si
+ * illisible.
+ */
+export function parseGrade(raw: string | null): string | null | undefined {
+  if (raw === null || raw.trim() === "") return undefined;
+  const value = raw.trim().replace(",", ".");
+  if (!/^\d{1,2}(\.5)?$/.test(value)) return null;
+  const number = Number(value);
+  if (number < 1 || number > 10) return null;
+  return String(number);
+}
+
+/** « PSA 10 », « Collect Aura 9.5 ». `null` pour une carte non gradée. */
+export function gradeLabel(item: {
+  grader: Grader | null;
+  grade: string | null;
+}): string | null {
+  if (!item.grader || !item.grade) return null;
+  return `${GRADERS[item.grader]} ${item.grade.replace(".", ",")}`;
+}
+
+/**
+ * Ce qui distingue un exemplaire d'un autre : gradation, sinon état, et
+ * langue quand elle n'est pas le français. Vide pour une carte ordinaire.
+ */
+export function editionLabel(item: {
+  language: Language | null;
+  condition: Condition | null;
+  grader: Grader | null;
+  grade: string | null;
+}): string | null {
+  const parts = [
+    gradeLabel(item) ?? (item.condition ? CONDITIONS[item.condition] : null),
+    item.language && item.language !== "fr" ? LANGUAGES[item.language] : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/** Codes courts des pastilles. Ceux de Cardmarket pour l'état. */
+export const LANGUAGE_CODES: Record<Language, string> = {
+  fr: "FR",
+  en: "EN",
+  ja: "JP",
+  ko: "KR",
+  zh: "CN",
+  de: "DE",
+  it: "IT",
+  es: "ES",
+  pt: "PT",
+};
+
+export const CONDITION_CODES: Record<Condition, string> = {
+  mt: "MT",
+  nm: "NM",
+  ex: "EX",
+  gd: "GD",
+  lp: "LP",
+  pl: "PL",
+  po: "PO",
+};
+
+/** Ce que portent les pastilles d'un article. `null` = pas de pastille. */
+export type EditionBadges = {
+  /** « PSA 10 ». */
+  grade: string | null;
+  /** Code de langue, jamais pour le français : c'est le cas par défaut. */
+  language: string | null;
+  /** Code d'état, jamais pour une gradée : sa note le remplace. */
+  condition: string | null;
+};
+
+export function editionBadges(item: {
+  language: Language | null;
+  condition: Condition | null;
+  grader: Grader | null;
+  grade: string | null;
+}): EditionBadges {
+  const grade = gradeLabel(item);
+  return {
+    grade,
+    language:
+      item.language && item.language !== "fr"
+        ? LANGUAGE_CODES[item.language]
+        : null,
+    condition: !grade && item.condition ? CONDITION_CODES[item.condition] : null,
+  };
+}
+
 export const KIND_LABELS: Record<ItemKind, string> = {
   single: "Carte à l'unité",
   sealed: "Scellé",
@@ -55,6 +197,13 @@ export type Item = {
   manualValueDate: string | null;
   imageUrl: string | null;
   notes: string | null;
+  /** `null` = non précisé, supposé français. */
+  language: Language | null;
+  /** État de la carte brute. Sans objet sur une carte gradée. */
+  condition: Condition | null;
+  /** Gradation : les deux champs vont ensemble, ou aucun. */
+  grader: Grader | null;
+  grade: string | null;
 };
 
 export type ItemInput = Omit<Item, "id">;
@@ -114,6 +263,10 @@ type Row = {
   manual_value_date: string | Date | null;
   image_url: string | null;
   notes: string | null;
+  language: string | null;
+  condition: string | null;
+  grader: string | null;
+  grade: string | null;
 };
 
 /** Postgres peut renvoyer une Date ou une chaîne selon le pilote. */
@@ -140,12 +293,17 @@ function toItem(row: Row): Item {
     manualValueDate: toIsoDate(row.manual_value_date),
     imageUrl: row.image_url,
     notes: row.notes,
+    language: isLanguage(row.language) ? row.language : null,
+    condition: isCondition(row.condition) ? row.condition : null,
+    grader: isGrader(row.grader) ? row.grader : null,
+    grade: row.grade,
   };
 }
 
 const COLUMNS = `id, status, kind, sealed_type, name, card_id, set_name, quantity,
                  purchase_price_cents, purchase_date,
-                 manual_value_cents, manual_value_date, image_url, notes`;
+                 manual_value_cents, manual_value_date, image_url, notes,
+                 language, condition, grader, grade`;
 
 /** Les articles d'un statut donné, du plus récent au plus ancien. */
 export async function listItems(
@@ -170,8 +328,10 @@ export async function createItem(input: ItemInput): Promise<Item> {
   const rows = await query<Row>(
     `insert into items (status, kind, sealed_type, name, card_id, set_name,
                         quantity, purchase_price_cents, purchase_date,
-                        manual_value_cents, manual_value_date, image_url, notes)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                        manual_value_cents, manual_value_date, image_url, notes,
+                        language, condition, grader, grade)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+             $14, $15, $16, $17)
      returning ${COLUMNS}`,
     [
       input.status,
@@ -187,6 +347,10 @@ export async function createItem(input: ItemInput): Promise<Item> {
       input.manualValueDate,
       input.imageUrl,
       input.notes,
+      input.language,
+      input.condition,
+      input.grader,
+      input.grade,
     ],
   );
   return toItem(rows[0]);
@@ -199,6 +363,7 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
             set_name = $7, quantity = $8, purchase_price_cents = $9,
             purchase_date = $10, manual_value_cents = $11,
             manual_value_date = $12, image_url = $13, notes = $14,
+            language = $15, condition = $16, grader = $17, grade = $18,
             updated_at = now()
       where id = $1`,
     [
@@ -216,6 +381,10 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
       input.manualValueDate,
       input.imageUrl,
       input.notes,
+      input.language,
+      input.condition,
+      input.grader,
+      input.grade,
     ],
   );
 }
@@ -267,6 +436,14 @@ export async function valuate(items: Item[]): Promise<ValuedItem[]> {
   const cards =
     cardIds.length > 0 ? await fetchCards(cardIds) : new Map<string, CardDetail>();
 
+  return valuateWith(items, cards);
+}
+
+/** La valorisation elle-même, sur des fiches déjà chargées. Sans réseau. */
+export function valuateWith(
+  items: Item[],
+  cards: Map<string, CardDetail>,
+): ValuedItem[] {
   return items.map((item) => {
     const card = item.cardId ? cards.get(item.cardId) : undefined;
     const quote = card ? readQuote(card.pricing) : undefined;
@@ -279,7 +456,10 @@ export async function valuate(items: Item[]): Promise<ValuedItem[]> {
     if (item.manualValueCents !== null) {
       currentUnitCents = item.manualValueCents;
       valueSource = "manual";
-    } else if (quote) {
+    } else if (quote && !item.grader) {
+      // La cote Cardmarket vaut pour une carte brute. L'appliquer à une carte
+      // gradée la sous-évaluerait sans le dire : mieux vaut une ligne non
+      // valorisée, qui se voit, qu'un chiffre faux, qui ne se voit pas.
       currentUnitCents = quote.cents;
       valueSource = "market";
       quoteField = quote.field;
@@ -423,6 +603,9 @@ export type ItemGroup = {
   name: string;
   setName: string | null;
   image: string | null;
+  /** Gradation, état, langue en toutes lettres : voir `editionLabel`. */
+  edition: string | null;
+  badges: EditionBadges;
   /** Les achats qui composent le groupe, du plus récent au plus ancien. */
   lines: ValuedItem[];
   quantity: number;
@@ -444,7 +627,10 @@ function groupKey(item: Item): string {
 
   // L'identifiant de carte prime : deux cartes homonymes de sets différents
   // ne sont pas le même produit.
-  return `${item.kind}|${item.sealedType ?? ""}|${item.cardId ?? ""}|${name}`;
+  // La gradation et la langue aussi : une PSA 10 et la même carte brute, ou
+  // une japonaise et une française, n'ont ni le même prix ni la même cote.
+  const grading = item.grader ? `${item.grader}:${item.grade ?? ""}` : "";
+  return `${item.kind}|${item.sealedType ?? ""}|${item.cardId ?? ""}|${item.language ?? "fr"}|${grading}|${name}`;
 }
 
 /**
@@ -466,6 +652,8 @@ export function groupItems(items: ValuedItem[]): ItemGroup[] {
       name: item.name,
       setName: item.setName,
       image: item.image,
+      edition: null,
+      badges: { grade: null, language: null, condition: null },
       lines: [],
       quantity: 0,
       purchaseCents: 0,
@@ -490,11 +678,24 @@ export function groupItems(items: ValuedItem[]): ItemGroup[] {
 
   return [...groups.values()].map((group) => ({
     ...group,
+    edition: editionLabel(groupEditionSource(group.lines)),
+    badges: editionBadges(groupEditionSource(group.lines)),
     unitPurchaseCents:
       group.quantity === 0
         ? 0
         : Math.round(group.purchaseCents / group.quantity),
   }));
+}
+
+/**
+ * Langue et gradation sont communes à tout le groupe (elles font partie de sa
+ * clé) ; l'état, non. S'il diffère d'un achat à l'autre, on ne l'affiche pas
+ * plutôt que d'afficher celui d'un seul exemplaire.
+ */
+function groupEditionSource(lines: Item[]): Item {
+  const conditions = new Set(lines.map((line) => line.condition));
+  const first = lines[0];
+  return conditions.size === 1 ? first : { ...first, condition: null };
 }
 
 /** Le libellé à afficher : le sous-type de scellé s'il existe, sinon le type. */

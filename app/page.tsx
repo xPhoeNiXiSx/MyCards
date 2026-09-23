@@ -3,18 +3,34 @@ import { redirect } from "next/navigation";
 
 import { isAuthConfigured, isAuthenticated } from "@/lib/auth";
 import {
-  KIND_LABELS,
+  CATEGORY_LABELS,
   bestGain,
-  breakdown,
+  groupItems,
+  itemLabel,
   listItems,
   summarize,
   valuate,
 } from "@/lib/collection";
+import {
+  buildChart,
+  categoryBreakdown,
+  isPeriod,
+  movers,
+  pendingChecks,
+  type Chart,
+} from "@/lib/dashboard";
 import { isDatabaseConfigured } from "@/lib/db";
+import {
+  investedSeries,
+  parisToday,
+  recordSnapshot,
+  valueSeries,
+} from "@/lib/history";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
 import { DatabaseErrorScreen, SetupScreen } from "./db-screens";
 import { TabBar } from "./tab-bar";
+import { ValueChart } from "./value-chart";
 import { Wordmark } from "./wordmark";
 
 // Le tableau de bord lit la base : jamais de rendu statique.
@@ -22,7 +38,23 @@ export const dynamic = "force-dynamic";
 
 const TITLE = "Tableau de bord";
 
-export default async function DashboardPage() {
+/** Vignette d'article : son visuel, ou un emplacement vide de même taille. */
+function Thumb({ src, className = "thumb" }: { src: string | null; className?: string }) {
+  return src ? (
+    <img className={className} src={src} alt="" loading="lazy" />
+  ) : (
+    <span className={`${className} empty`} aria-hidden="true" />
+  );
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ periode?: string }>;
+}) {
+  const { periode } = await searchParams;
+  const period = isPeriod(periode) ? periode : "30j";
+
   const missing: string[] = [];
   if (!isAuthConfigured()) missing.push("APP_PASSWORD", "AUTH_SECRET");
   if (!isDatabaseConfigured()) missing.push("DATABASE_URL");
@@ -53,10 +85,32 @@ export default async function DashboardPage() {
     summary.valuedPurchaseCents,
     summary.totalValueCents,
   );
-  const parts = breakdown(items);
+  const today = parisToday();
+  const groups = groupItems(items);
+  const shares = categoryBreakdown(items);
+  const moves = movers(groups);
+  const checks = pendingChecks(items, today);
   const best = bestGain(items);
   // `listItems` trie du plus récent au plus ancien : la tête est le dernier ajout.
   const latest = items[0];
+
+  // Chaque affichage relève la valeur du jour ; le cron couvre les jours sans
+  // visite. Un échec (schéma pas encore migré, typiquement) ne doit jamais
+  // empêcher d'afficher le tableau de bord : la courbe manquera, rien d'autre.
+  let chart: Chart | null = null;
+  if (items.length > 0) {
+    try {
+      await recordSnapshot(summary);
+      chart = buildChart(
+        await investedSeries(),
+        await valueSeries(),
+        period,
+        today,
+      );
+    } catch (error) {
+      console.warn("[dashboard] historique indisponible", error);
+    }
+  }
 
   return (
     <main className="page">
@@ -111,6 +165,8 @@ export default async function DashboardPage() {
                 </span>
               </div>
             </div>
+
+            {chart ? <ValueChart chart={chart} period={period} /> : null}
           </section>
 
           <section className="kpis">
@@ -124,25 +180,26 @@ export default async function DashboardPage() {
               </span>
             </div>
 
-            <div className="kpi">
-              <span className="kpi-label">Meilleure plus-value</span>
-              <strong className={(best?.gainCents ?? 0) >= 0 ? "up" : "down"}>
-                {best ? formatSignedCents(best.gainCents ?? 0) : "—"}
-              </strong>
-              <span className="kpi-note">{best ? best.name : "aucune cote"}</span>
-            </div>
-
-            <div className="kpi">
-              <span className="kpi-label">Sans prix d&apos;achat</span>
-              <strong className={summary.withoutPriceCount > 0 ? "down" : ""}>
-                {summary.withoutPriceCount}
-              </strong>
-              <span className="kpi-note">
-                {summary.withoutPriceCount > 0
-                  ? "comptées 0 € dans l'investi"
-                  : "tout est renseigné"}
-              </span>
-            </div>
+            {best ? (
+              <Link className="kpi kpi-link" href={`/collection/${best.id}`}>
+                <span className="kpi-label">Meilleure plus-value</span>
+                <span className="kpi-thumb">
+                  <Thumb src={best.image} />
+                  <span>
+                    <strong className={(best.gainCents ?? 0) >= 0 ? "up" : "down"}>
+                      {formatSignedCents(best.gainCents ?? 0)}
+                    </strong>
+                    <span className="kpi-note">{best.name}</span>
+                  </span>
+                </span>
+              </Link>
+            ) : (
+              <div className="kpi">
+                <span className="kpi-label">Meilleure plus-value</span>
+                <strong>—</strong>
+                <span className="kpi-note">aucune cote</span>
+              </div>
+            )}
 
             <div className="kpi">
               <span className="kpi-label">Mise moyenne</span>
@@ -154,32 +211,113 @@ export default async function DashboardPage() {
               <span className="kpi-note">par article</span>
             </div>
 
-            <div className="kpi">
+            <Link className="kpi kpi-link" href={`/collection/${latest.id}`}>
               <span className="kpi-label">Dernier ajout</span>
-              <strong className="kpi-text">{latest.name}</strong>
-              <span className="kpi-note">{KIND_LABELS[latest.kind]}</span>
-            </div>
+              <span className="kpi-thumb">
+                <Thumb src={latest.image} />
+                <span>
+                  <strong className="kpi-text">{latest.name}</strong>
+                  <span className="kpi-note">{itemLabel(latest)}</span>
+                </span>
+              </span>
+            </Link>
           </section>
 
-          <h2 className="section-title">Répartition par type</h2>
+          {/* Rien à vérifier, rien à afficher : un bloc vide ne ferait que
+              pousser le reste plus bas. */}
+          {checks.length > 0 ? (
+            <>
+              <h2 className="section-title">À vérifier</h2>
+              <div className="checks">
+                {checks.map((check) => (
+                  <Link
+                    key={check.key}
+                    className="check"
+                    href={`/collection?verifier=${check.key}`}
+                  >
+                    <span className="check-count">{check.count}</span>
+                    <span>{check.label}</span>
+                    <span className="check-go" aria-hidden="true">
+                      Voir →
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          {moves.gains.length > 0 || moves.losses.length > 0 ? (
+            <>
+              <h2 className="section-title">Hausses et baisses</h2>
+              <div className="panel movers">
+                {[
+                  { title: "Plus-values", list: moves.gains, empty: "Aucune pour l'instant." },
+                  { title: "Moins-values", list: moves.losses, empty: "Aucune, tout est au-dessus du prix d'achat." },
+                ].map((column) => (
+                  <div key={column.title} className="movers-col">
+                    <h3 className="movers-title">{column.title}</h3>
+                    {column.list.length === 0 ? (
+                      <p className="hint">{column.empty}</p>
+                    ) : (
+                      column.list.map((group) => (
+                        <Link
+                          key={group.key}
+                          className="mover"
+                          href={`/collection/${group.lines[0].id}`}
+                        >
+                          <Thumb src={group.image} />
+                          <span className="mover-text">
+                            <span className="mover-name">
+                              {group.name}
+                              {group.quantity > 1 ? ` ×${group.quantity}` : ""}
+                            </span>
+                            <span
+                              className={`mover-gain ${(group.gainCents ?? 0) >= 0 ? "up" : "down"}`}
+                            >
+                              {formatSignedCents(group.gainCents ?? 0)}
+                            </span>
+                          </span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          <h2 className="section-title">Répartition par catégorie</h2>
           <div className="panel breakdown">
-            {parts.map((part) => (
-              <div className="breakdown-row" key={part.kind}>
+            {shares.map((part) => (
+              <div className="breakdown-row" key={part.category}>
                 <div className="breakdown-head">
-                  <span className="breakdown-name">{KIND_LABELS[part.kind]}</span>
+                  <span className="breakdown-name">
+                    <span
+                      className="cat-mark"
+                      aria-hidden="true"
+                      style={{ ["--dot" as string]: `var(--cat-${part.category})` }}
+                    />
+                    {CATEGORY_LABELS[part.category]}
+                  </span>
                   <span className="breakdown-value">
                     {formatCents(part.valueCents)}
                     <em>{part.share} %</em>
                   </span>
                 </div>
                 {/* Barre à libellé direct : la valeur est écrite au-dessus,
-                    donc pas de légende ni d'infobulle à deviner. */}
+                    donc pas de légende ni d'infobulle à deviner. La couleur
+                    reprend celle de la catégorie dans l'inventaire. */}
                 <div
                   className="breakdown-bar"
                   role="img"
                   aria-label={`${part.share} % de la valeur totale`}
                 >
-                  <span style={{ width: `${part.share}%` }} />
+                  <span
+                    style={{
+                      width: `${part.share}%`,
+                      background: `var(--cat-${part.category})`,
+                    }}
+                  />
                 </div>
                 <span className="breakdown-note">
                   {part.units} article{part.units > 1 ? "s" : ""} ·{" "}
@@ -188,7 +326,6 @@ export default async function DashboardPage() {
               </div>
             ))}
           </div>
-
         </>
       )}
 

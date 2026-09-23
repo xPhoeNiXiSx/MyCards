@@ -12,8 +12,12 @@ import {
   listItems,
   summarize,
   valuate,
+  type EditionBadges,
   type ItemGroup,
 } from "@/lib/collection";
+import { setIdOf } from "@/lib/card-number";
+import { CHECKS, isCheckKey, matchesCheck } from "@/lib/dashboard";
+import { parisToday } from "@/lib/history";
 import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
@@ -60,6 +64,25 @@ function fullDate(iso: string | null): string | null {
       });
 }
 
+/**
+ * Pastilles d'édition : dorée pour la note, neutres pour la langue et l'état.
+ * Rien pour une carte française brute, le cas ordinaire.
+ */
+function Badges({ badges, label }: { badges: EditionBadges; label?: string }) {
+  if (!badges.grade && !badges.language && !badges.condition) return null;
+  return (
+    <span className="badges" aria-label={label}>
+      {badges.grade ? <span className="badge grade">{badges.grade}</span> : null}
+      {badges.language ? (
+        <span className="badge">{badges.language}</span>
+      ) : null}
+      {badges.condition ? (
+        <span className="badge outline">{badges.condition}</span>
+      ) : null}
+    </span>
+  );
+}
+
 function shortDate(iso: string | null): string | null {
   if (!iso) return null;
   const date = new Date(iso);
@@ -74,7 +97,9 @@ function GroupValue({ group }: { group: ItemGroup }) {
       <span
         className="muted"
         title={
-          group.lines.some((line) => line.cardId)
+          group.lines.some((line) => line.grader)
+            ? "Carte gradée : la cote Cardmarket vaut pour une carte brute. Saisis sa valeur."
+            : group.lines.some((line) => line.cardId)
             ? "Pas encore cotée sur Cardmarket. Saisis une valeur pour la valoriser."
             : "Aucune valeur saisie pour cet article."
         }
@@ -118,10 +143,13 @@ function GroupValue({ group }: { group: ItemGroup }) {
 export default async function CollectionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; vue?: string }>;
+  searchParams: Promise<{ type?: string; vue?: string; verifier?: string }>;
 }) {
-  const { type, vue } = await searchParams;
+  const { type, vue, verifier } = await searchParams;
   const filter = isItemCategory(type) ? type : null;
+  // Arrivée depuis « À vérifier » du tableau de bord : seules les lignes
+  // concernées, pour les corriger sans les chercher.
+  const check = isCheckKey(verifier) ? verifier : null;
   const gallery = vue === "images";
   const missing: string[] = [];
   if (!isAuthConfigured()) missing.push("APP_PASSWORD", "AUTH_SECRET");
@@ -171,23 +199,41 @@ export default async function CollectionPage({
 
   // Le filtre porte aussi sur les totaux : un total qui ne correspond pas aux
   // lignes affichées juste en dessous ne veut rien dire.
-  const shown = filter
-    ? items.filter((item) => itemCategory(item) === filter)
-    : items;
+  const today = parisToday();
+  const shown = items.filter(
+    (item) =>
+      (!filter || itemCategory(item) === filter) &&
+      (!check || matchesCheck(item, check, today)),
+  );
 
   /** Conserve la vue courante en changeant de filtre, et inversement. */
-  const link = (next: { type?: string | null; vue?: string | null }) => {
+  const link = (next: {
+    type?: string | null;
+    vue?: string | null;
+    verifier?: string | null;
+  }) => {
     const params = new URLSearchParams();
     const category = next.type === undefined ? filter : next.type;
     const view = next.vue === undefined ? (gallery ? "images" : null) : next.vue;
     if (category) params.set("type", category);
     if (view) params.set("vue", view);
+    const pending = next.verifier === undefined ? check : next.verifier;
+    if (pending) params.set("verifier", pending);
     const query = params.toString();
     return query ? `/collection?${query}` : "/collection";
   };
 
   const summary = summarize(shown);
   const groups = groupItems(shown);
+  // Les extensions déjà possédées, de la plus récemment alimentée à la plus
+  // ancienne : la recherche d'ajout les propose en premier.
+  const ownedSetIds = [
+    ...new Set(
+      items
+        .map((item) => (item.cardId ? setIdOf(item.cardId) : null))
+        .filter((id) => id !== null),
+    ),
+  ];
   // Comparé au prix d'achat des seules lignes valorisées : rapporter une
   // valeur partielle à l'investissement total donnerait un pourcentage faux.
   const change = percentChange(
@@ -243,6 +289,17 @@ export default async function CollectionPage({
           </div>
         </div>
       </section>
+
+      {check ? (
+        <div className="check-filter" role="status">
+          <span>{CHECKS.find((entry) => entry.key === check)?.label}</span>
+          <Link
+            href={link({ verifier: null })}
+          >
+            Tout afficher
+          </Link>
+        </div>
+      ) : null}
 
       {available.length > 1 ? (
         <div className="chips">
@@ -314,28 +371,37 @@ export default async function CollectionPage({
       ) : gallery ? (
         <div className="gallery">
           {groups.map((group) => (
-            <Link
-              key={group.key}
-              href={`/collection/${group.lines[0].id}`}
-              className="tile"
-              title={`${group.name} — ${itemLabel(group)}`}
-            >
-              <span
-                className="tile-mark"
-                aria-hidden="true"
-                style={{
-                  ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
-                }}
+            <div className="tile-cell" key={group.key}>
+              <Link
+                href={`/collection/${group.lines[0].id}`}
+                className="tile"
+                title={[group.name, itemLabel(group), group.edition]
+                  .filter(Boolean)
+                  .join(" — ")}
+              >
+                <span
+                  className="tile-mark"
+                  aria-hidden="true"
+                  style={{
+                    ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
+                  }}
+                />
+                {group.image ? (
+                  <img src={group.image} alt={group.name} loading="lazy" />
+                ) : (
+                  <span className="tile-fallback">{group.name}</span>
+                )}
+                {group.quantity > 1 ? (
+                  <span className="tile-qty">×{group.quantity}</span>
+                ) : null}
+              </Link>
+              {/* Sous l'image, pas dessus : le visuel reste intact. L'état n'y
+                  figure pas, la tuile n'a pas la place de tout dire. */}
+              <Badges
+                badges={{ ...group.badges, condition: null }}
+                label={group.edition ?? undefined}
               />
-              {group.image ? (
-                <img src={group.image} alt={group.name} loading="lazy" />
-              ) : (
-                <span className="tile-fallback">{group.name}</span>
-              )}
-              {group.quantity > 1 ? (
-                <span className="tile-qty">×{group.quantity}</span>
-              ) : null}
-            </Link>
+            </div>
           ))}
         </div>
       ) : (
@@ -369,6 +435,10 @@ export default async function CollectionPage({
                         ) : (
                           <span className="group-name">{group.name}</span>
                         )}
+                        <Badges
+                          badges={group.badges}
+                          label={group.edition ?? undefined}
+                        />
                         <span className="muted block">
                           <span
                             className="cat-mark"
@@ -450,7 +520,7 @@ export default async function CollectionPage({
         </div>
       )}
 
-      <AddFab />
+      <AddFab ownedSetIds={ownedSetIds} />
 
       <TabBar />
     </main>
