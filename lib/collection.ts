@@ -316,6 +316,22 @@ export async function listItems(
   return rows.map(toItem);
 }
 
+/**
+ * Exemplaires possédés par carte TCGdex, toutes lignes confondues : le
+ * catalogue s'en sert pour signaler une carte déjà dans l'inventaire.
+ */
+export async function ownedCountsByCard(): Promise<Record<string, number>> {
+  const rows = await query<{ card_id: string; quantity: string | number }>(
+    `select card_id, sum(quantity) as quantity
+       from items
+      where status = 'owned' and card_id is not null
+      group by card_id`,
+  );
+  return Object.fromEntries(
+    rows.map((row) => [row.card_id, Number(row.quantity)]),
+  );
+}
+
 export async function getItem(id: string): Promise<Item | undefined> {
   const rows = await query<Row>(
     `select ${COLUMNS} from items where id = $1`,

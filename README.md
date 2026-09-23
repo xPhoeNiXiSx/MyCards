@@ -132,6 +132,19 @@ environ 150 collections et plusieurs dizaines de milliers de cartes. Une
 collection déjà ouverte garde ses cartes en mémoire, la refermer et la rouvrir
 ne redemande rien.
 
+Un champ de recherche en tête du catalogue cherche à la fois les extensions
+(par leur nom ou celui de leur série, sur le catalogue déjà chargé) et les
+cartes de tout le catalogue par leur nom (`/api/search`, qui interroge
+`/cards?name=` chez TCGdex, en tenant compte du filtre de rareté). Les cartes
+trouvées sont classées de l'extension la plus récente à la plus ancienne.
+
+La visionneuse ajoute une carte à l'inventaire sans quitter le catalogue :
+prix, date et quantité, puis « Ajouter à l'inventaire » (action serveur
+`app/catalogue/actions.ts`). La confirmation mène à la fiche de l'article pour
+compléter l'état, la gradation ou la langue. Une pastille « Déjà ×N dans
+l'inventaire » signale les cartes possédées ; les compteurs sont lus en base
+par la page et mis à jour sur place après un ajout.
+
 TCGdex ne donne pas les collections dans la liste des séries : le catalogue
 fait une requête par série, en parallèle, mise en cache une heure côté
 serveur.

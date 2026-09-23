@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { setIdOf } from "@/lib/card-number";
 import { assetUrl, imageUrl } from "@/lib/images";
 import type { CardResume, SerieDetail, SetDetail, SetResume } from "@/lib/tcgdex";
 
 import { CardViewer } from "./card-viewer";
+import { OwnedContext, type Owned } from "./owned-context";
 
 /**
  * Catalogue complet en accordéon à deux niveaux : série, puis set, puis les
@@ -35,8 +37,46 @@ function plural(count: number, word: string): string {
   return `${count} ${word}${count > 1 ? "s" : ""}`;
 }
 
-export function SeriesBrowser() {
+/** En dessous, une recherche de cartes renverrait une bonne part du catalogue. */
+const MIN_QUERY = 2;
+
+/** Cartes affichées d'un coup dans les résultats, puis par tranche. */
+const PAGE = 60;
+
+type Search =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; cards: CardResume[] };
+
+export function SeriesBrowser({
+  owned: initialOwned = {},
+}: {
+  /** Exemplaires déjà possédés, par carte : lus en base par la page. */
+  owned?: Record<string, number>;
+}) {
   const [catalogue, setCatalogue] = useState<Catalogue>({ status: "loading" });
+  const [ownedCounts, setOwnedCounts] = useState(initialOwned);
+  const addOwned = useCallback((cardId: string, quantity: number) => {
+    setOwnedCounts((counts) => ({
+      ...counts,
+      [cardId]: (counts[cardId] ?? 0) + quantity,
+    }));
+  }, []);
+  const owned = useMemo<Owned>(
+    () => ({ counts: ownedCounts, add: addOwned }),
+    [ownedCounts, addOwned],
+  );
+
+  const [query, setQuery] = useState("");
+  /** La recherche part après une courte pause dans la frappe, pas à chaque touche. */
+  const [needle, setNeedle] = useState("");
+  const [search, setSearch] = useState<Search>({ status: "idle" });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setNeedle(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
   const [rarities, setRarities] = useState<string[]>([]);
   /** `null` = toutes les raretés. Le filtre vaut pour tout l'écran. */
   const [rarity, setRarity] = useState<string | null>(null);
@@ -68,6 +108,36 @@ export function SeriesBrowser() {
 
     return () => controller.abort();
   }, []);
+
+  // Les cartes dont le nom correspond, dans tout le catalogue.
+  useEffect(() => {
+    if (needle.length < MIN_QUERY) {
+      setSearch({ status: "idle" });
+      return;
+    }
+
+    const controller = new AbortController();
+    setSearch({ status: "loading" });
+    const params =
+      `q=${encodeURIComponent(needle)}` +
+      (rarity ? `&rarity=${encodeURIComponent(rarity)}` : "");
+
+    fetch(`/api/search?${params}`, { signal: controller.signal })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body?.error ?? `HTTP ${response.status}`);
+        setSearch({ status: "ready", cards: (body.cards ?? []) as CardResume[] });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setSearch({
+          status: "error",
+          message: error instanceof Error ? error.message : "Erreur inconnue.",
+        });
+      });
+
+    return () => controller.abort();
+  }, [needle, rarity]);
 
   // Quelles collections contiennent la rareté choisie, et combien.
   useEffect(() => {
@@ -136,9 +206,21 @@ export function SeriesBrowser() {
     (count, serie) => count + serie.sets.length,
     0,
   );
+  const searching = query.trim().length >= MIN_QUERY;
 
   return (
-    <>
+    <OwnedContext.Provider value={owned}>
+      <div className="catalogue-search">
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Chercher une extension ou une carte…"
+          aria-label="Chercher dans le catalogue"
+          enterKeyHint="search"
+        />
+      </div>
+
       <div className="toolbar">
         {rarities.length > 0 ? (
           <label className="rarity">
@@ -157,11 +239,13 @@ export function SeriesBrowser() {
           </label>
         ) : null}
 
-        <p className="catalogue-meta">
-          {counts.status === "loading"
-            ? "Recherche…"
-            : `${plural(series.length, "série")} · ${plural(totalSets, "collection")}`}
-        </p>
+        {searching ? null : (
+          <p className="catalogue-meta">
+            {counts.status === "loading"
+              ? "Recherche…"
+              : `${plural(series.length, "série")} · ${plural(totalSets, "collection")}`}
+          </p>
+        )}
       </div>
 
       {counts.status === "error" ? (
@@ -171,7 +255,15 @@ export function SeriesBrowser() {
         </p>
       ) : null}
 
-      {counts.status === "ready" && totalSets === 0 ? (
+      {searching ? (
+        <SearchResults
+          query={query.trim()}
+          series={series}
+          search={needle === query.trim() ? search : { status: "loading" }}
+          rarity={rarity}
+          counts={counts.status === "ready" ? counts.bySet : undefined}
+        />
+      ) : counts.status === "ready" && totalSets === 0 ? (
         <div className="panel">
           <h2>Aucune collection</h2>
           <p className="hint">
@@ -190,6 +282,174 @@ export function SeriesBrowser() {
           ))}
         </div>
       )}
+    </OwnedContext.Provider>
+  );
+}
+
+/**
+ * Résultats d'une recherche : les extensions dont le nom (ou celui de leur
+ * série) correspond, puis les cartes dont le nom correspond. Un seul champ,
+ * pas de mode à choisir : on tape ce qui vient, un Pokémon ou une extension.
+ */
+function SearchResults({
+  query,
+  series,
+  search,
+  rarity,
+  counts,
+}: {
+  query: string;
+  series: SerieDetail[];
+  search: Search;
+  rarity: string | null;
+  counts?: Record<string, number>;
+}) {
+  const [shown, setShown] = useState(PAGE);
+  useEffect(() => setShown(PAGE), [query]);
+
+  const needle = normalize(query);
+  const sets = series.flatMap((serie) =>
+    normalize(serie.name).includes(needle)
+      ? serie.sets
+      : serie.sets.filter((set) => normalize(set.name).includes(needle)),
+  );
+
+  // Le catalogue est trié du plus récent au plus ancien : son ordre sert à
+  // classer les cartes trouvées, et à retrouver le nom de leur extension.
+  const bySet = useMemo(() => {
+    const map = new Map<string, { name: string; rank: number }>();
+    series
+      .flatMap((serie) => serie.sets)
+      .forEach((set, rank) => map.set(set.id, { name: set.name, rank }));
+    return map;
+  }, [series]);
+
+  const cards = useMemo(() => {
+    if (search.status !== "ready") return [];
+    const rank = (card: CardResume) =>
+      bySet.get(setIdOf(card.id) ?? "")?.rank ?? Number.MAX_SAFE_INTEGER;
+    return [...search.cards].sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        a.localId.localeCompare(b.localId, "fr", { numeric: true }),
+    );
+  }, [search, bySet]);
+
+  const setNameOf = useCallback(
+    (card: CardResume) => bySet.get(setIdOf(card.id) ?? "")?.name ?? null,
+    [bySet],
+  );
+
+  return (
+    <>
+      <h2 className="results-title">
+        Extensions <span>{sets.length}</span>
+      </h2>
+      {sets.length === 0 ? (
+        <p className="hint">Aucune extension ne porte ce nom.</p>
+      ) : (
+        <div className="acc-list">
+          {sets.map((set) => (
+            <SetPanel
+              key={set.id}
+              set={set}
+              rarity={rarity}
+              count={counts?.[set.id]}
+            />
+          ))}
+        </div>
+      )}
+
+      <h2 className="results-title">
+        Cartes{" "}
+        {search.status === "ready" ? <span>{cards.length}</span> : null}
+      </h2>
+      {search.status === "loading" || search.status === "idle" ? (
+        <p className="hint">Recherche…</p>
+      ) : search.status === "error" ? (
+        <p className="hint">Recherche impossible : {search.message}</p>
+      ) : cards.length === 0 ? (
+        <p className="hint">
+          Aucune carte ne porte ce nom
+          {rarity ? ` dans la rareté « ${rarity} »` : ""}.
+        </p>
+      ) : (
+        <>
+          <CardGrid
+            cards={cards.slice(0, shown)}
+            setNameOf={setNameOf}
+            caption={(card) =>
+              [setNameOf(card), card.localId].filter(Boolean).join(" · ")
+            }
+          />
+          {cards.length > shown ? (
+            <button
+              type="button"
+              className="more-results"
+              onClick={() => setShown((count) => count + PAGE)}
+            >
+              Afficher {Math.min(PAGE, cards.length - shown)} cartes de plus
+            </button>
+          ) : null}
+        </>
+      )}
+    </>
+  );
+}
+
+/** Grille de cartes cliquables, et la visionneuse qui s'ouvre dessus. */
+function CardGrid({
+  cards,
+  setNameOf,
+  caption,
+}: {
+  cards: CardResume[];
+  setNameOf: (card: CardResume) => string | null;
+  /** Ligne sous le nom (l'extension, en recherche). Sans, le seul numéro à côté. */
+  caption?: (card: CardResume) => string;
+}) {
+  const [viewing, setViewing] = useState<number | null>(null);
+  // La liste peut rétrécir sous la visionneuse (filtre, rareté) : un index
+  // hors limites vaut fermeture.
+  const index = viewing !== null && viewing < cards.length ? viewing : null;
+
+  return (
+    <>
+      <div className="grid">
+        {cards.map((card, position) => {
+          const src = imageUrl(card.image);
+          return (
+            <article className="card" key={card.id}>
+              <button
+                type="button"
+                className="frame"
+                aria-label={`Agrandir ${card.name}`}
+                onClick={() => setViewing(position)}
+              >
+                {src ? (
+                  <img src={src} alt={card.name} loading="lazy" decoding="async" />
+                ) : null}
+              </button>
+              <div className={caption ? "meta stacked" : "meta"}>
+                <span className="name" title={card.name}>
+                  {card.name}
+                </span>
+                <span className="num">
+                  {caption ? caption(card) : card.localId}
+                </span>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <CardViewer
+        cards={cards}
+        index={index}
+        onNavigate={setViewing}
+        onClose={() => setViewing(null)}
+        setNameOf={setNameOf}
+      />
     </>
   );
 }
@@ -245,7 +505,6 @@ function SetPanel({
   const [open, setOpen] = useState(false);
   const [cards, setCards] = useState<Cards>({ status: "idle" });
   const [search, setSearch] = useState("");
-  const [viewing, setViewing] = useState<number | null>(null);
 
   /** Rareté pour laquelle les cartes en mémoire ont été chargées. */
   const loadedFor = useRef<string | null | undefined>(undefined);
@@ -259,7 +518,6 @@ function SetPanel({
     const controller = new AbortController();
     loadedFor.current = rarity;
     setCards({ status: "loading" });
-    setViewing(null);
 
     const query = rarity ? `?rarity=${encodeURIComponent(rarity)}` : "";
 
@@ -349,45 +607,7 @@ function SetPanel({
                   : "Aucune carte ne correspond."}
               </p>
             ) : (
-              <>
-                <div className="grid">
-                  {visible.map((card, position) => {
-                    const src = imageUrl(card.image);
-                    return (
-                      <article className="card" key={card.id}>
-                        <button
-                          type="button"
-                          className="frame"
-                          aria-label={`Agrandir ${card.name}`}
-                          onClick={() => setViewing(position)}
-                        >
-                          {src ? (
-                            <img
-                              src={src}
-                              alt={card.name}
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : null}
-                        </button>
-                        <div className="meta">
-                          <span className="name" title={card.name}>
-                            {card.name}
-                          </span>
-                          <span className="num">{card.localId}</span>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-
-                <CardViewer
-                  cards={visible}
-                  index={viewing}
-                  onNavigate={setViewing}
-                  onClose={() => setViewing(null)}
-                />
-              </>
+              <CardGrid cards={visible} setNameOf={() => set.name} />
             )}
           </>
         ) : null}

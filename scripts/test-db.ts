@@ -22,6 +22,7 @@ import {
   itemLabel,
   createItem,
   markAsOwned,
+  ownedCountsByCard,
   deleteItem,
   getItem,
   listItems,
@@ -641,6 +642,19 @@ async function main() {
   );
   assert.equal((await valueSeries())[0].day, "2026-09-01");
   ok("les relevés sont rendus dans l'ordre chronologique");
+
+  // --- Possession par carte, pour le catalogue ------------------------------
+
+  await createItem({ ...base, kind: "single", sealedType: null, cardId: "30th-025", quantity: 2 });
+  await createItem({ ...base, kind: "single", sealedType: null, cardId: "30th-025", quantity: 1 });
+  await createItem({ ...base, kind: "single", sealedType: null, cardId: "30th-015", quantity: 1 });
+  // Visée, pas possédée : ne compte pas.
+  await createItem({ ...base, status: "wanted", kind: "single", sealedType: null, cardId: "30th-015" });
+  const possedees = await ownedCountsByCard();
+  assert.equal(possedees["30th-025"], 3);
+  assert.equal(possedees["30th-015"], 1);
+  assert.equal(Object.keys(possedees).length, 2);
+  ok("exemplaires possédés par carte, sans les articles visés");
 
   // --- Courbe --------------------------------------------------------------
 
