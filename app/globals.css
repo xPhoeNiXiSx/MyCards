@@ -606,6 +606,9 @@ th.num {
   font: inherit;
   /* 16 px : voir `.filter input`. Un champ plus petit fait zoomer iOS. */
   font-size: 1rem;
+  /* Aucun champ ne dépasse son conteneur, quelle que soit sa largeur
+     intrinsèque. */
+  max-width: 100%;
   color: var(--fg);
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1917,4 +1920,24 @@ button.link.danger:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
   }
+}
+
+/* Safari sur iOS donne aux champs `date` et `time` une largeur intrinsèque
+   propre au composant natif, qu'un `width: 100%` ne contraint pas : le champ
+   dépasse alors sa colonne. Retirer l'habillage natif lui rend un
+   dimensionnement normal. Sans effet ailleurs, où le problème ne se pose pas. */
+.form input[type="date"],
+.form input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+}
+
+/* Le champ retrouve son indicateur de calendrier, que `appearance: none`
+   masque sur certaines versions. */
+.form input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
 }
