@@ -275,3 +275,57 @@ export function summarize(items: ValuedItem[]): Summary {
     },
   );
 }
+
+export type KindBreakdown = {
+  kind: ItemKind;
+  /** Lignes d'inventaire, et articles réellement possédés. */
+  lines: number;
+  units: number;
+  purchaseCents: number;
+  /** Ne totalise que les lignes valorisées. */
+  valueCents: number;
+  /** Part de la valeur totale, en pourcentage entier. */
+  share: number;
+};
+
+/** Répartition de l'inventaire par type d'article, la plus grosse d'abord. */
+export function breakdown(items: ValuedItem[]): KindBreakdown[] {
+  const kinds = new Map<ItemKind, KindBreakdown>();
+
+  for (const item of items) {
+    const row = kinds.get(item.kind) ?? {
+      kind: item.kind,
+      lines: 0,
+      units: 0,
+      purchaseCents: 0,
+      valueCents: 0,
+      share: 0,
+    };
+
+    row.lines += 1;
+    row.units += item.quantity;
+    row.purchaseCents += item.totalPurchaseCents;
+    row.valueCents += item.totalValueCents ?? 0;
+    kinds.set(item.kind, row);
+  }
+
+  const total = [...kinds.values()].reduce(
+    (sum, row) => sum + row.valueCents,
+    0,
+  );
+
+  return [...kinds.values()]
+    .map((row) => ({
+      ...row,
+      // Sans valeur connue nulle part, une part n'aurait aucun sens.
+      share: total === 0 ? 0 : Math.round((row.valueCents / total) * 100),
+    }))
+    .sort((a, b) => b.valueCents - a.valueCents);
+}
+
+/** La ligne à la plus forte plus-value. `undefined` si aucune n'est valorisée. */
+export function bestGain(items: ValuedItem[]): ValuedItem | undefined {
+  return items
+    .filter((item) => item.gainCents !== null)
+    .sort((a, b) => (b.gainCents ?? 0) - (a.gainCents ?? 0))[0];
+}

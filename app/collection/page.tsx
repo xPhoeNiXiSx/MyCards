@@ -13,6 +13,7 @@ import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
 import { Wordmark } from "../wordmark";
+import { DatabaseErrorScreen, SetupScreen } from "../db-screens";
 import { TabBar } from "../tab-bar";
 
 import { addItemAction, migrateAction } from "./actions";
@@ -20,33 +21,6 @@ import { ItemForm } from "./item-form";
 
 // L'inventaire dépend de la session : jamais de rendu statique ici.
 export const dynamic = "force-dynamic";
-
-function Setup({ missing }: { missing: string[] }) {
-  return (
-    <main className="page narrow">
-      <h1 className="page-title">Mon inventaire</h1>
-      <div className="panel">
-        <h2>Configuration incomplète</h2>
-        <p className="hint">
-          Il manque {missing.length > 1 ? "ces variables" : "cette variable"}{" "}
-          d&apos;environnement côté Vercel :
-        </p>
-        <ul className="hint">
-          {missing.map((name) => (
-            <li key={name}>
-              <code>{name}</code>
-            </li>
-          ))}
-        </ul>
-        <p className="hint">
-          Settings → Environment Variables, puis redéploie. Le détail est dans
-          le README.
-        </p>
-      </div>
-      <TabBar />
-    </main>
-  );
-}
 
 function Migrate() {
   return (
@@ -62,26 +36,6 @@ function Migrate() {
         <form action={migrateAction}>
           <button type="submit">Initialiser la base</button>
         </form>
-      </div>
-      <TabBar />
-    </main>
-  );
-}
-
-function DatabaseError({ message }: { message: string }) {
-  return (
-    <main className="page narrow">
-      <h1 className="page-title">Mon inventaire</h1>
-      <div className="panel">
-        <h2>Base injoignable</h2>
-        <p className="hint">{message}</p>
-        <p className="hint">
-          Si le message parle d&apos;une colonne inconnue, une migration reste à
-          appliquer : ouvre <strong>Mon compte</strong> et lance{" "}
-          <strong>Appliquer les migrations</strong>. Sinon, vérifie{" "}
-          <code>DATABASE_URL</code> dans les variables d&apos;environnement
-          Vercel, puis redéploie.
-        </p>
       </div>
       <TabBar />
     </main>
@@ -136,7 +90,8 @@ export default async function CollectionPage() {
   const missing: string[] = [];
   if (!isAuthConfigured()) missing.push("APP_PASSWORD", "AUTH_SECRET");
   if (!isDatabaseConfigured()) missing.push("DATABASE_URL");
-  if (missing.length > 0) return <Setup missing={missing} />;
+  if (missing.length > 0)
+    return <SetupScreen title="Mon inventaire" missing={missing} />;
 
   if (!(await isAuthenticated())) redirect("/login?next=/collection");
 
@@ -144,7 +99,8 @@ export default async function CollectionPage() {
     if (!(await isSchemaReady())) return <Migrate />;
   } catch (error) {
     return (
-      <DatabaseError
+      <DatabaseErrorScreen
+        title="Mon inventaire"
         message={
           error instanceof Error ? error.message : "Erreur de connexion inconnue."
         }
@@ -159,7 +115,8 @@ export default async function CollectionPage() {
     // Typiquement une colonne ajoutée par une mise à jour et pas encore
     // appliquée : le message doit dire quoi faire, pas seulement ce qui casse.
     return (
-      <DatabaseError
+      <DatabaseErrorScreen
+        title="Mon inventaire"
         message={
           error instanceof Error ? error.message : "Erreur de lecture inconnue."
         }

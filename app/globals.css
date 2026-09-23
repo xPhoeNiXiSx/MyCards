@@ -1370,3 +1370,144 @@ button.frame {
   border-radius: var(--radius-sm);
   padding: 11px 14px;
 }
+
+/* --- Tableau de bord ---------------------------------------------------- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.kpi-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--fg-muted);
+}
+
+.kpi strong {
+  font-family: var(--font-display-stack);
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un nom d'article n'est pas un chiffre : il ne prend pas la taille d'un. */
+.kpi strong.kpi-text {
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.kpi-note {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  overflow-wrap: anywhere;
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.breakdown-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.breakdown-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.breakdown-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.breakdown-value {
+  font-family: var(--font-display-stack);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+}
+
+.breakdown-value em {
+  font-style: normal;
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+  margin-left: 8px;
+}
+
+/* Marque fine, extrémité arrondie, ancrée à la ligne de base. Une seule
+   teinte : l'identité vient du libellé au-dessus, pas de la couleur. */
+.breakdown-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.breakdown-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  min-width: 3px;
+}
+
+.breakdown-note {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+}
+
+.shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.shortcut {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.shortcut:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.shortcut strong {
+  font-family: var(--font-display-stack);
+  font-size: 0.9375rem;
+}
+
+.shortcut span {
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+}

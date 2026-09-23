@@ -13,7 +13,8 @@ plutôt que publique par oubli.
 
 Deux écrans :
 
-- **`/`** — le catalogue complet : toutes les séries et leurs collections
+- **`/`** — le tableau de bord : valeur, plus-value, indicateurs, répartition
+- **`/catalogue`** — toutes les séries Pokémon et leurs collections
 - **`/collection`** — l'inventaire : articles possédés, prix d'achat, valeur
   actuelle et plus-value
 
@@ -87,6 +88,8 @@ rejeu est sans effet.
 | Chemin                 | Rôle                                                        |
 | ---------------------- | ----------------------------------------------------------- |
 | `app/page.tsx`         | Page d'accueil (statique)                                    |
+| `app/catalogue/`       | Le catalogue des collections                                  |
+| `app/db-screens.tsx`   | Écrans d'attente de la base, partagés par les pages qui la lisent |
 | `app/series-browser.tsx` | Catalogue en accordéon, cartes chargées à l'ouverture        |
 | `app/card-viewer.tsx`  | Visionneuse plein écran, navigation carte à carte             |
 | `app/api/series/route.ts` | Catalogue : séries et leurs collections                    |

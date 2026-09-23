@@ -12,6 +12,8 @@ import { PGlite } from "@electric-sql/pglite";
 
 import { runMigrations, isSchemaReady, setQueryRunner } from "../lib/db";
 import {
+  bestGain,
+  breakdown,
   createItem,
   deleteItem,
   getItem,
@@ -118,6 +120,32 @@ async function main() {
   assert.equal(summary.totalValueCents, 12400);
   assert.equal(summary.unvaluedCount, 1);
   ok("le total ignore les lignes sans cote");
+
+  // --- Tableau de bord --------------------------------------------------
+
+  const parts = breakdown(valued);
+  assert.equal(parts.length, 2);
+  // Trié par valeur : le scellé valorisé passe devant la carte sans cote.
+  assert.equal(parts[0].kind, "sealed");
+  assert.equal(parts[0].units, 2);
+  assert.equal(parts[0].valueCents, 12400);
+  assert.equal(parts[0].share, 100);
+  assert.equal(parts[1].kind, "single");
+  assert.equal(parts[1].valueCents, 0);
+  assert.equal(parts[1].share, 0);
+  ok("répartition par type, triée et en parts");
+
+  assert.equal(bestGain(valued)?.kind, "sealed");
+  // Sans aucune ligne valorisée, il n'y a pas de meilleure plus-value.
+  assert.equal(bestGain(valued.filter((item) => item.kind === "single")), undefined);
+  ok("meilleure plus-value, et son absence");
+
+  // Un inventaire sans valeur connue ne doit pas produire de part infinie.
+  assert.deepEqual(
+    breakdown(valued.filter((item) => item.kind === "single")).map((p) => p.share),
+    [0],
+  );
+  ok("aucune part calculée sur un total nul");
 
   await updateItem(created.id, { ...etb, quantity: 3, manualValueCents: 7000 });
   const updated = await getItem(created.id);

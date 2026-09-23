@@ -17,6 +17,24 @@ type Tab = {
   matches: (pathname: string) => boolean;
 };
 
+function IconHome() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3.6 10.4 12 3.8l8.4 6.6" />
+        <path d="M5.6 12v8.2h12.8V12" />
+        <path d="M10 20.2v-5.4h4v5.4" />
+      </g>
+    </svg>
+  );
+}
+
 function IconCollection() {
   return (
     <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
@@ -71,9 +89,15 @@ function IconAccount() {
 const TABS: Tab[] = [
   {
     href: "/",
-    label: "Collection",
-    icon: <IconCollection />,
+    label: "Tableau de bord",
+    icon: <IconHome />,
     matches: (pathname) => pathname === "/",
+  },
+  {
+    href: "/catalogue",
+    label: "Catalogue",
+    icon: <IconCollection />,
+    matches: (pathname) => pathname.startsWith("/catalogue"),
   },
   {
     href: "/collection",
