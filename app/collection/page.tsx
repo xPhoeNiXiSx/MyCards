@@ -42,6 +42,19 @@ function Migrate() {
   );
 }
 
+/** Date d'achat, en jour/mois/année — la forme qu'on lit dans une liste. */
+function fullDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+}
+
 function shortDate(iso: string | null): string | null {
   if (!iso) return null;
   const date = new Date(iso);
@@ -208,8 +221,15 @@ export default async function CollectionPage() {
                       <div className="title-text">
                         <Link href={`/collection/${item.id}`}>{item.name}</Link>
                         <span className="muted block">
-                          {KIND_LABELS[item.kind]}
-                          {item.setName ? ` · ${item.setName}` : ""}
+                          {[
+                            KIND_LABELS[item.kind],
+                            item.setName,
+                            fullDate(item.purchaseDate)
+                              ? `acheté le ${fullDate(item.purchaseDate)}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                       </div>
                     </div>

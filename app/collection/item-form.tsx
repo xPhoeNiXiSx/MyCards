@@ -100,6 +100,17 @@ export function ItemForm({ action, item, submitLabel }: Props) {
         </label>
 
         <label>
+          Date d&apos;achat
+          <input
+            name="purchaseDate"
+            type="date"
+            defaultValue={item?.purchaseDate ?? ""}
+          />
+        </label>
+      </div>
+
+      <div className="row">
+        <label>
           Valeur actuelle (à l&apos;unité)
           <input
             name="manualValue"
@@ -148,15 +159,6 @@ export function ItemForm({ action, item, submitLabel }: Props) {
               name="setName"
               defaultValue={item?.setName ?? ""}
               placeholder="Célébration 30 ans"
-            />
-          </label>
-
-          <label>
-            Date d&apos;achat
-            <input
-              name="purchaseDate"
-              type="date"
-              defaultValue={item?.purchaseDate ?? ""}
             />
           </label>
 
