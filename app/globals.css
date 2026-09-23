@@ -990,7 +990,10 @@ button[type="submit"]:disabled {
     border-bottom: 1px solid var(--border);
   }
 
-  td.title-cell a {
+  /* Le nom du produit seulement : sans ce ciblage, la règle s'appliquait
+     aussi aux pastilles d'achat et les affichait en grand. */
+  td.title-cell .title-text > a,
+  td.title-cell .group-name {
     font-size: 1rem;
   }
 
@@ -1599,4 +1602,37 @@ button.link.danger:hover {
   padding: 9px 12px;
   font-size: 0.875rem;
   margin: 0;
+}
+
+/* --- Achats groupés ------------------------------------------------------ */
+
+/* Un produit acheté plusieurs fois n'a pas de fiche à lui : son nom n'est
+   donc pas un lien, ce sont ses achats qui le sont. */
+.group-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.purchases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  margin-top: 5px;
+}
+
+.purchases a {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+  text-decoration: none;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.purchases a:hover {
+  color: var(--fg);
+  border-color: var(--border-strong);
 }

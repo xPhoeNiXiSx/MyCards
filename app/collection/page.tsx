@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 import { isAuthConfigured, isAuthenticated } from "@/lib/auth";
 import {
   KIND_LABELS,
+  groupItems,
   listItems,
   summarize,
   valuate,
-  type ValuedItem,
+  type ItemGroup,
 } from "@/lib/collection";
 import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
@@ -63,14 +64,14 @@ function shortDate(iso: string | null): string | null {
     : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
 }
 
-function ValueCell({ item }: { item: ValuedItem }) {
-  if (item.totalValueCents === null) {
+function GroupValue({ group }: { group: ItemGroup }) {
+  if (group.valueCents === null) {
     return (
       <span
         className="muted"
         title={
-          item.cardId
-            ? "Cette carte n'est pas encore cotée sur Cardmarket. Saisis une valeur pour la valoriser."
+          group.lines.some((line) => line.cardId)
+            ? "Pas encore cotée sur Cardmarket. Saisis une valeur pour la valoriser."
             : "Aucune valeur saisie pour cet article."
         }
       >
@@ -79,22 +80,33 @@ function ValueCell({ item }: { item: ValuedItem }) {
     );
   }
 
-  const day = shortDate(
-    item.valueSource === "manual" ? item.manualValueDate : item.quoteUpdated,
+  // Une seule origine possible quand toutes les lignes s'accordent ; sinon on
+  // ne prétend pas d'où vient le chiffre.
+  const sources = new Set(
+    group.lines
+      .filter((line) => line.totalValueCents !== null)
+      .map((line) => line.valueSource),
   );
+  const source = sources.size === 1 ? [...sources][0] : null;
 
-  const label =
-    item.valueSource === "manual"
-      ? `Valeur saisie${item.manualValueDate ? ` le ${item.manualValueDate}` : ""}`
-      : `Cote Cardmarket (${item.quoteField})`;
+  const day =
+    group.lines.length === 1
+      ? shortDate(
+          group.lines[0].valueSource === "manual"
+            ? group.lines[0].manualValueDate
+            : group.lines[0].quoteUpdated,
+        )
+      : null;
 
   return (
-    <span title={label}>
-      {formatCents(item.totalValueCents)}
-      <em className="source">
-        {item.valueSource === "manual" ? "saisie" : "cote"}
-        {day ? ` ${day}` : ""}
-      </em>
+    <span>
+      {formatCents(group.valueCents)}
+      {source ? (
+        <em className="source">
+          {source === "manual" ? "saisie" : "cote"}
+          {day ? ` ${day}` : ""}
+        </em>
+      ) : null}
     </span>
   );
 }
@@ -138,6 +150,7 @@ export default async function CollectionPage() {
   }
 
   const summary = summarize(items);
+  const groups = groupItems(items);
   // Comparé au prix d'achat des seules lignes valorisées : rapporter une
   // valeur partielle à l'investissement total donnerait un pourcentage faux.
   const change = percentChange(
@@ -208,68 +221,95 @@ export default async function CollectionPage() {
               <tr>
                 <th>Article</th>
                 <th className="num">Qté</th>
+                <th className="num">Prix unitaire</th>
                 <th className="num">Achat</th>
                 <th className="num">Valeur</th>
                 <th className="num">Plus-value</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
-                <tr key={item.id}>
+              {groups.map((group) => (
+                <tr key={group.key}>
                   <td className="title-cell">
                     <div className="title-row">
-                      {item.image ? (
-                        <img className="thumb" src={item.image} alt="" />
+                      {group.image ? (
+                        <img className="thumb" src={group.image} alt="" />
                       ) : (
                         <span className="thumb empty" aria-hidden="true" />
                       )}
                       <div className="title-text">
-                        <Link href={`/collection/${item.id}`}>{item.name}</Link>
+                        {group.lines.length === 1 ? (
+                          <Link href={`/collection/${group.lines[0].id}`}>
+                            {group.name}
+                          </Link>
+                        ) : (
+                          <span className="group-name">{group.name}</span>
+                        )}
                         <span className="muted block">
-                          {[
-                            KIND_LABELS[item.kind],
-                            item.setName,
-                            fullDate(item.purchaseDate)
-                              ? `acheté le ${fullDate(item.purchaseDate)}`
-                              : null,
-                          ]
+                          {[KIND_LABELS[group.kind], group.setName]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
+                        {/* Plusieurs achats du même produit : chacun reste
+                            atteignable, une moyenne ne doit pas les effacer. */}
+                        {group.lines.length > 1 ? (
+                          <span className="purchases">
+                            {group.lines.map((line) => (
+                              <Link
+                                key={line.id}
+                                href={`/collection/${line.id}`}
+                                title={`Modifier cet achat`}
+                              >
+                                {line.quantity} × {formatCents(line.purchasePriceCents)}
+                                {fullDate(line.purchaseDate)
+                                  ? ` le ${fullDate(line.purchaseDate)}`
+                                  : ""}
+                              </Link>
+                            ))}
+                          </span>
+                        ) : fullDate(group.lines[0].purchaseDate) ? (
+                          <span className="muted block">
+                            acheté le {fullDate(group.lines[0].purchaseDate)}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </td>
+
                   <td className="num" data-label="Quantité">
-                    {item.quantity}
+                    {group.quantity}
                   </td>
-                  <td className="num" data-label="Achat">
+
+                  <td className="num" data-label="Prix unitaire">
                     <span>
-                      {formatCents(item.totalPurchaseCents)}
-                      {/* Le prix saisi est unitaire : dès qu'il y a plusieurs
-                          exemplaires, la multiplication doit être lisible. */}
-                      {item.quantity > 1 ? (
-                        <em className="source">
-                          {item.quantity} × {formatCents(item.purchasePriceCents)}
-                        </em>
+                      {formatCents(group.unitPurchaseCents)}
+                      {group.lines.length > 1 ? (
+                        <em className="source">moyen</em>
                       ) : null}
                     </span>
                   </td>
-                  <td className="num" data-label="Valeur">
-                    <ValueCell item={item} />
+
+                  <td className="num" data-label="Achat">
+                    {formatCents(group.purchaseCents)}
                   </td>
+
+                  <td className="num" data-label="Valeur">
+                    <GroupValue group={group} />
+                  </td>
+
                   <td
                     className={`num ${
-                      item.gainCents === null
+                      group.gainCents === null
                         ? "muted"
-                        : item.gainCents >= 0
+                        : group.gainCents >= 0
                           ? "up"
                           : "down"
                     }`}
                     data-label="Plus-value"
                   >
-                    {item.gainCents === null
+                    {group.gainCents === null
                       ? "—"
-                      : formatSignedCents(item.gainCents)}
+                      : formatSignedCents(group.gainCents)}
                   </td>
                 </tr>
               ))}

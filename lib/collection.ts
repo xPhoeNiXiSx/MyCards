@@ -386,3 +386,82 @@ export async function markAsOwned(
     [id, purchasePriceCents, purchaseDate],
   );
 }
+
+export type ItemGroup = {
+  key: string;
+  kind: ItemKind;
+  name: string;
+  setName: string | null;
+  image: string | null;
+  /** Les achats qui composent le groupe, du plus récent au plus ancien. */
+  lines: ValuedItem[];
+  quantity: number;
+  purchaseCents: number;
+  /** Prix unitaire moyen, pondéré par les quantités. */
+  unitPurchaseCents: number;
+  /** `null` si aucune ligne du groupe n'est valorisée. */
+  valueCents: number | null;
+  gainCents: number | null;
+};
+
+function groupKey(item: Item): string {
+  const name = item.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+  // L'identifiant de carte prime : deux cartes homonymes de sets différents
+  // ne sont pas le même produit.
+  return `${item.kind}|${item.cardId ?? ""}|${name}`;
+}
+
+/**
+ * Regroupe les achats d'un même produit en une ligne.
+ *
+ * Les achats individuels sont conservés dans `lines` : deux achats à des dates
+ * ou des prix différents restent consultables et modifiables, une moyenne ne
+ * doit pas les effacer.
+ */
+export function groupItems(items: ValuedItem[]): ItemGroup[] {
+  const groups = new Map<string, ItemGroup>();
+
+  for (const item of items) {
+    const key = groupKey(item);
+    const group = groups.get(key) ?? {
+      key,
+      kind: item.kind,
+      name: item.name,
+      setName: item.setName,
+      image: item.image,
+      lines: [],
+      quantity: 0,
+      purchaseCents: 0,
+      unitPurchaseCents: 0,
+      valueCents: null,
+      gainCents: null,
+    };
+
+    group.lines.push(item);
+    group.quantity += item.quantity;
+    group.purchaseCents += item.totalPurchaseCents;
+    group.setName ??= item.setName;
+    group.image ??= item.image;
+
+    if (item.totalValueCents !== null) {
+      group.valueCents = (group.valueCents ?? 0) + item.totalValueCents;
+      group.gainCents = (group.gainCents ?? 0) + (item.gainCents ?? 0);
+    }
+
+    groups.set(key, group);
+  }
+
+  return [...groups.values()].map((group) => ({
+    ...group,
+    unitPurchaseCents:
+      group.quantity === 0
+        ? 0
+        : Math.round(group.purchaseCents / group.quantity),
+  }));
+}

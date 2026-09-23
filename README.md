@@ -179,6 +179,18 @@ TCGdex pour une carte. Le prix d'achat et la valeur n'existent pas encore.
 Les cartes visées affichent tout de même leur cote du jour, puisque c'est ce
 qu'on veut savoir avant d'acheter.
 
+## Regroupement
+
+L'inventaire affiche une ligne par produit : les achats d'un même article sont
+regroupés, avec la quantité cumulée, le total dépensé et le prix unitaire
+moyen pondéré. Les achats individuels restent listés sous le nom et chacun
+ouvre sa fiche — deux achats à des dates ou des prix différents ne doivent pas
+disparaître dans une moyenne.
+
+Le regroupement se fait sur le type, l'identifiant TCGdex et le nom normalisé
+(accents, casse et espaces ignorés). L'identifiant prime : deux cartes
+homonymes de sets différents restent distinctes.
+
 ## Valorisation
 
 Les montants sont stockés **en centimes**, jamais en flottant.

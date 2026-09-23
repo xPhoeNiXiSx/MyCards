@@ -14,6 +14,7 @@ import { runMigrations, isSchemaReady, setQueryRunner } from "../lib/db";
 import {
   bestGain,
   breakdown,
+  groupItems,
   createItem,
   markAsOwned,
   deleteItem,
@@ -176,6 +177,45 @@ async function main() {
     [0],
   );
   ok("aucune part calculée sur un total nul");
+
+  // --- Regroupement par produit ----------------------------------------
+
+  // Un second achat du même ETB, à un autre prix.
+  const second = await createItem({
+    ...etb,
+    quantity: 1,
+    purchasePriceCents: 5500,
+    manualValueCents: null,
+    manualValueDate: null,
+  });
+
+  const groupes = groupItems(await valuate(await listItems()));
+  const etbGroupe = groupes.find((groupe) => groupe.kind === "sealed")!;
+
+  assert.equal(groupes.length, 2);
+  assert.equal(etbGroupe.lines.length, 2);
+  assert.equal(etbGroupe.quantity, 3);
+  assert.equal(etbGroupe.purchaseCents, 9980 + 5500);
+  // Moyenne pondérée : 154,80 € pour 3 exemplaires.
+  assert.equal(etbGroupe.unitPurchaseCents, Math.round((9980 + 5500) / 3));
+  ok("les achats d'un même produit forment une ligne");
+
+  // Le second achat n'est pas valorisé : seul le premier compte dans la valeur.
+  assert.equal(etbGroupe.valueCents, 12400);
+  assert.equal(etbGroupe.gainCents, 12400 - 9980);
+  ok("la valeur d'un groupe ne compte que ses lignes valorisées");
+
+  // Un produit sans identifiant ne doit pas absorber une carte homonyme.
+  const distincts = groupItems(
+    await valuate([
+      { ...etb, id: "a", name: "Pikachu", kind: "single", cardId: "30th-023" },
+      { ...etb, id: "b", name: "Pikachu", kind: "single", cardId: "sv09-012" },
+    ]),
+  );
+  assert.equal(distincts.length, 2);
+  ok("deux cartes homonymes de sets différents restent distinctes");
+
+  await deleteItem(second.id);
 
   await updateItem(created.id, { ...etb, quantity: 3, manualValueCents: 7000 });
   const updated = await getItem(created.id);
