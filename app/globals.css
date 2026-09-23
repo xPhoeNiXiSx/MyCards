@@ -1064,12 +1064,15 @@ button[type="submit"]:disabled {
 
 /* --- Vignettes ---------------------------------------------------------- */
 
-/* Proportions d'une carte : le scellé y entre aussi sans déformer, et les
-   lignes gardent la même hauteur qu'elles portent une image ou non. */
+/* Proportions d'une carte, pour que les lignes gardent la même hauteur
+   qu'elles portent une image ou non.
+   `contain` et non `cover` : une photo de produit scellé n'a pas le format
+   d'une carte, la rogner couperait l'objet qu'on cherche justement à voir.
+   Une carte, elle, remplit le cadre exactement — rien ne change pour elle. */
 .thumb {
-  width: 34px;
+  width: 48px;
   aspect-ratio: 245 / 342;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 4px;
   background: var(--bg-sunken);
   flex: none;
@@ -1098,6 +1101,10 @@ button[type="submit"]:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.with-preview .thumb {
+  width: 38px;
 }
 
 /* --- Catalogue en accordéon --------------------------------------------- */
