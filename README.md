@@ -260,6 +260,17 @@ de ses cartes n'a de prix Cardmarket (`cardmarket: null`), le set ayant six
 jours. Les cotes apparaîtront d'elles-mêmes, sans changement de code. En
 attendant, ces cartes se valorisent à la main comme le scellé.
 
+### Retrouver une carte
+
+Pour une carte à l'unité, le formulaire propose de choisir l'extension (celles
+déjà présentes dans l'inventaire d'abord, puis les plus récentes, et la liste
+complète en dessous), puis de taper le numéro imprimé sur la carte. « 15 »,
+« 015 » et « 015/165 » désignent la même carte. La carte trouvée remplit le
+nom, l'identifiant TCGdex et l'extension, qui restent modifiables, et affiche
+sa rareté et sa cote. Tout passe par les routes serveur (`/api/series`,
+`/api/sets/[id]`, `/api/cards/[id]`) : TCGdex n'est jamais appelé depuis le
+navigateur.
+
 ### Langue, état, gradation
 
 Facultatifs, dans « Plus d'options » du formulaire. La langue vaut pour tout
@@ -271,6 +282,11 @@ sa note le remplace.
 **Une carte gradée ne reprend jamais la cote automatique** : Cardmarket cote
 la carte brute, et l'appliquer à une PSA 10 la sous-évaluerait sans le dire.
 Sans valeur saisie, elle reste non valorisée, ce qui se voit.
+
+Dans l'inventaire, ces informations s'affichent en pastilles après le nom :
+dorée pour la note (« PSA 10 »), neutres pour la langue (« JP », jamais pour
+le français) et l'état (« NM »). En galerie, note et langue passent sous
+l'image, qui reste intacte.
 
 Langue et gradation font partie de la clé de regroupement : une japonaise et
 une française, ou une gradée et la même brute, sont deux produits. L'état,

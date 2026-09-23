@@ -12,8 +12,10 @@ import {
   listItems,
   summarize,
   valuate,
+  type EditionBadges,
   type ItemGroup,
 } from "@/lib/collection";
+import { setIdOf } from "@/lib/card-number";
 import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
 
@@ -58,6 +60,25 @@ function fullDate(iso: string | null): string | null {
         month: "2-digit",
         year: "numeric",
       });
+}
+
+/**
+ * Pastilles d'édition : dorée pour la note, neutres pour la langue et l'état.
+ * Rien pour une carte française brute, le cas ordinaire.
+ */
+function Badges({ badges, label }: { badges: EditionBadges; label?: string }) {
+  if (!badges.grade && !badges.language && !badges.condition) return null;
+  return (
+    <span className="badges" aria-label={label}>
+      {badges.grade ? <span className="badge grade">{badges.grade}</span> : null}
+      {badges.language ? (
+        <span className="badge">{badges.language}</span>
+      ) : null}
+      {badges.condition ? (
+        <span className="badge outline">{badges.condition}</span>
+      ) : null}
+    </span>
+  );
 }
 
 function shortDate(iso: string | null): string | null {
@@ -190,6 +211,15 @@ export default async function CollectionPage({
 
   const summary = summarize(shown);
   const groups = groupItems(shown);
+  // Les extensions déjà possédées, de la plus récemment alimentée à la plus
+  // ancienne : la recherche d'ajout les propose en premier.
+  const ownedSetIds = [
+    ...new Set(
+      items
+        .map((item) => (item.cardId ? setIdOf(item.cardId) : null))
+        .filter((id) => id !== null),
+    ),
+  ];
   // Comparé au prix d'achat des seules lignes valorisées : rapporter une
   // valeur partielle à l'investissement total donnerait un pourcentage faux.
   const change = percentChange(
@@ -316,30 +346,37 @@ export default async function CollectionPage({
       ) : gallery ? (
         <div className="gallery">
           {groups.map((group) => (
-            <Link
-              key={group.key}
-              href={`/collection/${group.lines[0].id}`}
-              className="tile"
-              title={[group.name, itemLabel(group), group.edition]
-                .filter(Boolean)
-                .join(" — ")}
-            >
-              <span
-                className="tile-mark"
-                aria-hidden="true"
-                style={{
-                  ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
-                }}
+            <div className="tile-cell" key={group.key}>
+              <Link
+                href={`/collection/${group.lines[0].id}`}
+                className="tile"
+                title={[group.name, itemLabel(group), group.edition]
+                  .filter(Boolean)
+                  .join(" — ")}
+              >
+                <span
+                  className="tile-mark"
+                  aria-hidden="true"
+                  style={{
+                    ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
+                  }}
+                />
+                {group.image ? (
+                  <img src={group.image} alt={group.name} loading="lazy" />
+                ) : (
+                  <span className="tile-fallback">{group.name}</span>
+                )}
+                {group.quantity > 1 ? (
+                  <span className="tile-qty">×{group.quantity}</span>
+                ) : null}
+              </Link>
+              {/* Sous l'image, pas dessus : le visuel reste intact. L'état n'y
+                  figure pas, la tuile n'a pas la place de tout dire. */}
+              <Badges
+                badges={{ ...group.badges, condition: null }}
+                label={group.edition ?? undefined}
               />
-              {group.image ? (
-                <img src={group.image} alt={group.name} loading="lazy" />
-              ) : (
-                <span className="tile-fallback">{group.name}</span>
-              )}
-              {group.quantity > 1 ? (
-                <span className="tile-qty">×{group.quantity}</span>
-              ) : null}
-            </Link>
+            </div>
           ))}
         </div>
       ) : (
@@ -373,6 +410,10 @@ export default async function CollectionPage({
                         ) : (
                           <span className="group-name">{group.name}</span>
                         )}
+                        <Badges
+                          badges={group.badges}
+                          label={group.edition ?? undefined}
+                        />
                         <span className="muted block">
                           <span
                             className="cat-mark"
@@ -381,7 +422,7 @@ export default async function CollectionPage({
                               ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
                             }}
                           />
-                          {[itemLabel(group), group.edition, group.setName]
+                          {[itemLabel(group), group.setName]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
@@ -454,7 +495,7 @@ export default async function CollectionPage({
         </div>
       )}
 
-      <AddFab />
+      <AddFab ownedSetIds={ownedSetIds} />
 
       <TabBar />
     </main>

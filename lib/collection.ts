@@ -125,6 +125,56 @@ export function editionLabel(item: {
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+/** Codes courts des pastilles. Ceux de Cardmarket pour l'état. */
+export const LANGUAGE_CODES: Record<Language, string> = {
+  fr: "FR",
+  en: "EN",
+  ja: "JP",
+  ko: "KR",
+  zh: "CN",
+  de: "DE",
+  it: "IT",
+  es: "ES",
+  pt: "PT",
+};
+
+export const CONDITION_CODES: Record<Condition, string> = {
+  mt: "MT",
+  nm: "NM",
+  ex: "EX",
+  gd: "GD",
+  lp: "LP",
+  pl: "PL",
+  po: "PO",
+};
+
+/** Ce que portent les pastilles d'un article. `null` = pas de pastille. */
+export type EditionBadges = {
+  /** « PSA 10 ». */
+  grade: string | null;
+  /** Code de langue, jamais pour le français : c'est le cas par défaut. */
+  language: string | null;
+  /** Code d'état, jamais pour une gradée : sa note le remplace. */
+  condition: string | null;
+};
+
+export function editionBadges(item: {
+  language: Language | null;
+  condition: Condition | null;
+  grader: Grader | null;
+  grade: string | null;
+}): EditionBadges {
+  const grade = gradeLabel(item);
+  return {
+    grade,
+    language:
+      item.language && item.language !== "fr"
+        ? LANGUAGE_CODES[item.language]
+        : null,
+    condition: !grade && item.condition ? CONDITION_CODES[item.condition] : null,
+  };
+}
+
 export const KIND_LABELS: Record<ItemKind, string> = {
   single: "Carte à l'unité",
   sealed: "Scellé",
@@ -553,8 +603,9 @@ export type ItemGroup = {
   name: string;
   setName: string | null;
   image: string | null;
-  /** Gradation, état, langue : voir `editionLabel`. */
+  /** Gradation, état, langue en toutes lettres : voir `editionLabel`. */
   edition: string | null;
+  badges: EditionBadges;
   /** Les achats qui composent le groupe, du plus récent au plus ancien. */
   lines: ValuedItem[];
   quantity: number;
@@ -602,6 +653,7 @@ export function groupItems(items: ValuedItem[]): ItemGroup[] {
       setName: item.setName,
       image: item.image,
       edition: null,
+      badges: { grade: null, language: null, condition: null },
       lines: [],
       quantity: 0,
       purchaseCents: 0,
@@ -626,7 +678,8 @@ export function groupItems(items: ValuedItem[]): ItemGroup[] {
 
   return [...groups.values()].map((group) => ({
     ...group,
-    edition: groupEdition(group.lines),
+    edition: editionLabel(groupEditionSource(group.lines)),
+    badges: editionBadges(groupEditionSource(group.lines)),
     unitPurchaseCents:
       group.quantity === 0
         ? 0
@@ -639,12 +692,10 @@ export function groupItems(items: ValuedItem[]): ItemGroup[] {
  * clé) ; l'état, non. S'il diffère d'un achat à l'autre, on ne l'affiche pas
  * plutôt que d'afficher celui d'un seul exemplaire.
  */
-function groupEdition(lines: Item[]): string | null {
+function groupEditionSource(lines: Item[]): Item {
   const conditions = new Set(lines.map((line) => line.condition));
   const first = lines[0];
-  return editionLabel(
-    conditions.size === 1 ? first : { ...first, condition: null },
-  );
+  return conditions.size === 1 ? first : { ...first, condition: null };
 }
 
 /** Le libellé à afficher : le sous-type de scellé s'il existe, sinon le type. */

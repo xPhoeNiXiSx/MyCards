@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 
 import {
   CONDITIONS,
@@ -13,18 +13,26 @@ import {
 } from "@/lib/collection";
 
 import type { ActionState } from "./actions";
+import { CardFinder, type PickedCard } from "./card-finder";
 
 type Props = {
   action: (state: ActionState, form: FormData) => Promise<ActionState>;
   item?: Item;
   submitLabel: string;
+  /** Extensions déjà possédées, proposées en tête de la recherche. */
+  ownedSetIds?: string[];
 };
 
 function euros(cents: number | null): string {
   return cents === null ? "" : (cents / 100).toFixed(2).replace(".", ",");
 }
 
-export function ItemForm({ action, item, submitLabel }: Props) {
+export function ItemForm({
+  action,
+  item,
+  submitLabel,
+  ownedSetIds = [],
+}: Props) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     action,
     {},
@@ -36,6 +44,19 @@ export function ItemForm({ action, item, submitLabel }: Props) {
   // Gradée, la carte n'a plus d'état à saisir mais une note.
   const [grader, setGrader] = useState(item?.grader ?? "");
   const formRef = useRef<HTMLFormElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const cardIdRef = useRef<HTMLInputElement>(null);
+  const setNameRef = useRef<HTMLInputElement>(null);
+  // Change à chaque ajout réussi : remonte la recherche, qui repart de zéro.
+  const [finderKey, setFinderKey] = useState(0);
+
+  // La carte trouvée remplit le nom, l'identifiant et l'extension. Les champs
+  // restent modifiables : la recherche propose, elle n'impose rien.
+  const pick = useCallback((card: PickedCard) => {
+    if (nameRef.current) nameRef.current.value = card.name;
+    if (cardIdRef.current) cardIdRef.current.value = card.id;
+    if (setNameRef.current) setNameRef.current.value = card.setName;
+  }, []);
 
   // Après un ajout réussi, vider les champs : les laisser remplis laisse
   // croire que rien n'a été enregistré, et invite à ressaisir le même article.
@@ -44,6 +65,7 @@ export function ItemForm({ action, item, submitLabel }: Props) {
     formRef.current?.reset();
     setImage("");
     setGrader("");
+    setFinderKey((key) => key + 1);
   }, [state.nonce]);
   const isCard = kind === "single";
   const isSealed = kind === "sealed";
@@ -74,6 +96,7 @@ export function ItemForm({ action, item, submitLabel }: Props) {
         <label className="grow">
           Nom
           <input
+            ref={nameRef}
             name="name"
             defaultValue={item?.name ?? ""}
             placeholder={
@@ -110,15 +133,28 @@ export function ItemForm({ action, item, submitLabel }: Props) {
       ) : null}
 
       {isCard ? (
-        <label>
-          Identifiant TCGdex
-          <input
-            name="cardId"
-            defaultValue={item?.cardId ?? ""}
-            placeholder="30c-015"
+        <>
+          <CardFinder
+            key={finderKey}
+            ownedSetIds={ownedSetIds}
+            initialCardId={item?.cardId}
+            onPick={pick}
           />
-          <small>Renseigné, la cote Cardmarket est récupérée toute seule.</small>
-        </label>
+
+          <label>
+            Identifiant TCGdex
+            <input
+              ref={cardIdRef}
+              name="cardId"
+              defaultValue={item?.cardId ?? ""}
+              placeholder="30c-015"
+            />
+            <small>
+              Rempli par la recherche. Renseigné, la cote Cardmarket est
+              récupérée toute seule.
+            </small>
+          </label>
+        </>
       ) : (
         <input type="hidden" name="cardId" value={item?.cardId ?? ""} />
       )}
@@ -263,6 +299,7 @@ export function ItemForm({ action, item, submitLabel }: Props) {
           <label className="grow">
             Extension
             <input
+              ref={setNameRef}
               name="setName"
               defaultValue={item?.setName ?? ""}
               placeholder="Célébration 30 ans"

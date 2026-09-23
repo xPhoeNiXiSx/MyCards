@@ -14,6 +14,7 @@ import { runMigrations, isSchemaReady, query, setQueryRunner } from "../lib/db";
 import {
   bestGain,
   breakdown,
+  editionBadges,
   editionLabel,
   gradeLabel,
   parseGrade,
@@ -31,6 +32,7 @@ import {
   type ItemInput,
 } from "../lib/collection";
 import type { CardDetail } from "../lib/tcgdex";
+import { findByNumber, normalizeCardNumber, setIdOf } from "../lib/card-number";
 import { parseImageUrl } from "../lib/images";
 import { formatCents, parseEuros, percentChange } from "../lib/money";
 import { readQuote } from "../lib/pricing";
@@ -297,6 +299,18 @@ async function main() {
   assert.equal(gradeLabel({ grader: "psa", grade: null }), null);
   ok("libellé d'édition : gradation, sinon état, et langue étrangère");
 
+  assert.deepEqual(editionBadges(brute), { grade: null, language: null, condition: null });
+  assert.deepEqual(
+    editionBadges({ language: "ja", condition: "nm", grader: "psa", grade: "10" }),
+    // Gradée : la note remplace l'état, qui n'a plus de pastille.
+    { grade: "PSA 10", language: "JP", condition: null },
+  );
+  assert.deepEqual(
+    editionBadges({ language: "fr", condition: "ex", grader: null, grade: null }),
+    { grade: null, language: null, condition: "EX" },
+  );
+  ok("pastilles : note, langue hors français, état hors gradée");
+
   // Une gradée et la même carte brute ne forment pas un seul produit ; une
   // japonaise et une française non plus.
   const pika = { ...etb, kind: "single" as const, sealedType: null, name: "Pikachu", cardId: "30th-023" };
@@ -399,6 +413,33 @@ async function main() {
   assert.equal(await getItem(created.id), undefined);
   assert.equal((await listItems()).length, 1);
   ok("suppression");
+
+  // --- Numéro de carte --------------------------------------------------
+
+  assert.equal(normalizeCardNumber("015/165"), "15");
+  assert.equal(normalizeCardNumber(" 015 "), "15");
+  assert.equal(normalizeCardNumber("15"), "15");
+  assert.equal(normalizeCardNumber("tg05"), "TG5");
+  assert.equal(normalizeCardNumber("SV045"), "SV45");
+  assert.equal(normalizeCardNumber("100a"), "100A");
+  ok("un numéro se lit avec ou sans zéros, avec ou sans total");
+
+  const setCartes = [
+    { id: "sv03-015", localId: "015" },
+    { id: "sv03-150", localId: "150" },
+    { id: "sv03-TG05", localId: "TG05" },
+  ];
+  assert.equal(findByNumber(setCartes, "15/197")?.id, "sv03-015");
+  assert.equal(findByNumber(setCartes, "150")?.id, "sv03-150");
+  assert.equal(findByNumber(setCartes, "tg5")?.id, "sv03-TG05");
+  assert.equal(findByNumber(setCartes, "16"), undefined);
+  assert.equal(findByNumber(setCartes, "  "), undefined);
+  ok("la carte d'un set se retrouve par son numéro, et seulement elle");
+
+  assert.equal(setIdOf("sv03-015"), "sv03");
+  assert.equal(setIdOf("sv03.5-025"), "sv03.5");
+  assert.equal(setIdOf("sansTiret"), null);
+  ok("le set se déduit de l'identifiant de carte");
 
   // --- Limitation des connexions ---------------------------------------
 
