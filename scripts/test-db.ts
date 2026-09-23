@@ -10,10 +10,13 @@ import assert from "node:assert/strict";
 
 import { PGlite } from "@electric-sql/pglite";
 
-import { runMigrations, isSchemaReady, setQueryRunner } from "../lib/db";
+import { runMigrations, isSchemaReady, query, setQueryRunner } from "../lib/db";
 import {
   bestGain,
   breakdown,
+  editionLabel,
+  gradeLabel,
+  parseGrade,
   groupItems,
   itemLabel,
   createItem,
@@ -24,11 +27,19 @@ import {
   summarize,
   updateItem,
   valuate,
+  valuateWith,
   type ItemInput,
 } from "../lib/collection";
+import type { CardDetail } from "../lib/tcgdex";
 import { parseImageUrl } from "../lib/images";
 import { formatCents, parseEuros, percentChange } from "../lib/money";
 import { readQuote } from "../lib/pricing";
+import {
+  MAX_FAILURES,
+  clearFailures,
+  lockedMinutes,
+  recordFailure,
+} from "../lib/throttle";
 import { newToken, safeEquals, verifyToken } from "../lib/session";
 
 const checks: string[] = [];
@@ -69,6 +80,10 @@ async function main() {
     manualValueDate: "2026-09-22",
     imageUrl: "https://exemple.test/etb.jpg",
     notes: null,
+    language: null,
+    condition: null,
+    grader: null,
+    grade: null,
   };
 
   const created = await createItem(etb);
@@ -237,6 +252,98 @@ async function main() {
 
   await deleteItem(second.id);
 
+  // --- Langue, état, gradation ------------------------------------------
+
+  const gradee = await createItem({
+    ...etb,
+    kind: "single",
+    sealedType: null,
+    name: "Pikachu",
+    cardId: "30th-023",
+    quantity: 1,
+    manualValueCents: null,
+    manualValueDate: null,
+    language: "ja",
+    condition: null,
+    grader: "psa",
+    grade: "9.5",
+  });
+  assert.deepEqual(await getItem(gradee.id), gradee);
+  assert.equal(gradee.language, "ja");
+  assert.equal(gradee.grader, "psa");
+  assert.equal(gradee.grade, "9.5");
+  ok("langue et gradation sont enregistrées et relues");
+  await deleteItem(gradee.id);
+
+  assert.equal(parseGrade("10"), "10");
+  assert.equal(parseGrade("9,5"), "9.5");
+  assert.equal(parseGrade(" 9.5 "), "9.5");
+  assert.equal(parseGrade(""), undefined);
+  assert.equal(parseGrade(null), undefined);
+  assert.equal(parseGrade("11"), null);
+  assert.equal(parseGrade("0"), null);
+  assert.equal(parseGrade("9.3"), null);
+  assert.equal(parseGrade("dix"), null);
+  ok("lecture des notes de gradation");
+
+  const brute = { language: null, condition: null, grader: null, grade: null };
+  assert.equal(editionLabel(brute), null);
+  assert.equal(editionLabel({ ...brute, language: "fr" }), null);
+  assert.equal(editionLabel({ ...brute, condition: "nm" }), "Near Mint");
+  assert.equal(
+    editionLabel({ ...brute, language: "ja", grader: "psa", grade: "9.5" }),
+    "PSA 9,5 · Japonais",
+  );
+  assert.equal(gradeLabel({ grader: "psa", grade: null }), null);
+  ok("libellé d'édition : gradation, sinon état, et langue étrangère");
+
+  // Une gradée et la même carte brute ne forment pas un seul produit ; une
+  // japonaise et une française non plus.
+  const pika = { ...etb, kind: "single" as const, sealedType: null, name: "Pikachu", cardId: "30th-023" };
+  const editions = groupItems(
+    await valuate([
+      { ...pika, id: "p1" },
+      { ...pika, id: "p2", grader: "psa", grade: "10" },
+      { ...pika, id: "p3", language: "ja" },
+      { ...pika, id: "p4", language: "fr" },
+    ]),
+  );
+  assert.equal(editions.length, 3);
+  ok("gradation et langue séparent les groupes, le français est le défaut");
+
+  // L'état n'est affiché pour un groupe que s'il est le même partout.
+  const etats = groupItems(
+    await valuate([
+      { ...pika, id: "e1", condition: "nm" },
+      { ...pika, id: "e2", condition: "ex" },
+    ]),
+  );
+  assert.equal(etats.length, 1);
+  assert.equal(etats[0].edition, null);
+  ok("un état qui diffère d'un achat à l'autre n'est pas affiché");
+
+  // La cote Cardmarket vaut pour une carte brute : une gradée sans valeur
+  // saisie reste non valorisée plutôt que d'hériter d'un chiffre faux.
+  const fiches = new Map([
+    ["30th-023", { pricing: { cardmarket: { trend: 2 } } } as unknown as CardDetail],
+  ]);
+  const sansValeur = { ...pika, manualValueCents: null, manualValueDate: null };
+  const [brutCote, gradeeCote, gradeeSaisie] = valuateWith(
+    [
+      { ...sansValeur, id: "g0" },
+      { ...sansValeur, id: "g1", grader: "psa", grade: "10" },
+      { ...sansValeur, id: "g2", grader: "psa", grade: "10", manualValueCents: 25000 },
+    ],
+    fiches,
+  );
+  assert.equal(brutCote.valueSource, "market");
+  assert.equal(brutCote.currentUnitCents, 200);
+  assert.equal(gradeeCote.valueSource, "none");
+  assert.equal(gradeeCote.totalValueCents, null);
+  assert.equal(gradeeSaisie.valueSource, "manual");
+  assert.equal(gradeeSaisie.currentUnitCents, 25000);
+  ok("une carte gradée ne reprend pas la cote d'une carte brute");
+
   await updateItem(created.id, { ...etb, quantity: 3, manualValueCents: 7000 });
   const updated = await getItem(created.id);
   assert.equal(updated?.quantity, 3);
@@ -292,6 +399,42 @@ async function main() {
   assert.equal(await getItem(created.id), undefined);
   assert.equal((await listItems()).length, 1);
   ok("suppression");
+
+  // --- Limitation des connexions ---------------------------------------
+
+  const ip = "203.0.113.7";
+  assert.equal(await lockedMinutes(ip), 0);
+  for (let attempt = 1; attempt < MAX_FAILURES; attempt++) {
+    await recordFailure(ip);
+  }
+  assert.equal(await lockedMinutes(ip), 0);
+  ok("les premiers échecs ne bloquent pas");
+
+  await recordFailure(ip);
+  const attente = await lockedMinutes(ip);
+  assert.ok(attente >= 1 && attente <= 15, `attente : ${attente}`);
+  ok("au-delà de la limite, l'adresse est bloquée pour la fenêtre");
+
+  // Une autre adresse n'est pas touchée : un inconnu ne bloque pas le
+  // propriétaire en échouant exprès.
+  assert.equal(await lockedMinutes("198.51.100.1"), 0);
+  ok("le blocage est propre à une adresse");
+
+  // Des échecs hors de la fenêtre ne comptent plus.
+  await query(
+    `update login_failures set failed_at = now() - interval '16 minutes' where ip = $1`,
+    [ip],
+  );
+  assert.equal(await lockedMinutes(ip), 0);
+  ok("les échecs anciens ne comptent plus");
+
+  await recordFailure(ip);
+  await clearFailures(ip);
+  assert.equal(
+    (await query(`select 1 from login_failures where ip = $1`, [ip])).length,
+    0,
+  );
+  ok("une connexion réussie efface les échecs");
 
   // --- Montants ---------------------------------------------------------
 

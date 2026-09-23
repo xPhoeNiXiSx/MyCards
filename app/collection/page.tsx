@@ -74,7 +74,9 @@ function GroupValue({ group }: { group: ItemGroup }) {
       <span
         className="muted"
         title={
-          group.lines.some((line) => line.cardId)
+          group.lines.some((line) => line.grader)
+            ? "Carte gradée : la cote Cardmarket vaut pour une carte brute. Saisis sa valeur."
+            : group.lines.some((line) => line.cardId)
             ? "Pas encore cotée sur Cardmarket. Saisis une valeur pour la valoriser."
             : "Aucune valeur saisie pour cet article."
         }
@@ -318,7 +320,9 @@ export default async function CollectionPage({
               key={group.key}
               href={`/collection/${group.lines[0].id}`}
               className="tile"
-              title={`${group.name} — ${itemLabel(group)}`}
+              title={[group.name, itemLabel(group), group.edition]
+                .filter(Boolean)
+                .join(" — ")}
             >
               <span
                 className="tile-mark"
@@ -377,7 +381,7 @@ export default async function CollectionPage({
                               ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
                             }}
                           />
-                          {[itemLabel(group), group.setName]
+                          {[itemLabel(group), group.edition, group.setName]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>

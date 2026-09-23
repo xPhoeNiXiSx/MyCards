@@ -2,8 +2,8 @@
 
 **En ligne :** https://my-cards-alpha.vercel.app
 
-Suivi de collection Pokémon. Première étape : la collection anniversaire
-**30 ans** affichée sur la page d'accueil, en français.
+Suivi de collection Pokémon, en français : ce qu'on possède, ce que ça a
+coûté, ce que ça vaut, et ce qu'on cherche encore.
 
 **L'application entière est privée.** Toute route autre que la page de
 connexion redirige vers celle-ci tant que la session n'est pas ouverte — la
@@ -11,7 +11,13 @@ galerie et les routes API comprises. La fermeture se fait dans `proxy.ts`,
 en amont du rendu, pour qu'une route ajoutée plus tard soit fermée par défaut
 plutôt que publique par oubli.
 
-Deux écrans :
+La connexion est freinée : au-delà de 5 mots de passe faux en 15 minutes
+depuis une même adresse, elle est refusée jusqu'à la fin de la fenêtre
+(`lib/throttle.ts`). Les échecs sont comptés en base, une fonction serverless
+ne gardant rien en mémoire d'un appel à l'autre, et par adresse, pour qu'un
+inconnu ne puisse pas bloquer le propriétaire en échouant exprès.
+
+Quatre écrans :
 
 - **`/`** — le tableau de bord : valeur, plus-value, indicateurs, répartition
 - **`/catalogue`** — toutes les séries Pokémon et leurs collections
@@ -21,14 +27,14 @@ Deux écrans :
 
 ## Design
 
-Direction « papier chaud et encre » : le mode clair évoque le carton d'une
-carte, le mode sombre l'encre. L'accent terracotta est réservé à la marque et
-aux repères actifs. Deux familles via `next/font` — **Inter** pour le texte,
+**Thème sombre uniquement** : pas de variante claire, pas de
+`prefers-color-scheme` à suivre, `:root` déclare `color-scheme: dark`.
+L'accent terracotta est réservé à la marque et aux repères actifs. Deux familles via `next/font` — **Inter** pour le texte,
 **Space Grotesk** pour les titres et tous les montants, parce que les chiffres
 sont le sujet de l'application.
 
-Tout est piloté par des variables CSS dans `app/globals.css`, redéfinies pour
-le thème sombre. `--font-body` et `--font-display` ont un repli déclaré dans
+Tout est piloté par des variables CSS dans `app/globals.css`, qui portent
+directement les valeurs sombres. `--font-body` et `--font-display` ont un repli déclaré dans
 `:root` : une `font-family` construite sur une variable absente est invalide
 *en entier* et ferait retomber la page en serif.
 
@@ -88,7 +94,7 @@ rejeu est sans effet.
 
 | Chemin                 | Rôle                                                        |
 | ---------------------- | ----------------------------------------------------------- |
-| `app/page.tsx`         | Page d'accueil (statique)                                    |
+| `app/page.tsx`         | Tableau de bord : valeur, plus-value, répartition             |
 | `app/catalogue/`       | Le catalogue des collections                                  |
 | `app/db-screens.tsx`   | Écrans d'attente de la base, partagés par les pages qui la lisent |
 | `app/series-browser.tsx` | Catalogue en accordéon, cartes chargées à l'ouverture        |
@@ -110,6 +116,7 @@ rejeu est sans effet.
 | `lib/pricing.ts`       | Lecture des cotes Cardmarket exposées par TCGdex              |
 | `lib/money.ts`         | Montants en centimes, formatage et saisie en euros            |
 | `lib/auth.ts`          | Session par mot de passe unique                               |
+| `lib/throttle.ts`      | Limite des essais de connexion, par adresse                   |
 | `lib/schema.ts`        | Schéma Postgres, idempotent, appliqué par l'app elle-même      |
 
 L'appel à TCGdex passe par une route serveur plutôt que directement depuis le
@@ -216,7 +223,8 @@ moyen pondéré. Les achats individuels restent listés sous le nom et chacun
 ouvre sa fiche — deux achats à des dates ou des prix différents ne doivent pas
 disparaître dans une moyenne.
 
-Le regroupement se fait sur le type, l'identifiant TCGdex et le nom normalisé
+Le regroupement se fait sur le type, l'identifiant TCGdex, la langue, la
+gradation et le nom normalisé
 (accents, casse et espaces ignorés). L'identifiant prime : deux cartes
 homonymes de sets différents restent distinctes.
 
@@ -252,10 +260,21 @@ de ses cartes n'a de prix Cardmarket (`cardmarket: null`), le set ayant six
 jours. Les cotes apparaîtront d'elles-mêmes, sans changement de code. En
 attendant, ces cartes se valorisent à la main comme le scellé.
 
-Deux routes de diagnostic :
+### Langue, état, gradation
 
-- `/api/debug/pricing` — une carte du set, son `pricing` brut et ce qui en est lu
-- `/api/debug/prices` — combien de cartes d'un set portent réellement une cote
+Facultatifs, dans « Plus d'options » du formulaire. La langue vaut pour tout
+article (français par défaut), l'état (échelle Cardmarket, Mint à Poor) et la
+gradation (PSA, PCA, CGC, BGS, SGC, Collect Aura, note de 1 à 10 par
+demi-points) pour les cartes seulement. Gradée, une carte n'a plus d'état :
+sa note le remplace.
+
+**Une carte gradée ne reprend jamais la cote automatique** : Cardmarket cote
+la carte brute, et l'appliquer à une PSA 10 la sous-évaluerait sans le dire.
+Sans valeur saisie, elle reste non valorisée, ce qui se voit.
+
+Langue et gradation font partie de la clé de regroupement : une japonaise et
+une française, ou une gradée et la même brute, sont deux produits. L'état,
+non : s'il diffère d'un achat à l'autre, il n'est pas affiché sur le groupe.
 
 ## Suite
 

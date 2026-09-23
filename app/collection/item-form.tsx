@@ -3,7 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import {
+  CONDITIONS,
+  GRADERS,
   KIND_LABELS,
+  LANGUAGES,
   SEALED_TYPES,
   type Item,
   type ItemKind,
@@ -30,6 +33,8 @@ export function ItemForm({ action, item, submitLabel }: Props) {
   // carte, et la cote automatique n'existe que dans ce cas.
   const [kind, setKind] = useState<ItemKind>(item?.kind ?? "single");
   const [image, setImage] = useState(item?.imageUrl ?? "");
+  // Gradée, la carte n'a plus d'état à saisir mais une note.
+  const [grader, setGrader] = useState(item?.grader ?? "");
   const formRef = useRef<HTMLFormElement>(null);
 
   // Après un ajout réussi, vider les champs : les laisser remplis laisse
@@ -38,6 +43,7 @@ export function ItemForm({ action, item, submitLabel }: Props) {
     if (!state.nonce) return;
     formRef.current?.reset();
     setImage("");
+    setGrader("");
   }, [state.nonce]);
   const isCard = kind === "single";
   const isSealed = kind === "sealed";
@@ -178,8 +184,80 @@ export function ItemForm({ action, item, submitLabel }: Props) {
         </small>
       </label>
 
-      <details className="more" open={Boolean(item?.notes || item?.setName)}>
+      <details
+        className="more"
+        open={Boolean(
+          item?.notes ||
+            item?.setName ||
+            item?.language ||
+            item?.condition ||
+            item?.grader,
+        )}
+      >
         <summary>Plus d&apos;options</summary>
+
+        <div className="row">
+          <label>
+            Langue
+            <select name="language" defaultValue={item?.language ?? "fr"}>
+              {Object.entries(LANGUAGES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {isCard && grader === "" ? (
+            <label>
+              État
+              <select name="condition" defaultValue={item?.condition ?? ""}>
+                <option value="">Non précisé</option>
+                {Object.entries(CONDITIONS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+
+        {isCard ? (
+          <div className="row">
+            <label>
+              Gradation
+              <select
+                name="grader"
+                value={grader}
+                onChange={(event) => setGrader(event.target.value)}
+              >
+                <option value="">Non gradée</option>
+                {Object.entries(GRADERS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              {grader !== "" ? (
+                <small>La cote Cardmarket vaut pour une carte brute : saisis la valeur.</small>
+              ) : null}
+            </label>
+
+            {grader !== "" ? (
+              <label className="narrow">
+                Note
+                <input
+                  name="grade"
+                  inputMode="decimal"
+                  defaultValue={item?.grade?.replace(".", ",") ?? ""}
+                  placeholder="10"
+                  required
+                />
+              </label>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="row">
           <label className="grow">
