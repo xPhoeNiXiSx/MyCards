@@ -58,6 +58,12 @@ export type Summary = {
   totalPurchaseCents: number;
   /** Ne totalise que les lignes effectivement valorisées. */
   totalValueCents: number;
+  /**
+   * Prix d'achat des seules lignes valorisées. C'est la base à laquelle
+   * comparer `totalValueCents` : rapporter une valeur partielle à un
+   * investissement total donnerait un pourcentage faux.
+   */
+  valuedPurchaseCents: number;
   gainCents: number;
   /** Lignes sans aucune valeur actuelle connue. */
   unvaluedCount: number;
@@ -276,8 +282,13 @@ export function summarize(items: ValuedItem[]): Summary {
     (summary, item) => ({
       itemCount: summary.itemCount + 1,
       unitCount: summary.unitCount + item.quantity,
+      // Investi : tous les prix d'achat, valorisés ou non. Un article dont on
+      // ignore la valeur a bien coûté ce qu'il a coûté.
       totalPurchaseCents: summary.totalPurchaseCents + item.totalPurchaseCents,
       totalValueCents: summary.totalValueCents + (item.totalValueCents ?? 0),
+      valuedPurchaseCents:
+        summary.valuedPurchaseCents +
+        (item.totalValueCents === null ? 0 : item.totalPurchaseCents),
       // La plus-value n'a de sens que sur les lignes valorisées : on exclut
       // aussi leur prix d'achat du calcul, sinon tout apparaît en perte.
       gainCents: summary.gainCents + (item.gainCents ?? 0),
@@ -291,6 +302,7 @@ export function summarize(items: ValuedItem[]): Summary {
       unitCount: 0,
       totalPurchaseCents: 0,
       totalValueCents: 0,
+      valuedPurchaseCents: 0,
       gainCents: 0,
       unvaluedCount: 0,
       withoutPriceCount: 0,

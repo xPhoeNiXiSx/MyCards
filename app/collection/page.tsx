@@ -138,8 +138,10 @@ export default async function CollectionPage() {
   }
 
   const summary = summarize(items);
+  // Comparé au prix d'achat des seules lignes valorisées : rapporter une
+  // valeur partielle à l'investissement total donnerait un pourcentage faux.
   const change = percentChange(
-    summary.totalPurchaseCents,
+    summary.valuedPurchaseCents,
     summary.totalValueCents,
   );
 

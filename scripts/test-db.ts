@@ -121,7 +121,17 @@ async function main() {
   assert.equal(summary.unitCount, 3);
   assert.equal(summary.totalValueCents, 12400);
   assert.equal(summary.unvaluedCount, 1);
-  ok("le total ignore les lignes sans cote");
+  ok("la valeur actuelle ignore les lignes sans cote");
+
+  // L'investi, lui, compte tout : 49,90 × 2 pour l'ETB, 12,00 pour la carte
+  // non valorisée. Ne pas la compter reviendrait à oublier de l'argent dépensé.
+  assert.equal(summary.totalPurchaseCents, 9980 + 1200);
+  ok("l'investi compte les lignes non valorisées");
+
+  // La plus-value se rapporte au seul achat des lignes valorisées.
+  assert.equal(summary.valuedPurchaseCents, 9980);
+  assert.equal(summary.gainCents, 12400 - 9980);
+  ok("la plus-value et sa base portent sur les mêmes lignes");
 
   // Un prix laissé vide vaut 0 en base : il doit être compté, pas oublié.
   assert.equal(summary.withoutPriceCount, 0);
