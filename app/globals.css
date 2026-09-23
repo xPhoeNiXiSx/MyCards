@@ -926,8 +926,10 @@ button[type="submit"]:disabled {
     border-top: 1px solid var(--border);
   }
 
-  /* Le tableau devient une pile de fiches : chaque valeur porte son libellé
-     et il n'y a plus de défilement horizontal. */
+  /* Le tableau devient une pile de fiches compactes : le nom sur une ligne,
+     les montants à la suite sur la suivante. Les libellés visibles ont été
+     retirés — c'est l'ordre des montants qui les nomme — mais ils restent
+     annoncés aux lecteurs d'écran par les libellés masqués du balisage. */
   .table-wrap {
     border: 0;
     background: none;
@@ -936,9 +938,7 @@ button[type="submit"]:disabled {
   }
 
   table,
-  tbody,
-  tr,
-  td {
+  tbody {
     display: block;
     width: auto;
   }
@@ -948,12 +948,15 @@ button[type="submit"]:disabled {
   }
 
   tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    padding: 15px 17px;
-    margin-bottom: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
   }
 
   tbody tr:hover {
@@ -965,48 +968,50 @@ button[type="submit"]:disabled {
   }
 
   td {
+    display: block;
     border: 0;
-    padding: 5px 0;
-    white-space: normal;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  td::before {
-    content: attr(data-label);
-    font-size: 0.6875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--fg-muted);
-    flex: none;
+    padding: 0;
+    white-space: nowrap;
+    text-align: left;
   }
 
   td.title-cell {
-    display: block;
-    padding-bottom: 11px;
-    margin-bottom: 5px;
-    border-bottom: 1px solid var(--border);
+    flex: 1 1 100%;
+    padding-bottom: 8px;
   }
 
-  /* Le nom du produit seulement : sans ce ciblage, la règle s'appliquait
-     aussi aux pastilles d'achat et les affichait en grand. */
   td.title-cell .title-text > a,
   td.title-cell .group-name {
-    font-size: 1rem;
+    font-size: 0.9375rem;
   }
 
-  /* La valeur et sa provenance forment un seul bloc aligné à droite. */
+  td[data-label] {
+    font-size: 0.8125rem;
+  }
+
+  /* La quantité multiplie le prix unitaire ; le reste s'énumère. */
+  td:nth-child(3)::before {
+    content: "×";
+  }
+
+  td:nth-child(4)::before,
+  td:nth-child(5)::before,
+  td:nth-child(6)::before {
+    content: "·";
+  }
+
+  td:nth-child(n + 3)::before {
+    color: var(--fg-faint);
+    margin: 0 6px;
+  }
+
   td[data-label] > span {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-end;
-    text-align: right;
+    display: inline;
   }
 
-  .source {
-    display: inline;
+  /* « moyen », « saisie » : utiles dans le tableau, de trop sur une ligne. */
+  td .source {
+    display: none;
   }
 
   /* Nom sur toute la largeur, puis type et quantité côte à côte. */
@@ -1720,4 +1725,18 @@ button.link.danger:hover {
 .sheet-body {
   padding: 18px 20px calc(20px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
+}
+
+/* Libellé réservé aux lecteurs d'écran : sans lui, la liste compacte
+   n'annoncerait que des montants sans dire de quoi il s'agit. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

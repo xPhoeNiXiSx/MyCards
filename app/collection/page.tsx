@@ -278,10 +278,12 @@ export default async function CollectionPage() {
                   </td>
 
                   <td className="num" data-label="Quantité">
+                    <span className="sr-only">Quantité </span>
                     {group.quantity}
                   </td>
 
                   <td className="num" data-label="Prix unitaire">
+                    <span className="sr-only">Prix unitaire </span>
                     <span>
                       {formatCents(group.unitPurchaseCents)}
                       {group.lines.length > 1 ? (
@@ -291,10 +293,12 @@ export default async function CollectionPage() {
                   </td>
 
                   <td className="num" data-label="Achat">
+                    <span className="sr-only">Achat </span>
                     {formatCents(group.purchaseCents)}
                   </td>
 
                   <td className="num" data-label="Valeur">
+                    <span className="sr-only">Valeur </span>
                     <GroupValue group={group} />
                   </td>
 
@@ -308,6 +312,7 @@ export default async function CollectionPage() {
                     }`}
                     data-label="Plus-value"
                   >
+                    <span className="sr-only">Plus-value </span>
                     {group.gainCents === null
                       ? "—"
                       : formatSignedCents(group.gainCents)}
