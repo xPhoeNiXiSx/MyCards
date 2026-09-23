@@ -17,8 +17,8 @@ import { Wordmark } from "../wordmark";
 import { DatabaseErrorScreen, SetupScreen } from "../db-screens";
 import { TabBar } from "../tab-bar";
 
-import { addItemAction, migrateAction } from "./actions";
-import { ItemForm } from "./item-form";
+import { migrateAction } from "./actions";
+import { AddFab } from "./add-fab";
 
 // L'inventaire dépend de la session : jamais de rendu statique ici.
 export const dynamic = "force-dynamic";
@@ -211,7 +211,8 @@ export default async function CollectionPage() {
         <div className="panel">
           <h2>Inventaire vide</h2>
           <p className="hint">
-            Ajoute ton premier article avec le bouton ci-dessous.
+            Ajoute ton premier article avec le bouton <strong>+</strong>, en bas
+            à droite de l&apos;écran.
           </p>
         </div>
       ) : (
@@ -318,12 +319,7 @@ export default async function CollectionPage() {
         </div>
       )}
 
-      <details className="panel disclosure" open={items.length === 0}>
-        <summary>
-          <span>Ajouter un article</span>
-        </summary>
-        <ItemForm action={addItemAction} submitLabel="Ajouter" />
-      </details>
+      <AddFab />
 
       <TabBar />
     </main>

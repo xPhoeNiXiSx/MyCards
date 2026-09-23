@@ -1636,3 +1636,88 @@ button.link.danger:hover {
   color: var(--fg);
   border-color: var(--border-strong);
 }
+
+/* --- Bouton d'ajout flottant --------------------------------------------- */
+
+/* Posé au-dessus de la barre d'onglets, jamais dessus : les deux doivent
+   rester atteignables au pouce sans se recouvrir. */
+.fab {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(53px + 16px + env(safe-area-inset-bottom, 0px));
+  z-index: 35;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--accent);
+  color: #1a1008;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.16s ease;
+}
+
+.fab:hover {
+  transform: translateY(-2px);
+}
+
+/* Feuille modale : le formulaire est long, il défile dans son cadre. */
+.sheet {
+  margin: auto;
+  width: min(100vw - 24px, 560px);
+  max-height: calc(100dvh - 48px);
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 0;
+  overflow: hidden;
+}
+
+/* La disposition ne s'applique qu'à l'ouverture : un `display` sur l'élément
+   lui-même écraserait le `display: none` que le navigateur donne à une boîte
+   fermée, et la feuille resterait visible dans la page. */
+.sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet::backdrop {
+  background: rgba(10, 8, 6, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.sheet-head h2 {
+  font-size: 1.0625rem;
+  margin: 0;
+}
+
+.sheet-close {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.sheet-body {
+  padding: 18px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+}
