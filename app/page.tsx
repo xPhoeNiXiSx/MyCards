@@ -131,6 +131,18 @@ export default async function DashboardPage() {
             </div>
 
             <div className="kpi">
+              <span className="kpi-label">Sans prix d&apos;achat</span>
+              <strong className={summary.withoutPriceCount > 0 ? "down" : ""}>
+                {summary.withoutPriceCount}
+              </strong>
+              <span className="kpi-note">
+                {summary.withoutPriceCount > 0
+                  ? "comptées 0 € dans l'investi"
+                  : "tout est renseigné"}
+              </span>
+            </div>
+
+            <div className="kpi">
               <span className="kpi-label">Mise moyenne</span>
               <strong>
                 {formatCents(

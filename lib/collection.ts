@@ -61,6 +61,11 @@ export type Summary = {
   gainCents: number;
   /** Lignes sans aucune valeur actuelle connue. */
   unvaluedCount: number;
+  /**
+   * Lignes à 0 € d'achat. Un prix laissé vide est enregistré à zéro : sans ce
+   * compteur, il disparaît silencieusement du total investi.
+   */
+  withoutPriceCount: number;
 };
 
 type Row = {
@@ -278,6 +283,8 @@ export function summarize(items: ValuedItem[]): Summary {
       gainCents: summary.gainCents + (item.gainCents ?? 0),
       unvaluedCount:
         summary.unvaluedCount + (item.totalValueCents === null ? 1 : 0),
+      withoutPriceCount:
+        summary.withoutPriceCount + (item.purchasePriceCents === 0 ? 1 : 0),
     }),
     {
       itemCount: 0,
@@ -286,6 +293,7 @@ export function summarize(items: ValuedItem[]): Summary {
       totalValueCents: 0,
       gainCents: 0,
       unvaluedCount: 0,
+      withoutPriceCount: 0,
     },
   );
 }

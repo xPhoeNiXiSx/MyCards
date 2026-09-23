@@ -184,6 +184,9 @@ export default async function CollectionPage() {
               {summary.unvaluedCount > 0
                 ? `, ${summary.unvaluedCount} sans cote`
                 : ""}
+              {summary.withoutPriceCount > 0
+                ? `, ${summary.withoutPriceCount} sans prix`
+                : ""}
             </span>
           </div>
         </div>
@@ -238,7 +241,16 @@ export default async function CollectionPage() {
                     {item.quantity}
                   </td>
                   <td className="num" data-label="Achat">
-                    {formatCents(item.totalPurchaseCents)}
+                    <span>
+                      {formatCents(item.totalPurchaseCents)}
+                      {/* Le prix saisi est unitaire : dès qu'il y a plusieurs
+                          exemplaires, la multiplication doit être lisible. */}
+                      {item.quantity > 1 ? (
+                        <em className="source">
+                          {item.quantity} × {formatCents(item.purchasePriceCents)}
+                        </em>
+                      ) : null}
+                    </span>
                   </td>
                   <td className="num" data-label="Valeur">
                     <ValueCell item={item} />

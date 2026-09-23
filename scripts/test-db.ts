@@ -123,6 +123,24 @@ async function main() {
   assert.equal(summary.unvaluedCount, 1);
   ok("le total ignore les lignes sans cote");
 
+  // Un prix laissé vide vaut 0 en base : il doit être compté, pas oublié.
+  assert.equal(summary.withoutPriceCount, 0);
+  const sansPrix = await createItem({
+    ...etb,
+    name: "Carte offerte",
+    quantity: 1,
+    purchasePriceCents: 0,
+    manualValueCents: null,
+    manualValueDate: null,
+    imageUrl: null,
+  });
+  assert.equal(
+    summarize(await valuate(await listItems())).withoutPriceCount,
+    1,
+  );
+  await deleteItem(sansPrix.id);
+  ok("les lignes sans prix d'achat sont comptées");
+
   // --- Tableau de bord --------------------------------------------------
 
   const parts = breakdown(valued);
