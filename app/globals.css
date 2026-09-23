@@ -978,6 +978,9 @@ button[type="submit"]:disabled {
   td.title-cell {
     flex: 1 1 100%;
     padding-bottom: 8px;
+    /* Le `nowrap` vaut pour les montants, qui ne doivent jamais se couper ;
+       le nom et sa description, eux, doivent pouvoir revenir à la ligne. */
+    white-space: normal;
   }
 
   td.title-cell .title-text > a,
@@ -1746,4 +1749,172 @@ button.link.danger:hover {
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* --- Couleurs de catégorie ----------------------------------------------- */
+
+/* Palette catégorielle validée sur le fond sombre de l'application : bande de
+   luminosité, saturation, séparation en vision déficiente (ΔE 8,4 au pire) et
+   contraste, tous vérifiés. Les teintes sont attribuées dans un ordre fixe et
+   ne tournent jamais — une catégorie garde sa couleur quel que soit le filtre.
+   Au-delà de huit, on ne fabrique pas une neuvième teinte : « Autre » prend un
+   gris neutre. La couleur ne porte jamais l'information seule, chaque puce
+   étant nommée. */
+:root {
+  --cat-single: #3987e5;
+  --cat-booster: #d95926;
+  --cat-blister: #199e70;
+  --cat-tripack: #c98500;
+  --cat-etb: #d55181;
+  --cat-display: #008300;
+  --cat-coffret: #9085e9;
+  --cat-bundle: #e66767;
+  --cat-autre: #8a8279;
+  --cat-other: #8a8279;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 14px 0 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 13px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--border-strong);
+  color: var(--fg);
+}
+
+.chip[aria-pressed="true"] {
+  color: var(--fg);
+  border-color: currentColor;
+  background: var(--surface-hover);
+}
+
+/* Pastille de couleur : un repère, jamais le seul — le nom l'accompagne. */
+.chip .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--dot, var(--fg-faint));
+}
+
+.chip .count {
+  font-size: 0.75rem;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sur une ligne d'inventaire, la même pastille rappelle la catégorie. */
+.cat-mark {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--dot, var(--fg-faint));
+  margin-right: 7px;
+  vertical-align: baseline;
+  flex: none;
+}
+
+/* --- Vue images ---------------------------------------------------------- */
+
+.views {
+  display: flex;
+  gap: 7px;
+  margin: 10px 0 0;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 245 / 342;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--fg-muted);
+}
+
+.tile:hover {
+  border-color: var(--border-strong);
+}
+
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Sans image, le nom tient lieu de visuel : une tuile vide ne dirait rien. */
+.tile-fallback {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Le même repère de catégorie que dans la liste. */
+.tile-mark {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--dot, var(--fg-faint));
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.45);
+}
+
+.tile-qty {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 1;
+  font-family: var(--font-display-stack);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  background: rgba(10, 8, 6, 0.78);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+@media (max-width: 720px) {
+  .gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
 }

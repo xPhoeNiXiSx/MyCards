@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 
 import { isAuthConfigured, isAuthenticated } from "@/lib/auth";
 import {
-  SEALED_TYPE_KEYS,
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
   groupItems,
-  isSealedType,
+  isItemCategory,
+  itemCategory,
   itemLabel,
   listItems,
   summarize,
@@ -21,7 +23,6 @@ import { TabBar } from "../tab-bar";
 
 import { migrateAction } from "./actions";
 import { AddFab } from "./add-fab";
-import { TypeFilter } from "./type-filter";
 
 // L'inventaire dépend de la session : jamais de rendu statique ici.
 export const dynamic = "force-dynamic";
@@ -117,10 +118,11 @@ function GroupValue({ group }: { group: ItemGroup }) {
 export default async function CollectionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ type?: string; vue?: string }>;
 }) {
-  const { type } = await searchParams;
-  const filter = isSealedType(type) ? type : null;
+  const { type, vue } = await searchParams;
+  const filter = isItemCategory(type) ? type : null;
+  const gallery = vue === "images";
   const missing: string[] = [];
   if (!isAuthConfigured()) missing.push("APP_PASSWORD", "AUTH_SECRET");
   if (!isDatabaseConfigured()) missing.push("DATABASE_URL");
@@ -158,16 +160,31 @@ export default async function CollectionPage({
     );
   }
 
-  // Les types présents, dans l'ordre de la liste de référence.
-  const available = SEALED_TYPE_KEYS.filter((key) =>
-    items.some((item) => item.sealedType === key),
-  );
+  // Les catégories présentes, dans l'ordre fixe : une catégorie garde sa
+  // couleur quel que soit le filtre actif.
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const category = itemCategory(item);
+    counts.set(category, (counts.get(category) ?? 0) + 1);
+  }
+  const available = CATEGORY_ORDER.filter((category) => counts.has(category));
 
   // Le filtre porte aussi sur les totaux : un total qui ne correspond pas aux
   // lignes affichées juste en dessous ne veut rien dire.
   const shown = filter
-    ? items.filter((item) => item.sealedType === filter)
+    ? items.filter((item) => itemCategory(item) === filter)
     : items;
+
+  /** Conserve la vue courante en changeant de filtre, et inversement. */
+  const link = (next: { type?: string | null; vue?: string | null }) => {
+    const params = new URLSearchParams();
+    const category = next.type === undefined ? filter : next.type;
+    const view = next.vue === undefined ? (gallery ? "images" : null) : next.vue;
+    if (category) params.set("type", category);
+    if (view) params.set("vue", view);
+    const query = params.toString();
+    return query ? `/collection?${query}` : "/collection";
+  };
 
   const summary = summarize(shown);
   const groups = groupItems(shown);
@@ -190,8 +207,48 @@ export default async function CollectionPage({
 
       <h1 className="page-title">Mon inventaire</h1>
 
-      <div className="toolbar">
-        <TypeFilter available={available} current={filter} />
+      {available.length > 1 ? (
+        <div className="chips">
+          <Link
+            href={link({ type: null })}
+            className="chip"
+            aria-pressed={filter === null}
+          >
+            Tout
+            <span className="count">{items.length}</span>
+          </Link>
+
+          {available.map((category) => (
+            <Link
+              key={category}
+              href={link({ type: category })}
+              className="chip"
+              aria-pressed={filter === category}
+              style={{ ["--dot" as string]: `var(--cat-${category})` }}
+            >
+              <span className="dot" aria-hidden="true" />
+              {CATEGORY_LABELS[category]}
+              <span className="count">{counts.get(category)}</span>
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="views">
+        <Link
+          href={link({ vue: null })}
+          className="chip"
+          aria-pressed={!gallery}
+        >
+          Liste
+        </Link>
+        <Link
+          href={link({ vue: "images" })}
+          className="chip"
+          aria-pressed={gallery}
+        >
+          Images
+        </Link>
       </div>
 
       <section className="summary">
@@ -239,6 +296,33 @@ export default async function CollectionPage({
             à droite de l&apos;écran.
           </p>
         </div>
+      ) : gallery ? (
+        <div className="gallery">
+          {groups.map((group) => (
+            <Link
+              key={group.key}
+              href={`/collection/${group.lines[0].id}`}
+              className="tile"
+              title={`${group.name} — ${itemLabel(group)}`}
+            >
+              <span
+                className="tile-mark"
+                aria-hidden="true"
+                style={{
+                  ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
+                }}
+              />
+              {group.image ? (
+                <img src={group.image} alt={group.name} loading="lazy" />
+              ) : (
+                <span className="tile-fallback">{group.name}</span>
+              )}
+              {group.quantity > 1 ? (
+                <span className="tile-qty">×{group.quantity}</span>
+              ) : null}
+            </Link>
+          ))}
+        </div>
       ) : (
         <div className="table-wrap">
           <table>
@@ -271,6 +355,13 @@ export default async function CollectionPage({
                           <span className="group-name">{group.name}</span>
                         )}
                         <span className="muted block">
+                          <span
+                            className="cat-mark"
+                            aria-hidden="true"
+                            style={{
+                              ["--dot" as string]: `var(--cat-${itemCategory(group)})`,
+                            }}
+                          />
                           {[itemLabel(group), group.setName]
                             .filter(Boolean)
                             .join(" · ")}
@@ -291,10 +382,6 @@ export default async function CollectionPage({
                                   : ""}
                               </Link>
                             ))}
-                          </span>
-                        ) : fullDate(group.lines[0].purchaseDate) ? (
-                          <span className="muted block">
-                            acheté le {fullDate(group.lines[0].purchaseDate)}
                           </span>
                         ) : null}
                       </div>

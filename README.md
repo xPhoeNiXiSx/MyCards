@@ -182,12 +182,28 @@ qu'on veut savoir avant d'acheter.
 ## Types de scellé
 
 Un article scellé porte un sous-type — blister, tripack, display, coffret
-dresseur d'élite… — qui sert de libellé dans la liste et alimente le filtre de
-l'inventaire. Le filtre passe par l'URL (`?type=blister`) : la page est rendue
-côté serveur, et une liste filtrée reste partageable et retrouvable par
-l'historique. Seuls les types réellement présents sont proposés, et le filtre
-porte aussi sur les totaux — un total qui ne correspondrait pas aux lignes
-affichées en dessous ne voudrait rien dire.
+dresseur d'élite… — qui sert de libellé dans la liste. Avec les cartes, ces
+sous-types forment les **catégories**, présentées en puces de filtre au-dessus
+de l'inventaire et rappelées par une pastille de couleur sur chaque ligne.
+
+Filtre et vue passent par l'URL (`?type=blister&vue=images`) : la page est
+rendue côté serveur, donc une liste filtrée reste partageable et le bouton
+retour fonctionne. Seules les catégories réellement présentes sont proposées,
+et le filtre porte aussi sur les totaux — un total qui ne correspondrait pas
+aux lignes affichées en dessous ne voudrait rien dire.
+
+Deux vues : **liste** (avec les montants) et **images** (les visuels seuls,
+trois colonnes sur mobile, quantité en pastille).
+
+### Couleurs de catégorie
+
+Palette catégorielle validée sur le fond sombre de l'application : bande de
+luminosité, saturation, séparation en vision déficiente (ΔE 8,4 au pire) et
+contraste. Les teintes sont attribuées dans un **ordre fixe** et ne tournent
+jamais — une catégorie garde sa couleur quel que soit le filtre actif.
+Au-delà de huit catégories, aucune neuvième teinte n'est fabriquée : « Autre »
+prend un gris neutre. La couleur ne porte jamais l'information seule, chaque
+puce étant nommée.
 
 Le sous-type ne vaut que pour le scellé : il est effacé si l'article change de
 type.

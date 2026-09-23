@@ -504,3 +504,54 @@ export function itemLabel(item: {
 }): string {
   return item.sealedType ? SEALED_TYPES[item.sealedType] : KIND_LABELS[item.kind];
 }
+
+/**
+ * Catégorie d'un article, pour les puces de filtre et de couleur.
+ * Le sous-type de scellé s'il existe, sinon le type de l'article.
+ */
+export type ItemCategory = SealedType | "single" | "other";
+
+export const CATEGORY_LABELS: Record<ItemCategory, string> = {
+  single: "Cartes",
+  booster: "Boosters",
+  blister: "Blisters",
+  tripack: "Tripacks",
+  etb: "ETB",
+  display: "Displays",
+  coffret: "Coffrets",
+  bundle: "Bundles",
+  autre: "Autre scellé",
+  other: "Autre",
+};
+
+/**
+ * Ordre fixe. Les couleurs sont attribuées dans cet ordre et ne tournent
+ * jamais : une catégorie garde sa teinte quel que soit le filtre actif.
+ */
+export const CATEGORY_ORDER: ItemCategory[] = [
+  "single",
+  "booster",
+  "blister",
+  "tripack",
+  "etb",
+  "display",
+  "coffret",
+  "bundle",
+  "autre",
+  "other",
+];
+
+export function itemCategory(item: {
+  kind: ItemKind;
+  sealedType: SealedType | null;
+}): ItemCategory {
+  if (item.sealedType) return item.sealedType;
+  return item.kind === "single" ? "single" : "other";
+}
+
+export function isItemCategory(value: unknown): value is ItemCategory {
+  return (
+    typeof value === "string" &&
+    (CATEGORY_ORDER as string[]).includes(value)
+  );
+}
