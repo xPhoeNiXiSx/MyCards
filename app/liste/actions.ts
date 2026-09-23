@@ -20,7 +20,11 @@ function text(form: FormData, field: string): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
-export type ActionState = { error?: string };
+export type ActionState = {
+  error?: string;
+  added?: string;
+  nonce?: number;
+};
 
 /** Un article visé porte le strict nécessaire : ce qu'on cherche, et rien de plus. */
 export async function addWantedAction(
@@ -53,7 +57,7 @@ export async function addWantedAction(
   });
 
   revalidatePath("/liste");
-  return {};
+  return { added: name, nonce: Date.now() };
 }
 
 export async function markBoughtAction(

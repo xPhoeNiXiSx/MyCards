@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { KIND_LABELS, type ItemKind } from "@/lib/collection";
 
@@ -17,9 +17,15 @@ export function WantedForm() {
     {},
   );
   const [kind, setKind] = useState<ItemKind>("sealed");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!state.nonce) return;
+    formRef.current?.reset();
+  }, [state.nonce]);
 
   return (
-    <form action={action} className="form">
+    <form ref={formRef} action={action} className="form">
       <div className="row">
         <label className="narrow">
           Type
@@ -57,6 +63,11 @@ export function WantedForm() {
       ) : null}
 
       {state.error ? <p className="error">{state.error}</p> : null}
+      {state.added ? (
+        <p className="success" role="status">
+          « {state.added} » ajouté à ta liste.
+        </p>
+      ) : null}
 
       <button type="submit" disabled={pending}>
         {pending ? "Ajout…" : "Ajouter à la liste"}

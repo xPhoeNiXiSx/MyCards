@@ -1590,3 +1590,13 @@ button.link.danger:hover {
     align-self: stretch;
   }
 }
+
+/* Confirmation d'ajout : même poids visuel qu'une erreur, ton opposé. */
+.success {
+  color: var(--positive);
+  background: var(--positive-soft);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 0.875rem;
+  margin: 0;
+}

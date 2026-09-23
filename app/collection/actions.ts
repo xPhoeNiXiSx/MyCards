@@ -41,7 +41,13 @@ function date(form: FormData, field: string): string | null {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
-export type ActionState = { error?: string };
+export type ActionState = {
+  error?: string;
+  /** Nom du dernier article ajouté, pour le confirmer à l'écran. */
+  added?: string;
+  /** Change à chaque ajout : deux articles homonymes restent deux événements. */
+  nonce?: number;
+};
 
 function parse(form: FormData): ItemInput | string {
   const name = text(form, "name");
@@ -104,7 +110,8 @@ export async function addItemAction(
 
   await createItem(input);
   revalidatePath("/collection");
-  return {};
+  revalidatePath("/");
+  return { added: input.name, nonce: Date.now() };
 }
 
 export async function updateItemAction(

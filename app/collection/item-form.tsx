@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { KIND_LABELS, type Item, type ItemKind } from "@/lib/collection";
 
@@ -25,10 +25,19 @@ export function ItemForm({ action, item, submitLabel }: Props) {
   // carte, et la cote automatique n'existe que dans ce cas.
   const [kind, setKind] = useState<ItemKind>(item?.kind ?? "single");
   const [image, setImage] = useState(item?.imageUrl ?? "");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Après un ajout réussi, vider les champs : les laisser remplis laisse
+  // croire que rien n'a été enregistré, et invite à ressaisir le même article.
+  useEffect(() => {
+    if (!state.nonce) return;
+    formRef.current?.reset();
+    setImage("");
+  }, [state.nonce]);
   const isCard = kind === "single";
 
   return (
-    <form action={formAction} className="form">
+    <form ref={formRef} action={formAction} className="form">
       {item ? <input type="hidden" name="id" value={item.id} /> : null}
       {/* Modifier un article visé ne doit pas le faire entrer dans la
           collection : seul le bouton d'achat fait cette bascule. */}
@@ -183,6 +192,11 @@ export function ItemForm({ action, item, submitLabel }: Props) {
       </details>
 
       {state.error ? <p className="error">{state.error}</p> : null}
+      {state.added ? (
+        <p className="success" role="status">
+          « {state.added} » ajouté à ta collection.
+        </p>
+      ) : null}
 
       <button type="submit" disabled={pending}>
         {pending ? "Enregistrement…" : submitLabel}
