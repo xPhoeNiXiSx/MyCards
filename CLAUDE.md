@@ -24,3 +24,11 @@ directement les valeurs sombres, et `:root` déclare `color-scheme: dark`.
   l'application. La base n'est joignable que par les fonctions serveur.
 - `npm test` rejoue les requêtes de production contre un Postgres en mémoire.
   À lancer avant chaque commit touchant à la couche données.
+
+## Publication
+
+**Tout part directement sur `main`**, qui est déployée en production par
+Vercel : l'utilisateur ne voit une modification qu'une fois en ligne. Pas de
+branche de travail qui traîne, pas de pull request en attente de validation.
+Les vérifications (`npm run typecheck`, `npm test`, `npm run build`) se font
+avant le push, pas après.
