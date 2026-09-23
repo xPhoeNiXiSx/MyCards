@@ -1776,11 +1776,44 @@ button.link.danger:hover {
   --cat-other: #8a8279;
 }
 
+/* Une seule rangée qui défile : les catégories sont nombreuses, les empiler
+   pousserait la liste hors de l'écran avant même de l'avoir atteinte. Les
+   marges négatives laissent les puces filer jusqu'aux bords. */
 .chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 7px;
-  margin: 14px 0 4px;
+  margin: 18px -16px 0;
+  padding: 0 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sous-titre de la liste, et le choix de vue à sa droite. */
+.listbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.listbar-count {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.views {
+  display: flex;
+  gap: 7px;
+  flex: none;
 }
 
 .chip {
@@ -1838,12 +1871,6 @@ button.link.danger:hover {
 }
 
 /* --- Vue images ---------------------------------------------------------- */
-
-.views {
-  display: flex;
-  gap: 7px;
-  margin: 10px 0 0;
-}
 
 .gallery {
   display: grid;

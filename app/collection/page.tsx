@@ -207,50 +207,6 @@ export default async function CollectionPage({
 
       <h1 className="page-title">Mon inventaire</h1>
 
-      {available.length > 1 ? (
-        <div className="chips">
-          <Link
-            href={link({ type: null })}
-            className="chip"
-            aria-pressed={filter === null}
-          >
-            Tout
-            <span className="count">{items.length}</span>
-          </Link>
-
-          {available.map((category) => (
-            <Link
-              key={category}
-              href={link({ type: category })}
-              className="chip"
-              aria-pressed={filter === category}
-              style={{ ["--dot" as string]: `var(--cat-${category})` }}
-            >
-              <span className="dot" aria-hidden="true" />
-              {CATEGORY_LABELS[category]}
-              <span className="count">{counts.get(category)}</span>
-            </Link>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="views">
-        <Link
-          href={link({ vue: null })}
-          className="chip"
-          aria-pressed={!gallery}
-        >
-          Liste
-        </Link>
-        <Link
-          href={link({ vue: "images" })}
-          className="chip"
-          aria-pressed={gallery}
-        >
-          Images
-        </Link>
-      </div>
-
       <section className="summary">
         <div className="summary-main">
           <span className="summary-label">Valeur actuelle</span>
@@ -287,6 +243,65 @@ export default async function CollectionPage({
           </div>
         </div>
       </section>
+
+      {available.length > 1 ? (
+        <div className="chips">
+          <Link
+            href={link({ type: null })}
+            className="chip"
+            aria-pressed={filter === null}
+          >
+            Tout
+            <span className="count">{items.length}</span>
+          </Link>
+
+          {available.map((category) => (
+            <Link
+              key={category}
+              href={link({ type: category })}
+              className="chip"
+              aria-pressed={filter === category}
+              style={{ ["--dot" as string]: `var(--cat-${category})` }}
+            >
+              <span className="dot" aria-hidden="true" />
+              {CATEGORY_LABELS[category]}
+              <span className="count">{counts.get(category)}</span>
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
+
+      {items.length > 0 ? (
+        <div className="listbar">
+          <p className="listbar-count">
+            {groups.length} produit{groups.length > 1 ? "s" : ""}
+            {summary.unitCount !== groups.length
+              ? ` · ${summary.unitCount} article${summary.unitCount > 1 ? "s" : ""}`
+              : ""}
+          </p>
+
+          <div className="views">
+            <Link
+              href={link({ vue: null })}
+              className="chip"
+              aria-pressed={!gallery}
+            >
+              Liste
+            </Link>
+            <Link
+              href={link({ vue: "images" })}
+              className="chip"
+              aria-pressed={gallery}
+            >
+              Images
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+
+
 
       {items.length === 0 ? (
         <div className="panel">
