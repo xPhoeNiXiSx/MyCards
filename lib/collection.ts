@@ -175,6 +175,29 @@ export function editionBadges(item: {
   };
 }
 
+/**
+ * Les deux inventaires : les cartes d'un côté, le scellé de l'autre. Ce ne
+ * sont pas les mêmes collections, elles ont chacune leur page. « Autre »
+ * (goodies, classeurs…) rejoint le scellé : ce ne sont pas des cartes.
+ */
+export type Scope = "cards" | "sealed";
+
+export const SCOPES: Record<
+  Scope,
+  { path: string; title: string; kinds: ItemKind[] }
+> = {
+  cards: { path: "/collection", title: "Ma collection de cartes", kinds: ["single"] },
+  sealed: { path: "/scelle", title: "Mon inventaire scellé", kinds: ["sealed", "other"] },
+};
+
+export function scopeOf(kind: ItemKind): Scope {
+  return kind === "single" ? "cards" : "sealed";
+}
+
+export function inScope(item: { kind: ItemKind }, scope: Scope): boolean {
+  return scopeOf(item.kind) === scope;
+}
+
 export const KIND_LABELS: Record<ItemKind, string> = {
   single: "Carte à l'unité",
   sealed: "Scellé",

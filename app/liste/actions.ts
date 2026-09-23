@@ -5,9 +5,12 @@ import { redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/auth";
 import {
+  SCOPES,
   createItem,
+  getItem,
   isSealedType,
   markAsOwned,
+  scopeOf,
   type ItemKind,
 } from "@/lib/collection";
 import { parseEuros } from "@/lib/money";
@@ -88,11 +91,14 @@ export async function markBoughtAction(
   const date = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
 
   await markAsOwned(id, price ?? 0, date ?? new Date().toISOString().slice(0, 10));
+  const item = await getItem(id);
 
   revalidatePath("/liste");
-  revalidatePath("/collection");
+  revalidatePath(SCOPES.cards.path);
+  revalidatePath(SCOPES.sealed.path);
   revalidatePath("/");
-  redirect("/collection");
+  // L'article acheté rejoint son inventaire : cartes ou scellé.
+  redirect(SCOPES[item ? scopeOf(item.kind) : "cards"].path);
 }
 
 export async function removeWantedAction(form: FormData): Promise<void> {

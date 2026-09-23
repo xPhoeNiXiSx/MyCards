@@ -5,12 +5,15 @@ import { redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/auth";
 import {
+  SCOPES,
   STATUSES,
+  getItem,
   isCondition,
   isGrader,
   isLanguage,
   isSealedType,
   parseGrade,
+  scopeOf,
   createItem,
   deleteItem,
   updateItem,
@@ -22,6 +25,13 @@ import { parseImageUrl } from "@/lib/images";
 import { parseEuros } from "@/lib/money";
 
 const KINDS: ItemKind[] = ["single", "sealed", "other"];
+
+/** Les deux pages d'inventaire et le tableau de bord lisent les mêmes lignes. */
+function revalidateInventory(): void {
+  revalidatePath(SCOPES.cards.path);
+  revalidatePath(SCOPES.sealed.path);
+  revalidatePath("/");
+}
 
 /**
  * Chaque action revérifie la session : une action serveur est une route HTTP à
@@ -140,8 +150,7 @@ export async function addItemAction(
   if (typeof input === "string") return { error: input };
 
   await createItem(input);
-  revalidatePath("/collection");
-  revalidatePath("/");
+  revalidateInventory();
   return { added: input.name, nonce: Date.now() };
 }
 
@@ -158,8 +167,9 @@ export async function updateItemAction(
   if (typeof input === "string") return { error: input };
 
   await updateItem(id, input);
-  revalidatePath("/collection");
-  redirect("/collection");
+  revalidateInventory();
+  // Retour à l'inventaire de l'article, tel qu'il est après modification.
+  redirect(SCOPES[scopeOf(input.kind)].path);
 }
 
 export async function deleteItemAction(form: FormData): Promise<void> {
@@ -168,10 +178,11 @@ export async function deleteItemAction(form: FormData): Promise<void> {
   const id = form.get("id");
   if (typeof id !== "string" || id === "") return;
 
+  const item = await getItem(id);
   await deleteItem(id);
-  revalidatePath("/collection");
+  revalidateInventory();
   // La fiche vient de disparaître : rester dessus afficherait un 404.
-  redirect("/collection");
+  redirect(SCOPES[item ? scopeOf(item.kind) : "cards"].path);
 }
 
 /**
@@ -181,5 +192,5 @@ export async function deleteItemAction(form: FormData): Promise<void> {
 export async function migrateAction(): Promise<void> {
   await requireSession();
   await runMigrations();
-  revalidatePath("/collection");
+  revalidateInventory();
 }

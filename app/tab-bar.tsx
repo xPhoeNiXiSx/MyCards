@@ -48,7 +48,8 @@ function IconCollection() {
   );
 }
 
-function IconInventory() {
+/** Deux cartes décalées : la collection de cartes. */
+function IconCards() {
   return (
     <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
       <g
@@ -58,12 +59,27 @@ function IconInventory() {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <rect x="3.5" y="4.5" width="4" height="4" rx="1.2" />
-        <rect x="3.5" y="15.5" width="4" height="4" rx="1.2" />
-        <line x1="10.5" y1="6.5" x2="20.5" y2="6.5" />
-        <line x1="10.5" y1="12" x2="20.5" y2="12" />
-        <line x1="10.5" y1="17.5" x2="20.5" y2="17.5" />
-        <rect x="3.5" y="10" width="4" height="4" rx="1.2" />
+        <rect x="8.5" y="3.5" width="10" height="14" rx="1.8" transform="rotate(8 13.5 10.5)" />
+        <path d="M6.6 6.4 5.1 6.6a1.8 1.8 0 0 0-1.5 2l1.5 10.5a1.8 1.8 0 0 0 2 1.5l6.3-.9" />
+      </g>
+    </svg>
+  );
+}
+
+/** Une boîte fermée : l'inventaire scellé. */
+function IconSealed() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3.8 7.6 12 3.8l8.2 3.8v8.8L12 20.2l-8.2-3.8Z" />
+        <path d="M3.8 7.6 12 11.4l8.2-3.8" />
+        <path d="M12 11.4v8.8" />
       </g>
     </svg>
   );
@@ -117,10 +133,18 @@ const TABS: Tab[] = [
     matches: (pathname) => pathname.startsWith("/catalogue"),
   },
   {
+    // La fiche d'un article (`/collection/[id]`) s'ouvre sous cet onglet,
+    // qu'il s'agisse d'une carte ou d'un scellé.
     href: "/collection",
-    label: "Mon inventaire",
-    icon: <IconInventory />,
+    label: "Ma collection de cartes",
+    icon: <IconCards />,
     matches: (pathname) => pathname.startsWith("/collection"),
+  },
+  {
+    href: "/scelle",
+    label: "Mon inventaire scellé",
+    icon: <IconSealed />,
+    matches: (pathname) => pathname.startsWith("/scelle"),
   },
   {
     href: "/liste",

@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { isAuthConfigured, isAuthenticated } from "@/lib/auth";
 import {
   CATEGORY_LABELS,
+  SCOPES,
   bestGain,
+  inScope,
   groupItems,
   itemLabel,
   listItems,
@@ -15,6 +17,7 @@ import {
   buildChart,
   categoryBreakdown,
   isPeriod,
+  matchesCheck,
   movers,
   pendingChecks,
   type Chart,
@@ -233,7 +236,17 @@ export default async function DashboardPage({
                   <Link
                     key={check.key}
                     className="check"
-                    href={`/collection?verifier=${check.key}`}
+                    // Vers les cartes s'il y en a de concernées, sinon vers le
+                    // scellé : la page d'arrivée signale l'autre au besoin.
+                    href={`${
+                      items.some(
+                        (item) =>
+                          inScope(item, "cards") &&
+                          matchesCheck(item, check.key, today),
+                      )
+                        ? SCOPES.cards.path
+                        : SCOPES.sealed.path
+                    }?verifier=${check.key}`}
                   >
                     <span className="check-count">{check.count}</span>
                     <span>{check.label}</span>

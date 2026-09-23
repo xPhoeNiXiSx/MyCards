@@ -21,6 +21,8 @@ type Props = {
   submitLabel: string;
   /** Extensions déjà possédées, proposées en tête de la recherche. */
   ownedSetIds?: string[];
+  /** Type d'un nouvel article, avant tout choix. */
+  defaultKind?: ItemKind;
 };
 
 function euros(cents: number | null): string {
@@ -32,6 +34,7 @@ export function ItemForm({
   item,
   submitLabel,
   ownedSetIds = [],
+  defaultKind = "single",
 }: Props) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     action,
@@ -39,7 +42,7 @@ export function ItemForm({
   );
   // Le type pilote l'affichage : l'identifiant TCGdex n'a de sens que sur une
   // carte, et la cote automatique n'existe que dans ce cas.
-  const [kind, setKind] = useState<ItemKind>(item?.kind ?? "single");
+  const [kind, setKind] = useState<ItemKind>(item?.kind ?? defaultKind);
   const [image, setImage] = useState(item?.imageUrl ?? "");
   // Gradée, la carte n'a plus d'état à saisir mais une note.
   const [grader, setGrader] = useState(item?.grader ?? "");

@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 
+import type { ItemKind } from "@/lib/collection";
+
 import { addItemAction } from "./actions";
 import { ItemForm } from "./item-form";
 
@@ -13,7 +15,14 @@ import { ItemForm } from "./item-form";
  * parcourir. La boîte reste ouverte après un ajout, pour en enchaîner
  * plusieurs — c'est le cas courant quand on rentre ses achats.
  */
-export function AddFab({ ownedSetIds }: { ownedSetIds: string[] }) {
+export function AddFab({
+  ownedSetIds,
+  defaultKind,
+}: {
+  ownedSetIds: string[];
+  /** Type proposé à l'ouverture : celui de la page où l'on se trouve. */
+  defaultKind: ItemKind;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
 
   return (
@@ -51,6 +60,7 @@ export function AddFab({ ownedSetIds }: { ownedSetIds: string[] }) {
             action={addItemAction}
             submitLabel="Ajouter"
             ownedSetIds={ownedSetIds}
+            defaultKind={defaultKind}
           />
         </div>
       </dialog>

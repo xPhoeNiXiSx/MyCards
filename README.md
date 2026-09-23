@@ -17,13 +17,15 @@ depuis une même adresse, elle est refusée jusqu'à la fin de la fenêtre
 ne gardant rien en mémoire d'un appel à l'autre, et par adresse, pour qu'un
 inconnu ne puisse pas bloquer le propriétaire en échouant exprès.
 
-Quatre écrans :
+Cinq écrans :
 
 - **`/`** — le tableau de bord : valeur, plus-value, évolution dans le temps,
   indicateurs, points à vérifier, hausses et baisses, répartition
 - **`/catalogue`** — toutes les séries Pokémon et leurs collections
-- **`/collection`** — l'inventaire : articles possédés, prix d'achat, valeur
-  actuelle et plus-value
+- **`/collection`** — ma collection de cartes : cartes possédées, prix
+  d'achat, valeur actuelle et plus-value
+- **`/scelle`** — mon inventaire scellé : boosters, displays, coffrets… et
+  les articles « Autre », qui ne sont pas des cartes non plus
 - **`/liste`** — les articles visés, et le passage à l'achat
 
 ## Design
@@ -103,7 +105,8 @@ rejeu est sans effet.
 | `app/card-viewer.tsx`  | Visionneuse plein écran, navigation carte à carte             |
 | `app/api/series/route.ts` | Catalogue : séries et leurs collections                    |
 | `app/api/sets/[id]/route.ts` | Cartes d'une collection                                |
-| `app/collection/`      | Inventaire : liste, totaux, formulaires, actions serveur      |
+| `app/collection/`      | Inventaire : liste, totaux, formulaires, actions serveur. `inventory-page.tsx` sert les cartes (`/collection`) et le scellé (`/scelle`) |
+| `app/scelle/`          | Inventaire scellé, sur la même page que les cartes            |
 | `app/liste/`           | Liste d'achats : articles visés, bascule à l'achat             |
 | `app/compte/`          | Compte : session, déconnexion, futurs réglages                 |
 | `app/tab-bar.tsx`      | Barre d'onglets fixée en bas, icônes seules                    |

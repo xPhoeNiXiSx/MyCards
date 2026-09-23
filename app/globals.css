@@ -2778,3 +2778,9 @@ button.link.danger:hover {
   opacity: 0.6;
   cursor: progress;
 }
+
+.check-filter-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}

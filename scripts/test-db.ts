@@ -23,6 +23,8 @@ import {
   createItem,
   markAsOwned,
   ownedCountsByCard,
+  inScope,
+  scopeOf,
   deleteItem,
   getItem,
   listItems,
@@ -657,6 +659,15 @@ async function main() {
   assert.equal(possedees["30th-015"], 1);
   assert.equal(Object.keys(possedees).length, 2);
   ok("exemplaires possédés par carte, sans les articles visés");
+
+  // --- Deux inventaires ------------------------------------------------------
+
+  assert.equal(scopeOf("single"), "cards");
+  assert.equal(scopeOf("sealed"), "sealed");
+  // « Autre » n'est pas une carte : il rejoint le scellé.
+  assert.equal(scopeOf("other"), "sealed");
+  assert.equal(inScope({ kind: "single" }, "sealed"), false);
+  ok("les cartes d'un côté, le scellé et le reste de l'autre");
 
   // --- Réglages ---------------------------------------------------------------
 

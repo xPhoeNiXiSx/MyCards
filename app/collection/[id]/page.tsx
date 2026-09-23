@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/auth";
-import { getItem } from "@/lib/collection";
+import { SCOPES, getItem, scopeOf } from "@/lib/collection";
 
 import { TabBar } from "../../tab-bar";
 import { Wordmark } from "../../wordmark";
@@ -31,8 +31,8 @@ export default async function EditItemPage({
             <Wordmark />
           </Link>
         </div>
-        <Link href="/collection" className="back">
-          ← Inventaire
+        <Link href={SCOPES[scopeOf(item.kind)].path} className="back">
+          ← {item.kind === "single" ? "Mes cartes" : "Mon scellé"}
         </Link>
       </header>
 
