@@ -272,7 +272,8 @@ export default async function DashboardPage({
                     {column.list.length === 0 ? (
                       <p className="hint">{column.empty}</p>
                     ) : (
-                      column.list.map((group) => (
+                      <div className="movers-list">
+                      {column.list.map((group) => (
                         <Link
                           key={group.key}
                           className="mover"
@@ -291,7 +292,8 @@ export default async function DashboardPage({
                             </span>
                           </span>
                         </Link>
-                      ))
+                      ))}
+                      </div>
                     )}
                   </div>
                 ))}

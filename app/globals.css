@@ -2188,6 +2188,18 @@ button.link.danger:hover {
   gap: 8px 12px;
 }
 
+/* L'écart de la période se lit à droite du libellé, aligné sur le bord du
+   graphique ; les périodes passent sur la ligne suivante, à droite aussi. */
+.evolution-change {
+  margin-left: auto;
+  text-align: right;
+}
+
+.evolution-head .range {
+  flex-basis: 100%;
+  justify-content: flex-end;
+}
+
 .evolution-change {
   font-family: var(--font-display-stack);
   font-size: 0.8125rem;
@@ -2412,18 +2424,26 @@ button.link.danger:hover {
   margin-bottom: 4px;
 }
 
-.mover {
+/* Trois produits côte à côte, l'image en grand, le nom et la plus-value
+   dessous : c'est le visuel qu'on reconnaît d'abord, pas le nom. */
+.movers-list {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  padding: 4px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mover {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
   text-decoration: none;
   color: inherit;
 }
 
 .mover .thumb {
-  width: 30px;
+  width: 100%;
+  border-radius: 6px;
 }
 
 .mover-text {
@@ -2798,7 +2818,7 @@ button.link.danger:hover {
 
 .cover-logo {
   display: block;
-  width: min(82%, 460px);
+  width: min(70%, 391px);
   height: auto;
   color: var(--fg);
 }
@@ -2877,4 +2897,18 @@ button.link.danger:hover {
   .kpi-thumb strong:not(.kpi-text) {
     font-size: 1.125rem;
   }
+}
+
+/* Sur téléphone, plus-values puis moins-values l'une sous l'autre : chaque
+   image dispose d'un tiers de la largeur au lieu d'un sixième. */
+@media (max-width: 720px) {
+  .movers {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+}
+
+/* De l'air entre le titre du catalogue et son champ de recherche. */
+.catalogue-search {
+  margin-top: 22px;
 }
