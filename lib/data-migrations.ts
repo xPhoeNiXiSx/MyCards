@@ -103,6 +103,26 @@ export const DATA_MIGRATIONS: DataMigration[] = [
   },
 ];
 
+/**
+ * Horodatage du dernier passage, rangé avec les réglages : le bouton doit
+ * pouvoir dire « appliquées le … » même quand il n'y avait rien à poser,
+ * ce que le registre des migrations ne raconte pas.
+ */
+const LAST_RUN_KEY = "migrations.last_run";
+
+export async function lastMigrationRun(
+  query: QueryRunner,
+): Promise<Date | null> {
+  const rows = await query<{ value: unknown }>(
+    `select value from app_settings where key = $1`,
+    [LAST_RUN_KEY],
+  );
+  const value = rows[0]?.value;
+  if (typeof value !== "string") return null;
+  const at = new Date(value);
+  return Number.isNaN(at.getTime()) ? null : at;
+}
+
 /** Identifiants déjà joués, lus depuis le registre. */
 async function alreadyApplied(query: QueryRunner): Promise<Set<string>> {
   const rows = await query<{ id: string }>(`select id from data_migrations`);
@@ -139,6 +159,14 @@ export async function runDataMigrations(
 
     results.push({ id: migration.id, label: migration.label, applied: true, rows });
   }
+
+  // L'heure vient de la base, pas de la fonction serverless : c'est la même
+  // horloge que les dates déjà stockées.
+  await query(
+    `insert into app_settings (key, value) values ($1, to_jsonb(now()))
+     on conflict (key) do update set value = excluded.value, updated_at = now()`,
+    [LAST_RUN_KEY],
+  );
 
   return results;
 }

@@ -11,7 +11,11 @@ import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 
 import { runMigrations, isSchemaReady, query, setQueryRunner } from "../lib/db";
-import { DATA_MIGRATIONS, migrationLedger } from "../lib/data-migrations";
+import {
+  DATA_MIGRATIONS,
+  lastMigrationRun,
+  migrationLedger,
+} from "../lib/data-migrations";
 import { SCHEMA_STATEMENTS } from "../lib/schema";
 import {
   bestGain,
@@ -815,6 +819,9 @@ async function main() {
     await query(statement);
   }
 
+  assert.equal(await lastMigrationRun(query), null);
+  ok("tant que rien n'a été appliqué, aucune date n'est affichée");
+
   const scelle: ItemInput = {
     status: "owned",
     kind: "sealed",
@@ -915,6 +922,13 @@ async function main() {
     null,
   );
   ok("une migration déjà jouée ne repart pas au clic suivant");
+
+  // Le bouton doit pouvoir dire « appliquées le … » même quand toutes les
+  // migrations avaient déjà été jouées et qu'il n'y avait rien à poser.
+  const passage = await lastMigrationRun(query);
+  assert.ok(passage instanceof Date);
+  assert.ok(Date.now() - passage.getTime() < 60_000);
+  ok("la date du dernier passage est enregistrée à chaque application");
 
   const ledger = await migrationLedger(query);
   assert.equal(ledger.length, 1);

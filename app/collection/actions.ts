@@ -193,4 +193,8 @@ export async function migrateAction(): Promise<void> {
   await requireSession();
   await runMigrations();
   revalidateInventory();
+  // La page du compte affiche la date du dernier passage : sans ça, le bouton
+  // renverrait l'écran inchangé et on ne saurait pas s'il s'est passé quelque
+  // chose.
+  revalidatePath("/compte");
 }

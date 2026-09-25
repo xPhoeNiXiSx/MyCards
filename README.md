@@ -92,7 +92,9 @@ fonctions serveur — ni depuis un poste de développement, ni depuis un agent.
 Même mécanique pour les évolutions futures : ajouter une instruction
 idempotente dans `SCHEMA_STATEMENTS`, déployer, puis lancer **Appliquer les
 migrations** depuis la page **Mon compte**. Rien n'est jamais supprimé, le
-rejeu est sans effet.
+rejeu est sans effet. Le panneau indique la date du dernier passage
+(`migrations.last_run` dans `app_settings`), sans quoi le bouton renverrait un
+écran inchangé et on ne saurait pas s'il s'est passé quelque chose.
 
 Le même bouton joue aussi les **migrations de données** (`lib/data-migrations.ts`) :
 des valeurs relevées ailleurs — la cote d'un produit scellé, par exemple — que

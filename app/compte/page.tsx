@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { lastMigrationRun } from "@/lib/data-migrations";
+import { query } from "@/lib/db";
 import { getSettingsOrDefaults } from "@/lib/settings";
 
 import { migrateAction } from "../collection/actions";
@@ -10,6 +12,28 @@ import { TabBar } from "../tab-bar";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Date du dernier passage des migrations, à l'heure de Paris. La base peut ne
+ * pas être joignable — la page du compte doit s'afficher quand même, c'est
+ * justement là qu'on vient quand quelque chose cloche.
+ */
+async function lastRunLabel(): Promise<string> {
+  try {
+    const at = await lastMigrationRun(query);
+    if (!at) return "Jamais appliquées depuis cet écran.";
+    const when = at.toLocaleString("fr-FR", {
+      timeZone: "Europe/Paris",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `Dernière application : ${when.replace(" ", " à ")}.`;
+  } catch {
+    return "Dernière application : inconnue (base injoignable).";
+  }
+}
+
 export default async function ComptePage({
   searchParams,
 }: {
@@ -17,6 +41,7 @@ export default async function ComptePage({
 }) {
   const { enregistre } = await searchParams;
   const settings = await getSettingsOrDefaults();
+  const dernierPassage = await lastRunLabel();
 
   return (
     <main className="page narrow">
@@ -49,6 +74,7 @@ export default async function ComptePage({
           être rejouée : elle ne crée que ce qui manque, ne touche jamais une
           valeur saisie ici, et ne supprime jamais rien.
         </p>
+        <p className="hint">{dernierPassage}</p>
         <form action={migrateAction} className="form">
           <button type="submit">Appliquer les migrations</button>
         </form>
