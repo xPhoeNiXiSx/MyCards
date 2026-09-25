@@ -859,6 +859,19 @@ async function main() {
     manualValueDate: "2026-09-01",
   });
 
+  // Nom libre : la migration de rattrapage décrit le produit au lieu de
+  // l'égaler, parce qu'on ne connaît pas le libellé exact d'un ETB déjà saisi.
+  await createItem({
+    ...scelle,
+    name: "Coffret Dresseur d'Élite 30 ans",
+  });
+  // Ne doit pas être touché par cette migration : ni ETB, ni 30 ans.
+  await createItem({
+    ...scelle,
+    sealedType: "display",
+    name: "Display ME05 Nuit noire",
+  });
+
   const report = await runMigrations();
   const quotes = report.find((row) => row.id === "2026-09-25-cotes-scelle");
   assert.ok(quotes);
@@ -869,6 +882,10 @@ async function main() {
   const posed = await listItems();
   const byName = (name: string) =>
     posed.find((item) => item.name.toLowerCase() === name.toLowerCase());
+
+  assert.equal(byName("Coffret Dresseur d'Élite 30 ans")?.manualValueCents, 5999);
+  assert.equal(byName("Display ME05 Nuit noire")?.manualValueCents, null);
+  ok("l'ETB est retrouvé par description, sans déborder sur un autre article");
 
   assert.equal(byName("ETB 30ans")?.manualValueCents, 5999);
   assert.equal(byName("ETB 30ans")?.manualValueDate, "2026-09-25");
@@ -931,8 +948,10 @@ async function main() {
   ok("la date du dernier passage est enregistrée à chaque application");
 
   const ledger = await migrationLedger(query);
-  assert.equal(ledger.length, 1);
-  assert.equal(ledger[0].id, "2026-09-25-cotes-scelle");
+  assert.deepEqual(
+    ledger.map((row) => row.id),
+    DATA_MIGRATIONS.map((migration) => migration.id),
+  );
   assert.equal(Number(ledger[0].rows_touched), 2);
   ok("le registre garde la trace de ce qui a été posé");
 

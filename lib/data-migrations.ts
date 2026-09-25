@@ -94,12 +94,58 @@ const SEALED_QUOTES_2026_09_25: Quote[] = [
   { name: "Booster Aventures Ensemble", cents: 599 },
 ];
 
+/**
+ * Pose une cote sur les articles dont le nom *décrit* le produit, au lieu de
+ * l'égaler.
+ *
+ * Utile quand le libellé exact n'est pas connu : un ETB peut avoir été saisi
+ * « ETB 30ans », « Coffret dresseur d'élite 30 ans » ou « Elite Trainer Box
+ * 30th ». Le motif doit donc rester descriptif — un mot qui désigne l'objet
+ * *et* un repère d'extension — pour ne pas déborder sur un autre article.
+ *
+ * Les articles « Autre » sont inclus : ils partagent l'écran du scellé, et un
+ * produit mal rangé ne doit pas rester sans cote pour autant.
+ */
+async function fillByPattern(
+  query: QueryRunner,
+  /** Le produit : « etb|coffret|dresseur|lite ». */
+  object: string,
+  /** L'extension : « 30 », « me05 »… Les deux doivent être présents. */
+  marker: string,
+  cents: number,
+  on: string,
+): Promise<number> {
+  const rows = await query<{ id: string }>(
+    `update items
+        set manual_value_cents = $1,
+            manual_value_date  = $2,
+            value_source       = 'auto',
+            updated_at         = now()
+      where kind in ('sealed', 'other')
+        and (manual_value_cents is null or value_source = 'auto')
+        and lower(name) ~ $3
+        and lower(name) ~ $4
+     returning id`,
+    [cents, on, object, marker],
+  );
+  return rows.length;
+}
+
 export const DATA_MIGRATIONS: DataMigration[] = [
   {
     id: "2026-09-25-cotes-scelle",
     label: "Cotes des produits scellés relevées le 25/09/2026",
     run: (query) =>
       fillSealedQuotes(query, SEALED_QUOTES_2026_09_25, "2026-09-25"),
+  },
+  {
+    // La migration précédente n'a pas trouvé l'ETB : elle comparait le nom
+    // au caractère près. Celle-ci le décrit — un mot qui désigne un coffret
+    // dresseur d'élite, et le repère des 30 ans — plutôt que de le deviner.
+    id: "2026-09-26-cote-etb-30ans",
+    label: "Cote de l'ETB 30 ans relevée le 25/09/2026",
+    run: (query) =>
+      fillByPattern(query, "etb|coffret|dresseur|lite", "30", 5999, "2026-09-25"),
   },
 ];
 
@@ -157,7 +203,12 @@ export async function runDataMigrations(
       [migration.id, migration.label, rows],
     );
 
-    results.push({ id: migration.id, label: migration.label, applied: true, rows });
+    results.push({
+      id: migration.id,
+      label: migration.label,
+      applied: true,
+      rows,
+    });
   }
 
   // L'heure vient de la base, pas de la fonction serverless : c'est la même
