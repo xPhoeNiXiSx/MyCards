@@ -865,6 +865,12 @@ async function main() {
     ...scelle,
     name: "Coffret Dresseur d'Élite 30 ans",
   });
+  // Saisi au clavier avec un espace en trop : la comparaison les neutralise.
+  await createItem({
+    ...scelle,
+    sealedType: "tripack",
+    name: " Tripack  ME01 ",
+  });
   // Ne doit pas être touché par cette migration : ni ETB, ni 30 ans.
   await createItem({
     ...scelle,
@@ -885,10 +891,16 @@ async function main() {
 
   assert.equal(byName("Coffret Dresseur d'Élite 30 ans")?.manualValueCents, 5999);
   assert.equal(byName("Display ME05 Nuit noire")?.manualValueCents, null);
+  assert.equal(
+    posed.find((item) => item.name.includes("Tripack"))?.manualValueCents,
+    1999,
+  );
   ok("l'ETB est retrouvé par description, sans déborder sur un autre article");
 
   assert.equal(byName("ETB 30ans")?.manualValueCents, 5999);
-  assert.equal(byName("ETB 30ans")?.manualValueDate, "2026-09-25");
+  // Le relevé du 26 couvre aussi l'ETB : c'est sa date qui reste, la plus
+  // fraîche, et c'est bien ce qu'on veut lire dans la fiche.
+  assert.equal(byName("ETB 30ans")?.manualValueDate, "2026-09-26");
   assert.equal(byName("blister me05 nuit noire")?.manualValueCents, 699);
   ok("les cotes posées sont datées et indépendantes de la casse");
 

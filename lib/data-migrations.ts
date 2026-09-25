@@ -38,6 +38,12 @@ export type DataMigrationResult = {
 type Quote = { name: string; cents: number };
 
 /**
+ * Le nom, ramené à sa forme comparable : sans casse, sans espaces de bord,
+ * et avec les suites d'espaces réduites à une seule.
+ */
+const NORMALIZED_NAME = `regexp_replace(btrim(lower(name)), '\\s+', ' ', 'g')`;
+
+/**
  * Pose un relevé de cotes sur les articles scellés.
  *
  * Deux cas sont touchés : la cote encore vide, et celle qu'un relevé
@@ -45,8 +51,11 @@ type Quote = { name: string; cents: number };
  * rafraîchir l'ensemble d'un coup. Une cote saisie dans l'application est
  * laissée telle quelle : elle fait autorité sur n'importe quel relevé.
  *
- * Le nom est comparé sans tenir compte de la casse : c'est le seul point
- * d'accroche, un produit scellé n'a pas d'identifiant TCGdex.
+ * Le nom est le seul point d'accroche — un produit scellé n'a pas
+ * d'identifiant TCGdex — et il vient d'une saisie au clavier : la casse, les
+ * espaces en double et les espaces insécables du clavier iOS sont donc
+ * neutralisés avant la comparaison. Un libellé qui « ressemble » ne suffit
+ * pas pour autant : le reste doit correspondre au caractère près.
  */
 async function fillSealedQuotes(
   query: QueryRunner,
@@ -63,7 +72,7 @@ async function fillSealedQuotes(
               value_source       = 'auto',
               updated_at         = now()
         where kind = 'sealed'
-          and lower(name) = lower($3)
+          and ${NORMALIZED_NAME} = regexp_replace(btrim(lower($3)), '\\s+', ' ', 'g')
           and (manual_value_cents is null or value_source = 'auto')
        returning id`,
       [quote.cents, on, quote.name],
@@ -131,6 +140,25 @@ async function fillByPattern(
   return rows.length;
 }
 
+/**
+ * Deuxième relevé, du 26 septembre 2026 : les articles que le premier n'avait
+ * pas couverts. Les libellés viennent de l'inventaire lui-même, lus à
+ * l'écran, et non plus devinés.
+ *
+ * Les deux boosters à l'unité valent nettement moins que leur prix d'achat :
+ * c'est le marché, pas une erreur de relevé. Une correction dans l'app prime
+ * sur ce chiffre et ne sera plus jamais écrasée.
+ */
+const SEALED_QUOTES_2026_09_26: Quote[] = [
+  { name: "Booster Évolution Prismatique", cents: 850 },
+  { name: "Booster Rivalité Destinées", cents: 699 },
+  { name: "Blister ME01", cents: 790 },
+  { name: "Tripack ME01", cents: 1999 },
+  { name: "Coffret Méga-Kangourex Ex", cents: 2990 },
+  { name: "Coffret Mewtwo Ex de la Team Rocket", cents: 2999 },
+  { name: "ETB 30ans", cents: 5999 },
+];
+
 export const DATA_MIGRATIONS: DataMigration[] = [
   {
     id: "2026-09-25-cotes-scelle",
@@ -146,6 +174,12 @@ export const DATA_MIGRATIONS: DataMigration[] = [
     label: "Cote de l'ETB 30 ans relevée le 25/09/2026",
     run: (query) =>
       fillByPattern(query, "etb|coffret|dresseur|lite", "30", 5999, "2026-09-25"),
+  },
+  {
+    id: "2026-09-26-cotes-scelle",
+    label: "Cotes des produits scellés relevées le 26/09/2026",
+    run: (query) =>
+      fillSealedQuotes(query, SEALED_QUOTES_2026_09_26, "2026-09-26"),
   },
 ];
 
