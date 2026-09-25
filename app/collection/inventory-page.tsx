@@ -22,8 +22,9 @@ import { setIdOf } from "@/lib/card-number";
 import { CHECKS, isCheckKey, matchesCheck } from "@/lib/dashboard";
 import { parisToday } from "@/lib/history";
 import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
-import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
+import { formatCents, percentChange } from "@/lib/money";
 
+import { Gain } from "../gain";
 import { Wordmark } from "../wordmark";
 import { DatabaseErrorScreen, SetupScreen } from "../db-screens";
 import { TabBar } from "../tab-bar";
@@ -285,7 +286,7 @@ export async function InventoryPage({
             {formatCents(summary.totalValueCents)}
           </span>
           <span className={`pill ${summary.gainCents >= 0 ? "up" : "down"}`}>
-            {formatSignedCents(summary.gainCents)}
+            <Gain cents={summary.gainCents} />
             {change === undefined ? null : (
               <small>
                 {change > 0 ? "+" : ""}
@@ -549,7 +550,7 @@ export async function InventoryPage({
                     <span className="sr-only">Plus-value </span>
                     {group.gainCents === null
                       ? "—"
-                      : formatSignedCents(group.gainCents)}
+                      : <Gain cents={group.gainCents} />}
                   </td>
                 </tr>
               ))}

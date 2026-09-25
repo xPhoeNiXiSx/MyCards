@@ -29,9 +29,10 @@ import {
   recordSnapshot,
   valueSeries,
 } from "@/lib/history";
-import { formatCents, formatSignedCents, percentChange } from "@/lib/money";
+import { formatCents, percentChange } from "@/lib/money";
 
 import { DatabaseErrorScreen, SetupScreen } from "./db-screens";
+import { Gain } from "./gain";
 import { TabBar } from "./tab-bar";
 import { ValueChart } from "./value-chart";
 import { Wordmark } from "./wordmark";
@@ -117,13 +118,12 @@ export default async function DashboardPage({
 
   return (
     <main className="page">
-      <header className="masthead">
-        <div className="wordmark">
-          <Wordmark />
-        </div>
+      {/* Page de garde : la marque en grand, à la place de l'en-tête et du
+          titre. Le titre reste annoncé aux lecteurs d'écran. */}
+      <header className="cover">
+        <Wordmark className="cover-logo" />
       </header>
-
-      <h1 className="page-title">{TITLE}</h1>
+      <h1 className="sr-only">{TITLE}</h1>
 
       {items.length === 0 ? (
         <div className="panel">
@@ -138,14 +138,14 @@ export default async function DashboardPage({
         </div>
       ) : (
         <>
-          <section className="summary">
+          <section className="summary summary-split">
             <div className="summary-main">
               <span className="summary-label">Valeur actuelle</span>
               <span className="summary-value">
                 {formatCents(summary.totalValueCents)}
               </span>
               <span className={`pill ${summary.gainCents >= 0 ? "up" : "down"}`}>
-                {formatSignedCents(summary.gainCents)}
+                <Gain cents={summary.gainCents} />
                 {change === undefined ? null : (
                   <small>
                     {change > 0 ? "+" : ""}
@@ -190,7 +190,7 @@ export default async function DashboardPage({
                   <Thumb src={best.image} />
                   <span>
                     <strong className={(best.gainCents ?? 0) >= 0 ? "up" : "down"}>
-                      {formatSignedCents(best.gainCents ?? 0)}
+                      <Gain cents={best.gainCents ?? 0} />
                     </strong>
                     <span className="kpi-note">{best.name}</span>
                   </span>
@@ -287,7 +287,7 @@ export default async function DashboardPage({
                             <span
                               className={`mover-gain ${(group.gainCents ?? 0) >= 0 ? "up" : "down"}`}
                             >
-                              {formatSignedCents(group.gainCents ?? 0)}
+                              <Gain cents={group.gainCents ?? 0} />
                             </span>
                           </span>
                         </Link>

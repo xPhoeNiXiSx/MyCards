@@ -2,7 +2,9 @@ import Link from "next/link";
 
 import { PERIODS, type Chart, type Period } from "@/lib/dashboard";
 import type { Point } from "@/lib/history";
-import { formatCents, formatSignedCents } from "@/lib/money";
+import { formatCents } from "@/lib/money";
+
+import { Gain } from "./gain";
 
 /** Marge haute et basse, en pourcentage : la courbe ne touche pas les bords. */
 const PAD = 8;
@@ -69,7 +71,7 @@ export function ValueChart({
         <span className="summary-label">Évolution</span>
         {chart.valueChange !== null ? (
           <span className={`evolution-change ${chart.valueChange >= 0 ? "up" : "down"}`}>
-            {formatSignedCents(chart.valueChange)}
+            <Gain cents={chart.valueChange} />
             {/* L'écart porte sur les relevés : en « Tout », il part du
                 premier relevé, pas du premier achat. */}
             {period === "tout"

@@ -2784,3 +2784,97 @@ button.link.danger:hover {
   flex-wrap: wrap;
   gap: 6px 14px;
 }
+
+/* --- Accueil : page de garde -------------------------------------------- */
+
+/* La marque en grand, centrée, là où les autres pages ont leur en-tête : on
+   arrive sur l'application, pas sur un écran parmi d'autres. Pas collante :
+   elle s'efface au défilement pour rendre la hauteur aux chiffres. */
+.cover {
+  display: grid;
+  place-items: center;
+  padding: calc(44px + env(safe-area-inset-top, 0px)) 0 30px;
+}
+
+.cover-logo {
+  display: block;
+  width: min(82%, 460px);
+  height: auto;
+  color: var(--fg);
+}
+
+@media (max-width: 720px) {
+  .cover {
+    padding: calc(32px + env(safe-area-inset-top, 0px)) 0 22px;
+  }
+}
+
+/* --- Accueil : valeur à gauche, indicateurs à droite -------------------- */
+
+/* Sur une seule rangée, même sur téléphone : empiler les deux indicateurs
+   sous la valeur coûtait une bande entière d'écran, que la courbe récupère. */
+.summary.summary-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 20px 24px;
+}
+
+.summary-split .summary-aside {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  margin-left: 0;
+  text-align: right;
+}
+
+.summary-split .evolution {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .summary.summary-split {
+    gap: 18px 16px;
+  }
+
+  .summary-split .summary-aside {
+    width: auto;
+    padding-top: 0;
+    border-top: 0;
+    gap: 10px;
+  }
+
+  .summary-split .summary-value {
+    font-size: clamp(1.75rem, 8.5vw, 2.875rem);
+  }
+
+  .summary-split .summary-item strong {
+    font-size: 1rem;
+  }
+}
+
+/* --- Sens d'une plus-value ---------------------------------------------- */
+
+.trend {
+  display: inline-block;
+  font-size: 0.72em;
+  margin-right: 0.3em;
+  transform: translateY(-0.08em);
+}
+
+/* Dans la pastille, l'écart du flex s'ajoute déjà à la marge de la flèche. */
+.pill .trend {
+  margin-right: -2px;
+}
+
+/* La flèche et le montant restent sur une ligne, même dans une tuile étroite.
+   Un nom d'article (`.kpi-text`), lui, doit pouvoir passer à la ligne. */
+.kpi-thumb strong:not(.kpi-text) {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .kpi-thumb strong:not(.kpi-text) {
+    font-size: 1.125rem;
+  }
+}
