@@ -363,14 +363,23 @@ export async function getItem(id: string): Promise<Item | undefined> {
   return rows[0] ? toItem(rows[0]) : undefined;
 }
 
+/**
+ * D'où vient la cote qu'on s'apprête à écrire. Tout ce qui passe par les
+ * formulaires est une saisie : une migration de données reconnaîtra ainsi
+ * qu'elle n'a pas le droit de la remplacer.
+ */
+function valueSource(input: ItemInput): string | null {
+  return input.manualValueCents === null ? null : "manual";
+}
+
 export async function createItem(input: ItemInput): Promise<Item> {
   const rows = await query<Row>(
     `insert into items (status, kind, sealed_type, name, card_id, set_name,
                         quantity, purchase_price_cents, purchase_date,
                         manual_value_cents, manual_value_date, image_url, notes,
-                        language, condition, grader, grade)
+                        language, condition, grader, grade, value_source)
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-             $14, $15, $16, $17)
+             $14, $15, $16, $17, $18)
      returning ${COLUMNS}`,
     [
       input.status,
@@ -390,6 +399,7 @@ export async function createItem(input: ItemInput): Promise<Item> {
       input.condition,
       input.grader,
       input.grade,
+      valueSource(input),
     ],
   );
   return toItem(rows[0]);
@@ -403,7 +413,7 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
             purchase_date = $10, manual_value_cents = $11,
             manual_value_date = $12, image_url = $13, notes = $14,
             language = $15, condition = $16, grader = $17, grade = $18,
-            updated_at = now()
+            value_source = $19, updated_at = now()
       where id = $1`,
     [
       id,
@@ -424,6 +434,7 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
       input.condition,
       input.grader,
       input.grade,
+      valueSource(input),
     ],
   );
 }

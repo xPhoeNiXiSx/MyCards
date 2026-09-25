@@ -12,8 +12,9 @@ import type { QueryRunner } from "@/lib/db";
  *
  *  1. Chaque migration porte un identifiant et n'est jouée qu'une fois. Le
  *     registre `data_migrations` s'en souvient, même après redéploiement.
- *  2. Chaque instruction ne remplit que du vide (`... is null`). Une valeur
- *     déjà saisie n'est jamais écrasée, même si la migration rejouait.
+ *  2. Une migration ne touche jamais une valeur saisie dans l'application.
+ *     Elle remplit ce qui est vide, et rafraîchit ce qu'un relevé précédent
+ *     avait posé (`value_source = 'auto'`) — rien d'autre.
  *  3. Rien n'est jamais supprimé, et le nombre de lignes touchées est
  *     conservé : on peut toujours vérifier après coup ce qui s'est passé.
  */
@@ -37,9 +38,15 @@ export type DataMigrationResult = {
 type Quote = { name: string; cents: number };
 
 /**
- * Remplit la cote des articles scellés dont la valeur actuelle est encore
- * vide. Le nom est comparé sans tenir compte de la casse : c'est le seul
- * point d'accroche, un produit scellé n'a pas d'identifiant TCGdex.
+ * Pose un relevé de cotes sur les articles scellés.
+ *
+ * Deux cas sont touchés : la cote encore vide, et celle qu'un relevé
+ * précédent avait posée — c'est ce qui permet à un relevé plus frais de
+ * rafraîchir l'ensemble d'un coup. Une cote saisie dans l'application est
+ * laissée telle quelle : elle fait autorité sur n'importe quel relevé.
+ *
+ * Le nom est comparé sans tenir compte de la casse : c'est le seul point
+ * d'accroche, un produit scellé n'a pas d'identifiant TCGdex.
  */
 async function fillSealedQuotes(
   query: QueryRunner,
@@ -53,10 +60,11 @@ async function fillSealedQuotes(
       `update items
           set manual_value_cents = $1,
               manual_value_date  = $2,
+              value_source       = 'auto',
               updated_at         = now()
         where kind = 'sealed'
-          and manual_value_cents is null
           and lower(name) = lower($3)
+          and (manual_value_cents is null or value_source = 'auto')
        returning id`,
       [quote.cents, on, quote.name],
     );
@@ -68,7 +76,12 @@ async function fillSealedQuotes(
 
 /**
  * Cotes relevées le 25 septembre 2026 chez des revendeurs français, au prix
- * public constaté. Pour l'ETB 30 ans on retient le prix conseillé constaté
+ * public constaté.
+ *
+ * Un relevé plus récent ne remplace pas celui-ci : il s'ajoute à la liste,
+ * avec son propre identifiant et sa propre date. C'est ce qui fait qu'un
+ * seul clic sur « Appliquer les migrations » rafraîchit tout le scellé, et
+ * qu'on peut toujours dire de quand date une cote. Pour l'ETB 30 ans on retient le prix conseillé constaté
  * (59,99 €) plutôt que le prix des boutiques en rupture, plus haut mais qu'on
  * ne peut pas vérifier.
  */

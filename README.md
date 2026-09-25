@@ -99,9 +99,15 @@ des valeurs relevées ailleurs — la cote d'un produit scellé, par exemple —
 personne ne peut écrire à la main puisque la base n'est joignable que par
 l'app. Trois garde-fous, parce qu'on touche à des données saisies : chaque
 migration porte un identifiant et n'est jouée **qu'une fois** (registre
-`data_migrations`), chaque instruction ne remplit **que du vide**, donc une
-valeur déjà saisie n'est jamais écrasée, et le nombre de lignes touchées est
-conservé.
+`data_migrations`), aucune ne touche **une valeur saisie dans l'app**, et le
+nombre de lignes touchées est conservé.
+
+Une cote porte donc sa provenance (`items.value_source`) : `manual` si elle a
+été tapée dans un formulaire, `auto` si elle vient d'un relevé. Un relevé plus
+frais — un nouvel identifiant dans `DATA_MIGRATIONS`, avec sa propre date —
+rafraîchit d'un seul clic toutes les cotes `auto`, et laisse intactes celles
+qui ont été corrigées à la main. C'est ce qui permet de remettre à jour le
+scellé sans jamais écraser un arbitrage.
 
 ## Architecture
 

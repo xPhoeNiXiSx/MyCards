@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 
 import { runMigrations, isSchemaReady, query, setQueryRunner } from "../lib/db";
-import { migrationLedger } from "../lib/data-migrations";
+import { DATA_MIGRATIONS, migrationLedger } from "../lib/data-migrations";
 import { SCHEMA_STATEMENTS } from "../lib/schema";
 import {
   bestGain,
@@ -871,6 +871,35 @@ async function main() {
   assert.equal(byName("Blister ME04 Chaos Ascendant")?.manualValueCents, 1200);
   assert.equal(byName("Blister ME04 Chaos Ascendant")?.manualValueDate, "2026-09-01");
   ok("une cote déjà saisie n'est jamais écrasée");
+
+  // Un relevé plus frais (un nouvel identifiant, donc une nouvelle migration)
+  // rafraîchit ce qu'un relevé précédent avait posé, et laisse les saisies.
+  const refresh = await DATA_MIGRATIONS[0].run(query);
+  assert.equal(refresh, 2);
+  const apres = await listItems();
+  assert.equal(
+    apres.find((item) => item.name === "Blister ME04 Chaos Ascendant")
+      ?.manualValueCents,
+    1200,
+  );
+  ok("un relevé plus frais rafraîchit les cotes posées, jamais les saisies");
+
+  // Corriger une cote dans l'app la met hors d'atteinte des relevés suivants.
+  const corrige = apres.find((item) => item.name === "ETB 30ans");
+  assert.ok(corrige);
+  await updateItem(corrige.id, {
+    ...scelle,
+    name: corrige.name,
+    manualValueCents: 6990,
+    manualValueDate: "2026-09-26",
+  });
+  assert.equal(await DATA_MIGRATIONS[0].run(query), 1);
+  const garde = await listItems();
+  assert.equal(
+    garde.find((item) => item.name === "ETB 30ans")?.manualValueCents,
+    6990,
+  );
+  ok("une cote corrigée dans l'app n'est plus touchée par les relevés");
 
   // Deuxième clic sur « Appliquer les migrations » : rien ne doit rebouger,
   // même si une valeur a été effacée entre-temps.

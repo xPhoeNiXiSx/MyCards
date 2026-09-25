@@ -46,8 +46,8 @@ export default async function ComptePage({
         <p className="hint">
           À lancer après une mise à jour qui ajoute des champs, ou qui apporte
           des cotes relevées en ligne. L&apos;opération est sans risque et peut
-          être rejouée : elle ne crée que ce qui manque, ne remplit que ce qui
-          est vide, et ne supprime jamais rien.
+          être rejouée : elle ne crée que ce qui manque, ne touche jamais une
+          valeur saisie ici, et ne supprime jamais rien.
         </p>
         <form action={migrateAction} className="form">
           <button type="submit">Appliquer les migrations</button>

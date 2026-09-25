@@ -111,4 +111,10 @@ export const SCHEMA_STATEMENTS: string[] = [
    )`,
 
   `alter table data_migrations add column if not exists label text not null default ''`,
+
+  // Qui a écrit la cote : 'manual' si elle a été saisie dans l'app, 'auto' si
+  // elle vient d'un relevé posé par une migration de données. Sans cette
+  // distinction, un relevé plus frais ne pourrait jamais rafraîchir une cote
+  // sans risquer d'écraser une correction faite à la main.
+  `alter table items add column if not exists value_source text`,
 ];
