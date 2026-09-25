@@ -94,6 +94,15 @@ idempotente dans `SCHEMA_STATEMENTS`, déployer, puis lancer **Appliquer les
 migrations** depuis la page **Mon compte**. Rien n'est jamais supprimé, le
 rejeu est sans effet.
 
+Le même bouton joue aussi les **migrations de données** (`lib/data-migrations.ts`) :
+des valeurs relevées ailleurs — la cote d'un produit scellé, par exemple — que
+personne ne peut écrire à la main puisque la base n'est joignable que par
+l'app. Trois garde-fous, parce qu'on touche à des données saisies : chaque
+migration porte un identifiant et n'est jouée **qu'une fois** (registre
+`data_migrations`), chaque instruction ne remplit **que du vide**, donc une
+valeur déjà saisie n'est jamais écrasée, et le nombre de lignes touchées est
+conservé.
+
 ## Architecture
 
 | Chemin                 | Rôle                                                        |
@@ -123,6 +132,7 @@ rejeu est sans effet.
 | `lib/auth.ts`          | Session par mot de passe unique                               |
 | `lib/throttle.ts`      | Limite des essais de connexion, par adresse                   |
 | `lib/schema.ts`        | Schéma Postgres, idempotent, appliqué par l'app elle-même      |
+| `lib/data-migrations.ts` | Migrations de données, jouées une fois, ne remplissent que du vide |
 
 L'appel à TCGdex passe par une route serveur plutôt que directement depuis le
 navigateur : pas de dépendance au CORS, une seule réponse mise en cache (1 h)

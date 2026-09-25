@@ -11,6 +11,8 @@ import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 
 import { runMigrations, isSchemaReady, query, setQueryRunner } from "../lib/db";
+import { migrationLedger } from "../lib/data-migrations";
+import { SCHEMA_STATEMENTS } from "../lib/schema";
 import {
   bestGain,
   breakdown,
@@ -798,7 +800,100 @@ async function main() {
   assert.deepEqual(mouvements.losses.map((group) => group.name), ["B"]);
   ok("hausses et baisses : sans les lignes non cotées");
 
+  // --- Migrations de données --------------------------------------------
+
+  // Base neuve : les articles sont saisis *avant* la migration, comme dans la
+  // vraie vie — sinon elle n'aurait rien à remplir et se marquerait jouée.
   await pg.close();
+  const pgData = new PGlite();
+  setQueryRunner(async (text, params = []) => {
+    const result = await pgData.query(text, params as unknown[]);
+    return result.rows as never[];
+  });
+
+  for (const statement of SCHEMA_STATEMENTS) {
+    await query(statement);
+  }
+
+  const scelle: ItemInput = {
+    status: "owned",
+    kind: "sealed",
+    sealedType: "etb",
+    name: "ETB 30ans",
+    cardId: null,
+    setName: null,
+    quantity: 1,
+    purchasePriceCents: 5500,
+    purchaseDate: null,
+    manualValueCents: null,
+    manualValueDate: null,
+    imageUrl: null,
+    notes: null,
+    language: null,
+    condition: null,
+    grader: null,
+    grade: null,
+  };
+
+  await createItem(scelle);
+  // Casse différente : le nom est le seul point d'accroche, il doit être
+  // comparé sans tenir compte des majuscules.
+  await createItem({
+    ...scelle,
+    sealedType: "blister",
+    name: "blister me05 NUIT NOIRE",
+  });
+  // Cote déjà saisie : la migration ne doit pas y toucher.
+  await createItem({
+    ...scelle,
+    sealedType: "blister",
+    name: "Blister ME04 Chaos Ascendant",
+    manualValueCents: 1200,
+    manualValueDate: "2026-09-01",
+  });
+
+  const report = await runMigrations();
+  const quotes = report.find((row) => row.id === "2026-09-25-cotes-scelle");
+  assert.ok(quotes);
+  assert.equal(quotes.applied, true);
+  assert.equal(quotes.rows, 2);
+  ok("la migration de cotes remplit les valeurs vides");
+
+  const posed = await listItems();
+  const byName = (name: string) =>
+    posed.find((item) => item.name.toLowerCase() === name.toLowerCase());
+
+  assert.equal(byName("ETB 30ans")?.manualValueCents, 5999);
+  assert.equal(byName("ETB 30ans")?.manualValueDate, "2026-09-25");
+  assert.equal(byName("blister me05 nuit noire")?.manualValueCents, 699);
+  ok("les cotes posées sont datées et indépendantes de la casse");
+
+  assert.equal(byName("Blister ME04 Chaos Ascendant")?.manualValueCents, 1200);
+  assert.equal(byName("Blister ME04 Chaos Ascendant")?.manualValueDate, "2026-09-01");
+  ok("une cote déjà saisie n'est jamais écrasée");
+
+  // Deuxième clic sur « Appliquer les migrations » : rien ne doit rebouger,
+  // même si une valeur a été effacée entre-temps.
+  await query(
+    `update items set manual_value_cents = null where lower(name) = 'etb 30ans'`,
+  );
+  const again = await runMigrations();
+  assert.equal(again.find((row) => row.id === "2026-09-25-cotes-scelle")?.applied, false);
+  assert.equal(byName("ETB 30ans")?.name, "ETB 30ans");
+  const rejoue = await listItems();
+  assert.equal(
+    rejoue.find((item) => item.name === "ETB 30ans")?.manualValueCents,
+    null,
+  );
+  ok("une migration déjà jouée ne repart pas au clic suivant");
+
+  const ledger = await migrationLedger(query);
+  assert.equal(ledger.length, 1);
+  assert.equal(ledger[0].id, "2026-09-25-cotes-scelle");
+  assert.equal(Number(ledger[0].rows_touched), 2);
+  ok("le registre garde la trace de ce qui a été posé");
+
+  await pgData.close();
 
   console.log(checks.map((check) => `  ✓ ${check}`).join("\n"));
   console.log(`\n${checks.length} vérifications passées.`);

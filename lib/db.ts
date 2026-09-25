@@ -1,5 +1,9 @@
 import { neon } from "@neondatabase/serverless";
 
+import {
+  runDataMigrations,
+  type DataMigrationResult,
+} from "@/lib/data-migrations";
 import { SCHEMA_STATEMENTS } from "@/lib/schema";
 
 /**
@@ -48,15 +52,21 @@ export function isDatabaseConfigured(): boolean {
 }
 
 /**
- * Applique le schéma. Rejouable : chaque instruction est idempotente.
+ * Applique le schéma, puis les migrations de données. Rejouable : chaque
+ * instruction de schéma est idempotente, et chaque migration de données ne
+ * part qu'une fois (registre `data_migrations`).
  *
  * Les instructions partent une par une, et pas en un seul bloc, parce que le
  * pilote HTTP de Neon refuse les requêtes multi-instructions.
  */
-export async function runMigrations(): Promise<void> {
+export async function runMigrations(): Promise<DataMigrationResult[]> {
   for (const statement of SCHEMA_STATEMENTS) {
     await query(statement);
   }
+
+  // Les migrations de données viennent après le schéma : elles écrivent dans
+  // des colonnes que le schéma vient peut-être tout juste de créer.
+  return runDataMigrations(query);
 }
 
 /** `true` si la table principale existe déjà. */

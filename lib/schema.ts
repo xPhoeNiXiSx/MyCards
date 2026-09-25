@@ -99,4 +99,16 @@ export const SCHEMA_STATEMENTS: string[] = [
      unvalued_count        integer not null,
      recorded_at           timestamptz not null default now()
    )`,
+
+  // Registre des migrations de *données* (voir `lib/data-migrations.ts`) :
+  // une valeur posée par le code ne doit l'être qu'une fois, et on doit
+  // pouvoir dire après coup ce qui a été posé, quand, et sur combien de lignes.
+  `create table if not exists data_migrations (
+     id           text primary key,
+     label        text not null default '',
+     rows_touched integer not null default 0,
+     applied_at   timestamptz not null default now()
+   )`,
+
+  `alter table data_migrations add column if not exists label text not null default ''`,
 ];
