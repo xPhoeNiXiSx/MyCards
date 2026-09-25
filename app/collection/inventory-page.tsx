@@ -279,7 +279,9 @@ export async function InventoryPage({
 
       <h1 className="page-title">{title}</h1>
 
-      <section className="summary">
+      {/* Même disposition que l'accueil : la valeur à gauche, les deux
+          indicateurs à droite, sur une seule rangée même sur téléphone. */}
+      <section className="summary summary-split">
         <div className="summary-main">
           <span className="summary-label">Valeur actuelle</span>
           <span className="summary-value">
@@ -303,15 +305,21 @@ export async function InventoryPage({
           </div>
           <div className="summary-item">
             <strong>{summary.unitCount}</strong>
-            <span>
-              article{summary.unitCount > 1 ? "s" : ""}
-              {summary.unvaluedCount > 0
-                ? `, ${summary.unvaluedCount} sans cote`
-                : ""}
-              {summary.withoutPriceCount > 0
-                ? `, ${summary.withoutPriceCount} sans prix`
-                : ""}
-            </span>
+            <span>article{summary.unitCount > 1 ? "s" : ""}</span>
+            {summary.unvaluedCount > 0 || summary.withoutPriceCount > 0 ? (
+              <span className="summary-note">
+                {[
+                  summary.unvaluedCount > 0
+                    ? `${summary.unvaluedCount} sans cote`
+                    : null,
+                  summary.withoutPriceCount > 0
+                    ? `${summary.withoutPriceCount} sans prix`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            ) : null}
           </div>
         </div>
       </section>

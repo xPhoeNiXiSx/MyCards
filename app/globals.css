@@ -2912,3 +2912,20 @@ button.link.danger:hover {
 .catalogue-search {
   margin-top: 22px;
 }
+
+/* Ce qui manque au total (lignes sans cote, sans prix), sous le nombre
+   d'articles plutôt qu'à sa suite : la colonne de droite reste étroite. */
+.summary-item .summary-note {
+  font-size: 0.6875rem;
+  color: var(--fg-faint);
+}
+
+/* La pastille de plus-value ne se coupe jamais en deux ; c'est la note de
+   droite qui passe à la ligne si la place manque. */
+.summary-split .pill {
+  white-space: nowrap;
+}
+
+.summary-split .summary-note {
+  max-width: 8.5rem;
+}
