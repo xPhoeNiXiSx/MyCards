@@ -249,6 +249,16 @@ export const DATA_MIGRATIONS: DataMigration[] = [
         "other",
       ]),
   },
+  {
+    // Rattrapage : le nom exact du bundle dans l'inventaire n'était pas
+    // connu, et le relevé précédent, qui le comparait au caractère près, a pu
+    // ne rien trouver. Celui-ci le décrit : un bundle, et le repère de
+    // l'extension (« Nuit Noire » ou « ME05 »).
+    id: "2026-10-03-cote-bundle-nuit-noire-motif",
+    label: "Cote du Bundle Nuit Noire (par description) relevée le 02/10/2026",
+    run: (query) =>
+      fillByPattern(query, "bundle", "nuit|me ?0?5", 3899, "2026-10-02"),
+  },
 ];
 
 /**

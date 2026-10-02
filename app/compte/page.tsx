@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { lastMigrationRun } from "@/lib/data-migrations";
+import { lastMigrationRun, migrationLedger } from "@/lib/data-migrations";
 import { query } from "@/lib/db";
 import { getSettingsOrDefaults } from "@/lib/settings";
 
@@ -34,6 +34,42 @@ async function lastRunLabel(): Promise<string> {
   }
 }
 
+/** Combien de relevés afficher dans le journal : les plus récents. */
+const LEDGER_SIZE = 4;
+
+/**
+ * Ce que les derniers relevés ont réellement posé, et ce qui reste sans
+ * cote dans le scellé, avec le nom exact tel qu'il est saisi : c'est ce nom
+ * qu'un relevé doit viser. Sans ce journal, un relevé qui ne trouve rien ne
+ * se voit pas.
+ */
+async function migrationReport(): Promise<{
+  ledger: { id: string; label: string; rows: number }[];
+  unvalued: string[];
+} | null> {
+  try {
+    const ledger = (await migrationLedger(query))
+      .slice(-LEDGER_SIZE)
+      .reverse()
+      .map((row) => ({
+        id: row.id,
+        label: row.label,
+        rows: Number(row.rows_touched),
+      }));
+    const unvalued = (
+      await query<{ name: string }>(
+        `select name from items
+          where status = 'owned' and kind in ('sealed', 'other')
+            and manual_value_cents is null
+          order by name`,
+      )
+    ).map((row) => row.name);
+    return { ledger, unvalued };
+  } catch {
+    return null;
+  }
+}
+
 export default async function ComptePage({
   searchParams,
 }: {
@@ -42,6 +78,7 @@ export default async function ComptePage({
   const { enregistre } = await searchParams;
   const settings = await getSettingsOrDefaults();
   const dernierPassage = await lastRunLabel();
+  const report = await migrationReport();
 
   return (
     <main className="page narrow">
@@ -78,6 +115,39 @@ export default async function ComptePage({
         <form action={migrateAction} className="form">
           <button type="submit">Appliquer les migrations</button>
         </form>
+
+        {report && report.ledger.length > 0 ? (
+          <div className="ledger">
+            <span className="ledger-title">Derniers relevés de cotes</span>
+            <ul>
+              {report.ledger.map((row) => (
+                <li key={row.id}>
+                  <span>{row.label}</span>
+                  <strong className={row.rows === 0 ? "none" : undefined}>
+                    {row.rows === 0
+                      ? "aucun article"
+                      : `${row.rows} article${row.rows > 1 ? "s" : ""}`}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {report && report.unvalued.length > 0 ? (
+          <div className="ledger">
+            <span className="ledger-title">Scellé encore sans cote</span>
+            <ul>
+              {report.unvalued.map((name) => (
+                <li key={name}>
+                  {/* Entre guillemets : c'est le nom exact, espaces compris,
+                      qu'un relevé doit viser. */}
+                  <span>« {name} »</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
 
       <div className="panel">

@@ -905,6 +905,12 @@ async function main() {
     sealedType: null,
     name: "Bundle nuit noire",
   });
+  // Nom inconnu à l'avance : le rattrapage le retrouve par description.
+  await createItem({
+    ...scelle,
+    sealedType: "bundle",
+    name: "Bundle ME05 Nuit Noire (6 boosters)",
+  });
 
   const report = await runMigrations();
   const quotes = report.find((row) => row.id === "2026-09-25-cotes-scelle");
@@ -929,6 +935,9 @@ async function main() {
   assert.equal(byName("Bundle nuit noire")?.manualValueCents, 3899);
   assert.equal(byName("Bundle nuit noire")?.manualValueDate, "2026-10-02");
   ok("le bundle Nuit Noire est coté, même rangé en « Autre »");
+
+  assert.equal(byName("Bundle ME05 Nuit Noire (6 boosters)")?.manualValueCents, 3899);
+  ok("un bundle Nuit Noire au nom différent est retrouvé par description");
 
   assert.equal(byName("ETB 30ans")?.manualValueCents, 16500);
   // Chaque relevé rafraîchit le précédent : c'est la date du plus frais qui

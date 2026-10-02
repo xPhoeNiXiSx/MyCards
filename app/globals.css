@@ -3584,3 +3584,51 @@ span.swipe-btn {
     transform: scale(0.9);
   }
 }
+
+/* --- Compte : journal des relevés de cotes ------------------------------ */
+
+.ledger {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.ledger-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--fg-muted);
+}
+
+.ledger ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ledger li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+}
+
+.ledger li strong {
+  flex: none;
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+  color: var(--positive);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un relevé qui n'a rien trouvé se voit : c'est le signe d'un nom qui ne
+   correspond pas. */
+.ledger li strong.none {
+  color: var(--gold);
+}
