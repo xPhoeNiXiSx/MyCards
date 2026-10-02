@@ -32,3 +32,9 @@ Vercel : l'utilisateur ne voit une modification qu'une fois en ligne. Pas de
 branche de travail qui traîne, pas de pull request en attente de validation.
 Les vérifications (`npm run typecheck`, `npm test`, `npm run build`) se font
 avant le push, pas après.
+
+## Relevés de cotes du scellé
+
+Méthode, sources et adresses par produit : **`docs/releves-de-cotes.md`**.
+Un relevé s'en tient au panel de sources qui y figure ; on n'en cherche pas
+d'autres. Si une source change, on corrige ce fichier dans le même commit.
