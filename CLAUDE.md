@@ -1,5 +1,12 @@
 # MyCards — conventions
 
+## Langue
+
+**Tout se dit en français** : les réponses, mais aussi chaque message
+intermédiaire entre deux étapes de travail (« je vérifie… », « c'est
+corrigé… »), les messages de commit, les commentaires du code et la
+documentation. Aucune exception, même pour une phrase courte.
+
 ## Décisions produit qui reviennent à l'utilisateur
 
 **Ne jamais pousser une modification graphique ou ergonomique sans que
