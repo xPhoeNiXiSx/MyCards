@@ -1,8 +1,10 @@
 /* ==========================================================================
-   MyCards — système visuel
-   Thème sombre unique. L'accent terracotta ne sert qu'aux repères actifs et à
-   la marque. Les montants portent la typographie d'affichage, parce qu'ils
-   sont le sujet de l'application.
+   MyCards — système visuel, direction « holo »
+   Inspirée des cartes holographiques : nuit bleutée, halo violet et cyan en
+   fond, panneaux en verre dépoli, et un dégradé irisé (cyan → violet → rose
+   → or) réservé à ce qui compte : la valeur, les repères actifs, la marque.
+   Thème sombre unique. Les montants portent la typographie d'affichage,
+   parce qu'ils sont le sujet de l'application.
    ========================================================================== */
 
 /* Thème unique : sombre. L'application n'est utilisée que dans ce mode, donc
@@ -11,39 +13,50 @@
   color-scheme: dark;
 
   /* Surfaces, de l'arrière-plan au premier plan. */
-  --bg: #131210;
-  --bg-sunken: #0e0d0c;
-  --surface: #1c1a18;
-  --surface-hover: #232120;
+  --bg: #0a0f1f;
+  --bg-sunken: #070b17;
+  --surface: #121a33;
+  --surface-hover: #19223f;
 
   /* Texte, du plus appuyé au plus discret. */
-  --fg: #f1ede7;
-  --fg-muted: #a39c92;
-  --fg-faint: #7c756c;
+  --fg: #eef3ff;
+  --fg-muted: #9aa5c8;
+  --fg-faint: #6e7aa0;
 
-  --border: #2e2b27;
-  --border-strong: #3d3833;
+  --border: #222c4d;
+  --border-strong: #2f3b63;
 
-  --accent: #e08a68;
-  --accent-soft: #34251e;
+  /* L'accent uni, pour ce qui ne peut pas porter un dégradé (contours,
+     cases à cocher, texte de lien). */
+  --accent: #a78bfa;
+  --accent-soft: rgba(167, 139, 250, 0.16);
 
-  --positive: #6cc08b;
-  --positive-soft: #1a2b22;
-  --negative: #ef8b7d;
-  --negative-soft: #2f1e1b;
+  /* Le dégradé holo : la signature de l'application. */
+  --holo: linear-gradient(120deg, #7cf5ff, #a78bfa 45%, #ffa8e2 75%, #ffe58a);
+  /* Texte posé sur le dégradé : sombre, le dégradé étant clair. */
+  --on-holo: #0a0f1f;
+
+  /* Panneaux en verre dépoli, posés sur le halo du fond. */
+  --glass: rgba(255, 255, 255, 0.045);
+  --glass-border: rgba(255, 255, 255, 0.09);
+
+  --positive: #6cf0c2;
+  --positive-soft: rgba(108, 240, 194, 0.12);
+  --negative: #ff96a8;
+  --negative-soft: rgba(255, 150, 168, 0.12);
 
   /* Réservé à la note de gradation : l'or n'a pas d'autre usage. */
   --gold: #d9b45a;
   --gold-soft: #2e2716;
   --gold-border: #5a4a22;
 
-  --radius-sm: 8px;
-  --radius: 14px;
-  --radius-lg: 20px;
+  --radius-sm: 10px;
+  --radius: 18px;
+  --radius-lg: 22px;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.36);
-  --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 44px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(2, 4, 12, 0.5);
+  --shadow: 0 1px 2px rgba(2, 4, 12, 0.5), 0 10px 28px rgba(2, 4, 12, 0.45);
+  --shadow-lg: 0 2px 6px rgba(2, 4, 12, 0.6), 0 20px 48px rgba(2, 4, 12, 0.6);
 
   /* Repli défini ici plutôt que dans la seule pile : `font-family` construite
      sur une variable absente est invalide *en entier*, et la page retombe en
@@ -2238,15 +2251,14 @@ button.link.danger:hover {
 
 .evolution-plot .value-line {
   fill: none;
-  stroke: var(--accent);
+  stroke: url(#value-holo);
   stroke-width: 2;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
 .evolution-plot .value-area {
-  fill: var(--accent-soft);
-  opacity: 0.7;
+  fill: url(#value-fade);
 }
 
 .evolution-plot .invested-line {
@@ -2928,4 +2940,145 @@ button.link.danger:hover {
 
 .summary-split .summary-note {
   max-width: 8.5rem;
+}
+
+
+/* ==========================================================================
+   Direction « holo » — ce que les variables seules ne suffisent pas à dire
+   ========================================================================== */
+
+/* Le halo du fond : deux nappes, violette et cyan, fixées derrière tout. Sur
+   `html` plutôt que `body` pour que le pseudo-élément reste derrière le
+   contenu sans toucher à l'empilement des pages. */
+html {
+  background: var(--bg);
+}
+
+body {
+  background: transparent;
+}
+
+body::before {
+  content: "";
+  /* En haut du document, pas fixé à l'écran : le halo éclaire l'arrivée sur
+     la page et s'efface au défilement. */
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 640px;
+  z-index: -1;
+  pointer-events: none;
+  /* Deux nappes rondes, de taille fixe : un rayon relatif à la boîte les
+     étirerait en bandes verticales sur un écran de téléphone. */
+  background:
+    radial-gradient(circle 260px at 18% 170px, rgba(124, 92, 255, 0.34), transparent 70%),
+    radial-gradient(circle 230px at 86% 120px, rgba(0, 214, 255, 0.2), transparent 70%);
+}
+
+/* L'en-tête collant laisse deviner le halo au défilement. */
+.masthead {
+  background: rgba(10, 15, 31, 0.45);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-bottom-color: var(--glass-border);
+}
+
+/* Les panneaux principaux, en verre dépoli. */
+.summary,
+.panel,
+.kpi,
+.acc,
+.check {
+  background: var(--glass);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* La valeur actuelle, en dégradé holo : le chiffre qu'on vient lire. */
+.summary-value {
+  background: var(--holo);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Repères actifs : le dégradé, texte sombre dessus. */
+.chip[aria-pressed="true"] {
+  color: var(--on-holo);
+  background: var(--holo);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.chip[aria-pressed="true"] .count {
+  color: var(--on-holo);
+  opacity: 0.7;
+}
+
+button[type="submit"],
+.quick-add .quick-submit,
+.chooser-save {
+  color: var(--on-holo);
+  background: var(--holo);
+}
+
+.fab {
+  color: var(--on-holo);
+  background: var(--holo);
+  box-shadow: 0 8px 28px rgba(167, 139, 250, 0.45), var(--shadow-lg);
+}
+
+/* Barre d'onglets : verre dépoli, onglet actif lumineux, trait en dégradé. */
+.tabbar {
+  background: rgba(10, 15, 31, 0.78);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-top-color: var(--glass-border);
+}
+
+.tabbar a.active {
+  color: #ffffff;
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.85));
+}
+
+.tabbar a.active::after {
+  width: 20px;
+  background: var(--holo);
+}
+
+/* Reflet irisé sur les vignettes mises en avant. Les images ne prennent pas
+   de pseudo-élément : le reflet vit sur leur enveloppe `.holo`. */
+.holo {
+  position: relative;
+  display: block;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.holo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.4) 35%,
+    rgba(167, 139, 250, 0.3) 45%,
+    transparent 60%
+  );
+  mix-blend-mode: screen;
+}
+
+/* La meilleure pièce : un halo doré, comme une carte rare. */
+.holo.best {
+  overflow: visible;
+}
+
+.holo.best > .thumb {
+  box-shadow: 0 0 0 2px #ffe58a, 0 0 24px rgba(255, 229, 138, 0.55);
+}
+
+.holo.best::after {
+  border-radius: 6px;
 }

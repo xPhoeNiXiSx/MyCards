@@ -1,22 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Outfit } from "next/font/google";
 
 import "./globals.css";
 
-/** Texte courant : taillé pour les petites tailles d'interface. */
-const inter = Inter({
+/**
+ * Une seule famille, Outfit, pour le texte comme pour les montants : ronde
+ * et géométrique, dans l'esprit des interfaces de jeu de cartes. Les montants
+ * prennent ses graisses fortes. Deux variables restent exposées pour que le
+ * CSS puisse un jour séparer les rôles sans toucher aux composants.
+ */
+const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-body",
-  display: "swap",
-});
-
-/**
- * Titres et montants. Ses chiffres ont assez de caractère pour porter les
- * valeurs de la collection, qui sont le cœur de l'application.
- */
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display",
   display: "swap",
 });
 
@@ -38,7 +33,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#131210",
+  themeColor: "#0a0f1f",
   // Laisse la page occuper toute la dalle ; les encoches sont absorbées par
   // les `env(safe-area-inset-*)` du CSS.
   viewportFit: "cover",
@@ -50,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="fr" className={outfit.variable}>
       <body>{children}</body>
     </html>
   );

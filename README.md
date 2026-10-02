@@ -30,16 +30,26 @@ Cinq écrans :
 
 ## Design
 
+Direction « holo », inspirée des cartes holographiques et des interfaces de
+jeu de cartes : nuit bleutée, halo violet et cyan en haut de page, panneaux en
+verre dépoli, et un **dégradé irisé** (cyan → violet → rose → or, variable
+`--holo`) réservé à ce qui compte — la valeur actuelle, le tracé de la courbe,
+les repères actifs (puces, onglet, bouton d'ajout). Les vignettes mises en
+avant portent un reflet irisé, et la meilleure plus-value un halo doré, comme
+une carte rare.
+
 **Thème sombre uniquement** : pas de variante claire, pas de
 `prefers-color-scheme` à suivre, `:root` déclare `color-scheme: dark`.
-L'accent terracotta est réservé à la marque et aux repères actifs. Deux familles via `next/font` — **Inter** pour le texte,
-**Space Grotesk** pour les titres et tous les montants, parce que les chiffres
-sont le sujet de l'application.
 
-Tout est piloté par des variables CSS dans `app/globals.css`, qui portent
-directement les valeurs sombres. `--font-body` et `--font-display` ont un repli déclaré dans
-`:root` : une `font-family` construite sur une variable absente est invalide
-*en entier* et ferait retomber la page en serif.
+Une seule famille, **Outfit** (via `next/font`), pour le texte comme pour les
+montants, qui en prennent les graisses fortes. `--font-body` et
+`--font-display` ont un repli déclaré dans `:root` : une `font-family`
+construite sur une variable absente est invalide *en entier* et ferait
+retomber la page en serif.
+
+Tout est piloté par des variables CSS dans `app/globals.css` ; la section
+« Direction holo », en fin de fichier, porte ce que les variables seules ne
+suffisent pas à dire (halo, verre dépoli, dégradés).
 
 ## Stack
 

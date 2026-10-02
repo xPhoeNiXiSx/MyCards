@@ -187,7 +187,9 @@ export default async function DashboardPage({
               <Link className="kpi kpi-link" href={`/collection/${best.id}`}>
                 <span className="kpi-label">Meilleure plus-value</span>
                 <span className="kpi-thumb">
-                  <Thumb src={best.image} />
+                  <span className="holo best">
+                    <Thumb src={best.image} />
+                  </span>
                   <span>
                     <strong className={(best.gainCents ?? 0) >= 0 ? "up" : "down"}>
                       <Gain cents={best.gainCents ?? 0} />
@@ -273,13 +275,23 @@ export default async function DashboardPage({
                       <p className="hint">{column.empty}</p>
                     ) : (
                       <div className="movers-list">
-                      {column.list.map((group) => (
+                      {column.list.map((group, index) => (
                         <Link
                           key={group.key}
                           className="mover"
                           href={`/collection/${group.lines[0].id}`}
                         >
-                          <Thumb src={group.image} />
+                          {/* Reflet holo sur chaque pièce, halo doré sur la
+                              meilleure plus-value. */}
+                          <span
+                            className={
+                              column.title === "Plus-values" && index === 0
+                                ? "holo best"
+                                : "holo"
+                            }
+                          >
+                            <Thumb src={group.image} />
+                          </span>
                           <span className="mover-text">
                             <span className="mover-name">
                               {group.name}

@@ -100,6 +100,20 @@ export function ValueChart({
         aria-label={`Évolution du ${frenchDay(chart.start)} à aujourd'hui : investi ${formatCents(chart.invested.at(-1)?.cents ?? 0)}${last ? `, valeur ${formatCents(last.cents)}` : ""}.`}
       >
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {/* Le tracé de la valeur porte le dégradé holo de l'application ;
+              l'aire dessous s'efface vers le bas. */}
+          <defs>
+            <linearGradient id="value-holo" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="#7cf5ff" />
+              <stop offset="0.45" stopColor="#a78bfa" />
+              <stop offset="0.75" stopColor="#ffa8e2" />
+              <stop offset="1" stopColor="#ffe58a" />
+            </linearGradient>
+            <linearGradient id="value-fade" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stopColor="#a78bfa" stopOpacity="0.32" />
+              <stop offset="1" stopColor="#a78bfa" stopOpacity="0" />
+            </linearGradient>
+          </defs>
           <line className="grid" x1="0" x2="100" y1={PAD} y2={PAD} />
           <line className="grid" x1="0" x2="100" y1={100 - PAD} y2={100 - PAD} />
           {area ? <path className="value-area" d={area} /> : null}
