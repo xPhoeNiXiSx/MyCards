@@ -159,6 +159,39 @@ const SEALED_QUOTES_2026_09_26: Quote[] = [
   { name: "ETB 30ans", cents: 5999 },
 ];
 
+/**
+ * Troisième relevé, du 2 octobre 2026, sur tous les produits connus des deux
+ * premiers.
+ *
+ * Méthode, pour qu'on puisse refaire le calcul :
+ *
+ *  - un produit encore en rayon (blisters, boosters, tripacks, coffrets) est
+ *    coté à la **médiane** des prix constatés chez les revendeurs français ;
+ *    un prix isolé, haut ou bas, ne fait pas la cote ;
+ *  - l'ETB 30 ans, en rupture partout, est coté au **plus bas prix
+ *    Cardmarket constaté en version française** (165 €). Le prix conseillé
+ *    (59,99 €) ne dit plus ce qu'il vaut : il ne s'en trouve plus à ce prix.
+ *    La tendance Cardmarket de la version anglaise (137 €) ne vaut pas pour
+ *    un ETB français.
+ *
+ * Les prix publics bougent peu ; la cote de l'ETB, elle, est volatile dans
+ * les semaines qui suivent une sortie. Un relevé plus récent s'ajoutera, avec
+ * son propre identifiant.
+ */
+const SEALED_QUOTES_2026_10_02: Quote[] = [
+  { name: "Blister ME04 Chaos Ascendant", cents: 690 },
+  { name: "Blister ME05 Nuit noire", cents: 649 },
+  { name: "Blister EV10 Rivalités Destinées", cents: 890 },
+  { name: "Blister ME01", cents: 790 },
+  { name: "Tripack ME05 Nuit noire", cents: 1990 },
+  { name: "Tripack ME01", cents: 2340 },
+  { name: "Booster Aventures Ensemble", cents: 695 },
+  { name: "Booster Évolution Prismatique", cents: 1000 },
+  { name: "Booster Rivalité Destinées", cents: 766 },
+  { name: "Coffret Méga-Kangourex Ex", cents: 2790 },
+  { name: "Coffret Mewtwo Ex de la Team Rocket", cents: 3690 },
+];
+
 export const DATA_MIGRATIONS: DataMigration[] = [
   {
     id: "2026-09-25-cotes-scelle",
@@ -180,6 +213,17 @@ export const DATA_MIGRATIONS: DataMigration[] = [
     label: "Cotes des produits scellés relevées le 26/09/2026",
     run: (query) =>
       fillSealedQuotes(query, SEALED_QUOTES_2026_09_26, "2026-09-26"),
+  },
+  {
+    id: "2026-10-02-cotes-scelle",
+    label: "Cotes des produits scellés relevées le 02/10/2026",
+    run: async (query) =>
+      (await fillSealedQuotes(query, SEALED_QUOTES_2026_10_02, "2026-10-02")) +
+      // L'ETB par description, comme au relevé du 26/09 : son libellé exact
+      // varie d'une saisie à l'autre. Sans « coffret » seul cette fois : à
+      // 165 €, un autre coffret des 30 ans coté comme un ETB serait une
+      // erreur chère. « dresseur » couvre « Coffret Dresseur d'Élite ».
+      (await fillByPattern(query, "etb|dresseur|elite trainer", "30", 16500, "2026-10-02")),
   },
 ];
 

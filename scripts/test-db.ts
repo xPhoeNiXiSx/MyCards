@@ -889,19 +889,21 @@ async function main() {
   const byName = (name: string) =>
     posed.find((item) => item.name.toLowerCase() === name.toLowerCase());
 
-  assert.equal(byName("Coffret Dresseur d'Élite 30 ans")?.manualValueCents, 5999);
+  // Relevé le plus récent (02/10) : l'ETB vaut sa cote Cardmarket VF.
+  assert.equal(byName("Coffret Dresseur d'Élite 30 ans")?.manualValueCents, 16500);
   assert.equal(byName("Display ME05 Nuit noire")?.manualValueCents, null);
   assert.equal(
     posed.find((item) => item.name.includes("Tripack"))?.manualValueCents,
-    1999,
+    2340,
   );
   ok("l'ETB est retrouvé par description, sans déborder sur un autre article");
 
-  assert.equal(byName("ETB 30ans")?.manualValueCents, 5999);
-  // Le relevé du 26 couvre aussi l'ETB : c'est sa date qui reste, la plus
-  // fraîche, et c'est bien ce qu'on veut lire dans la fiche.
-  assert.equal(byName("ETB 30ans")?.manualValueDate, "2026-09-26");
-  assert.equal(byName("blister me05 nuit noire")?.manualValueCents, 699);
+  assert.equal(byName("ETB 30ans")?.manualValueCents, 16500);
+  // Chaque relevé rafraîchit le précédent : c'est la date du plus frais qui
+  // reste, et c'est bien ce qu'on veut lire dans la fiche.
+  assert.equal(byName("ETB 30ans")?.manualValueDate, "2026-10-02");
+  assert.equal(byName("blister me05 nuit noire")?.manualValueCents, 649);
+  assert.equal(byName("blister me05 nuit noire")?.manualValueDate, "2026-10-02");
   ok("les cotes posées sont datées et indépendantes de la casse");
 
   assert.equal(byName("Blister ME04 Chaos Ascendant")?.manualValueCents, 1200);
@@ -951,6 +953,19 @@ async function main() {
     null,
   );
   ok("une migration déjà jouée ne repart pas au clic suivant");
+
+  // Le relevé du 02/10 cote l'ETB à 165 € : il ne doit viser que l'ETB, pas
+  // n'importe quel coffret des 30 ans.
+  const autreCoffret = await createItem({
+    ...scelle,
+    sealedType: "coffret",
+    name: "Coffret Collection Premium 30 ans",
+  });
+  const octobre = DATA_MIGRATIONS.find((row) => row.id === "2026-10-02-cotes-scelle");
+  assert.ok(octobre);
+  await octobre.run(query);
+  assert.equal((await getItem(autreCoffret.id))?.manualValueCents, null);
+  ok("le relevé de l'ETB ne déborde pas sur un autre coffret des 30 ans");
 
   // Le bouton doit pouvoir dire « appliquées le … » même quand toutes les
   // migrations avaient déjà été jouées et qu'il n'y avait rien à poser.
