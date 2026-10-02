@@ -41,6 +41,13 @@ une carte rare.
 **Thème sombre uniquement** : pas de variante claire, pas de
 `prefers-color-scheme` à suivre, `:root` déclare `color-scheme: dark`.
 
+**Mouvement** : les blocs montent en cascade à l'arrivée sur une page, la
+valeur se précise puis son dégradé ondule lentement, la courbe se trace de
+gauche à droite, un reflet traverse les cartes mises en avant, les fenêtres
+s'ouvrent en glissant, et tout ce qui se touche réagit. Tout est regroupé dans
+la section « Mouvement » de `app/globals.css`, et rien ne bouge si l'appareil
+demande de réduire les animations.
+
 Une seule famille, **Outfit** (via `next/font`), pour le texte comme pour les
 montants, qui en prennent les graisses fortes. `--font-body` et
 `--font-display` ont un repli déclaré dans `:root` : une `font-family`

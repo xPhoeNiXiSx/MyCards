@@ -755,7 +755,7 @@ button[type="submit"]:disabled {
 }
 
 .confirm::backdrop {
-  background: rgba(10, 8, 6, 0.6);
+  background: rgba(4, 7, 18, 0.66);
   backdrop-filter: blur(2px);
 }
 
@@ -1276,7 +1276,7 @@ button[type="submit"]:disabled {
 }
 
 .viewer::backdrop {
-  background: rgba(8, 7, 6, 0.82);
+  background: rgba(4, 7, 18, 0.84);
   backdrop-filter: blur(3px);
 }
 
@@ -1737,7 +1737,7 @@ button.link.danger:hover {
 }
 
 .sheet::backdrop {
-  background: rgba(10, 8, 6, 0.6);
+  background: rgba(4, 7, 18, 0.66);
   backdrop-filter: blur(2px);
 }
 
@@ -3071,14 +3071,329 @@ button[type="submit"],
 }
 
 /* La meilleure pièce : un halo doré, comme une carte rare. */
+/* Le halo sur l'enveloppe, pas sur l'image : l'enveloppe rogne son contenu
+   (le reflet ne doit pas déborder), pas sa propre ombre. */
 .holo.best {
-  overflow: visible;
-}
-
-.holo.best > .thumb {
   box-shadow: 0 0 0 2px #ffe58a, 0 0 24px rgba(255, 229, 138, 0.55);
 }
 
-.holo.best::after {
-  border-radius: 6px;
+
+/* ==========================================================================
+   Mouvement
+   Tout ce qui bouge vit ici, et seulement si l'appareil ne demande pas de
+   réduire les animations : sans préférence exprimée, on anime ; sinon, rien
+   (la règle `prefers-reduced-motion: reduce` plus haut coupe le reste).
+   Règle d'écriture : les entrées utilisent `animation-fill-mode: backwards`,
+   jamais `forwards` — une transformation maintenue après l'animation ferait
+   de l'élément le repère des enfants en `position: fixed`.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* --- Arrivée sur une page : les blocs montent en cascade ------------- */
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .page > :not(.masthead):not(.tabbar):not(.fab):not(dialog) {
+    animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .page > :nth-child(2) { animation-delay: 0.04s; }
+  .page > :nth-child(3) { animation-delay: 0.08s; }
+  .page > :nth-child(4) { animation-delay: 0.12s; }
+  .page > :nth-child(5) { animation-delay: 0.16s; }
+  .page > :nth-child(6) { animation-delay: 0.2s; }
+  .page > :nth-child(7) { animation-delay: 0.24s; }
+  .page > :nth-child(n + 8) { animation-delay: 0.28s; }
+
+  /* Le logo de la page de garde se pose en douceur. */
+  @keyframes cover-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94);
+      filter: blur(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+  }
+
+  .cover-logo {
+    animation: cover-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  /* --- La valeur : apparition nette, puis reflet holo qui ondule -------- */
+
+  @keyframes value-in {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      letter-spacing: 0.04em;
+    }
+    to {
+      opacity: 1;
+      filter: none;
+    }
+  }
+
+  @keyframes holo-drift {
+    from {
+      background-position: 0% 50%;
+    }
+    to {
+      background-position: 100% 50%;
+    }
+  }
+
+  .summary-value {
+    background-size: 220% 100%;
+    animation:
+      value-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s backwards,
+      holo-drift 7s ease-in-out 1s infinite alternate;
+  }
+
+  @keyframes pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    70% {
+      transform: scale(1.04);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .summary .pill {
+    animation: pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s backwards;
+  }
+
+  /* --- La courbe se trace de gauche à droite ---------------------------- */
+
+  @keyframes draw {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  .evolution-plot svg {
+    animation: draw 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s backwards;
+  }
+
+  /* Le point du jour apparaît en dernier, puis respire, discrètement. */
+  @keyframes breathe {
+    0%,
+    100% {
+      box-shadow: 0 0 0 3px var(--surface), 0 0 0 3px rgba(167, 139, 250, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 3px var(--surface), 0 0 0 9px rgba(167, 139, 250, 0);
+    }
+  }
+
+  .value-dot {
+    animation:
+      pop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 1.3s backwards,
+      breathe 2.6s ease-in-out 1.8s infinite;
+  }
+
+  /* --- Les cartes : arrivée en cascade, reflet qui passe ---------------- */
+
+  .movers-list > *,
+  .gallery > *,
+  .grid > .card {
+    animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .movers-list > :nth-child(2),
+  .gallery > :nth-child(2),
+  .grid > .card:nth-child(2) { animation-delay: 0.06s; }
+  .movers-list > :nth-child(3),
+  .gallery > :nth-child(3),
+  .grid > .card:nth-child(3) { animation-delay: 0.12s; }
+  .gallery > :nth-child(4),
+  .grid > .card:nth-child(4) { animation-delay: 0.18s; }
+  .gallery > :nth-child(5),
+  .grid > .card:nth-child(5) { animation-delay: 0.24s; }
+  .gallery > :nth-child(n + 6),
+  .grid > .card:nth-child(n + 6) { animation-delay: 0.3s; }
+
+  /* Le reflet traverse la carte de temps en temps, comme une holo qu'on
+     incline sous la lumière. Décalé d'une carte à l'autre. */
+  @keyframes sheen {
+    0%,
+    62% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(120%);
+    }
+  }
+
+  .holo::after {
+    animation: sheen 5.5s ease-in-out infinite;
+  }
+
+  .movers-list > :nth-child(2) .holo::after { animation-delay: 0.7s; }
+  .movers-list > :nth-child(3) .holo::after { animation-delay: 1.4s; }
+
+  /* --- Fenêtres : la feuille d'ajout monte, la visionneuse s'ouvre ------ */
+
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(28px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes zoom-in {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .sheet[open],
+  .confirm[open] {
+    animation: sheet-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .viewer[open] {
+    animation: zoom-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .sheet[open]::backdrop,
+  .confirm[open]::backdrop,
+  .viewer[open]::backdrop {
+    animation: fade-in 0.3s ease;
+  }
+
+  /* --- Accordéons : le contenu glisse à l'ouverture --------------------- */
+
+  .acc[open] > .acc-body {
+    animation: rise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .acc > summary::before {
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* --- Onglet actif : le trait s'étire en arrivant ---------------------- */
+
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  .tabbar a.active::after {
+    animation: grow 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .tabbar a {
+    transition:
+      color 0.2s ease,
+      transform 0.15s ease;
+  }
+
+  .tabbar a:active {
+    transform: scale(0.88);
+  }
+
+  /* --- Toucher, survoler : tout ce qui se clique réagit ----------------- */
+
+  .chip,
+  .set-chip,
+  .choose-sets,
+  .check,
+  .kpi-link,
+  .mover,
+  .tile,
+  .card .frame,
+  button[type="submit"],
+  .quick-add .quick-submit,
+  .chooser-save,
+  .fab {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.25s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease,
+      opacity 0.15s ease;
+  }
+
+  .chip:active,
+  .set-chip:active,
+  .choose-sets:active,
+  .check:active,
+  .kpi-link:active,
+  .mover:active,
+  .tile:active,
+  .card .frame:active,
+  button[type="submit"]:active,
+  .quick-add .quick-submit:active,
+  .chooser-save:active {
+    transform: scale(0.97);
+  }
+
+  .fab:active {
+    transform: scale(0.92);
+  }
+
+  /* Le survol n'existe qu'à la souris : sur téléphone, il resterait
+     « collé » après un toucher. */
+  @media (hover: hover) {
+    .kpi-link:hover,
+    .check:hover,
+    .tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(124, 92, 255, 0.18);
+    }
+
+    .mover:hover .holo {
+      transform: translateY(-3px) rotate(-1deg);
+    }
+
+    .card .frame:hover {
+      transform: translateY(-3px);
+    }
+
+    .fab:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 12px 34px rgba(167, 139, 250, 0.6), var(--shadow-lg);
+    }
+  }
+
+  .mover .holo {
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 }
