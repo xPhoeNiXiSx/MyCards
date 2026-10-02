@@ -52,6 +52,7 @@ Les produits actuellement suivis, avec l'adresse à consulter en premier.
 | Coffret Méga-Kangourex Ex | [Pokézenith](https://www.pokezenith.com/coffrets-boites-speciales/259-pokemon-coffret-mega-kangourex-ex-0196214116870.html) · [Chocobonplan](https://chocobonplan.com/bons-plans/cartes-a-jouer/cartes-pokemon/coffret-mega-kangourex-ex) |
 | Tripack ME01 | [Blazingtail](https://www.blazingtail.fr/69068-tripack-pokemon-mega-evolution-me01.html) |
 | Tripack ME05 Nuit noire | [Blazingtail](https://www.blazingtail.fr/80477-tripack-pokemon-nuit-noire-me05.html) · [Les Gentlemen du Jeu](https://lesgentlemendujeu.com/pokemon-me05-nuit-noire/12348-pokemon-me05-tripack-nuit-noire-0196214142411.html) |
+| Bundle Nuit Noire | [Les Gentlemen du Jeu](https://lesgentlemendujeu.com/pokemon-me05-nuit-noire/12347-pokemon-me05-bundle-6-boosters-nuit-noire.html) · [Pokelite](https://www.pokelite.fr/produit/bundle-nuit-noire-pokemon-me05/) · [Cultura](https://www.cultura.com/p-bundle-pokemon-mega-evolutions-nuit-noire-13040385.html) |
 | Blister ME01 | [Pokestock](https://pokestock.fr/produit/booster-blister-me01-pokemon/) · [Hamacards](https://www.hamacards.com/produit/blister-pokemon-mega-evolution-me01/) |
 | Blister ME04 Chaos Ascendant | [Blazingtail](https://www.blazingtail.fr/77320-blister-pokemon-chaos-ascendant-me04.html) |
 | Blister ME05 Nuit noire | [Le Coin des Barons](https://lecoindesbarons.com/tradingcard-game/cartes-pokemon/booster-pokemon/pokemon-blister-nuit-noire-me05-en-francais/) |
@@ -63,6 +64,10 @@ Les produits actuellement suivis, avec l'adresse à consulter en premier.
 Un nouveau produit scellé dans l'inventaire : l'ajouter à ce tableau, avec son
 nom **exact** tel qu'il apparaît dans l'inventaire (c'est le seul point
 d'accroche de la migration) et une adresse sur un site du panel.
+
+Un relevé vise les types « Scellé » **et** « Autre » (passer
+`["sealed", "other"]` à `fillSealedQuotes`) : un produit rangé en « Autre »
+partage l'écran du scellé et ne doit pas rester sans cote.
 
 ## Accès depuis une session Claude Code
 
@@ -98,3 +103,4 @@ précédent.
 | 25/09/2026 | 6 | Prix publics ; l'ETB n'avait pas été trouvé (libellé exact) |
 | 26/09/2026 | 7 | Libellés lus dans l'inventaire ; ETB retrouvé par description |
 | 02/10/2026 | 12 | Médiane revendeurs ; ETB au plus bas Cardmarket VF (165 €) |
+| 02/10/2026 | 1 | Bundle Nuit Noire (38,99 €), oublié des relevés précédents ; vise aussi le type « Autre » |

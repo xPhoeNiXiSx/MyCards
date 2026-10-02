@@ -897,6 +897,15 @@ async function main() {
     name: "Display ME05 Nuit noire",
   });
 
+  // Rangé en « Autre » plutôt qu'en scellé, et tapé en minuscules : le
+  // relevé du bundle doit le retrouver quand même.
+  await createItem({
+    ...scelle,
+    kind: "other",
+    sealedType: null,
+    name: "Bundle nuit noire",
+  });
+
   const report = await runMigrations();
   const quotes = report.find((row) => row.id === "2026-09-25-cotes-scelle");
   assert.ok(quotes);
@@ -916,6 +925,10 @@ async function main() {
     2340,
   );
   ok("l'ETB est retrouvé par description, sans déborder sur un autre article");
+
+  assert.equal(byName("Bundle nuit noire")?.manualValueCents, 3899);
+  assert.equal(byName("Bundle nuit noire")?.manualValueDate, "2026-10-02");
+  ok("le bundle Nuit Noire est coté, même rangé en « Autre »");
 
   assert.equal(byName("ETB 30ans")?.manualValueCents, 16500);
   // Chaque relevé rafraîchit le précédent : c'est la date du plus frais qui

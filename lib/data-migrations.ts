@@ -61,6 +61,12 @@ async function fillSealedQuotes(
   query: QueryRunner,
   quotes: Quote[],
   on: string,
+  /**
+   * Types d'articles visés. Le scellé seul jusqu'au relevé du 02/10 ; les
+   * suivants visent aussi « Autre », qui partage l'écran du scellé : un
+   * produit rangé là ne doit pas rester sans cote pour autant.
+   */
+  kinds: string[] = ["sealed"],
 ): Promise<number> {
   let touched = 0;
 
@@ -71,11 +77,11 @@ async function fillSealedQuotes(
               manual_value_date  = $2,
               value_source       = 'auto',
               updated_at         = now()
-        where kind = 'sealed'
+        where kind = any($4)
           and ${NORMALIZED_NAME} = regexp_replace(btrim(lower($3)), '\\s+', ' ', 'g')
           and (manual_value_cents is null or value_source = 'auto')
        returning id`,
-      [quote.cents, on, quote.name],
+      [quote.cents, on, quote.name, kinds],
     );
     touched += rows.length;
   }
@@ -192,6 +198,15 @@ const SEALED_QUOTES_2026_10_02: Quote[] = [
   { name: "Coffret Mewtwo Ex de la Team Rocket", cents: 3690 },
 ];
 
+/**
+ * Complément du 02/10 : le Bundle Nuit Noire (ME05), absent des relevés
+ * précédents, était le seul article du scellé sans cote. Médiane des trois
+ * prix relevés chez les revendeurs du panel (35,99 €, 38,99 €, 39,90 €).
+ */
+const SEALED_QUOTES_2026_10_02_BUNDLE: Quote[] = [
+  { name: "Bundle Nuit Noire", cents: 3899 },
+];
+
 export const DATA_MIGRATIONS: DataMigration[] = [
   {
     id: "2026-09-25-cotes-scelle",
@@ -224,6 +239,15 @@ export const DATA_MIGRATIONS: DataMigration[] = [
       // 165 €, un autre coffret des 30 ans coté comme un ETB serait une
       // erreur chère. « dresseur » couvre « Coffret Dresseur d'Élite ».
       (await fillByPattern(query, "etb|dresseur|elite trainer", "30", 16500, "2026-10-02")),
+  },
+  {
+    id: "2026-10-02-cote-bundle-nuit-noire",
+    label: "Cote du Bundle Nuit Noire relevée le 02/10/2026",
+    run: (query) =>
+      fillSealedQuotes(query, SEALED_QUOTES_2026_10_02_BUNDLE, "2026-10-02", [
+        "sealed",
+        "other",
+      ]),
   },
 ];
 
