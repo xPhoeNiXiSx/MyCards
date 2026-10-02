@@ -3473,3 +3473,114 @@ tbody tr {
   position: relative;
   z-index: 1;
 }
+
+/* --- Fiche : glisser vers le produit voisin ----------------------------- */
+
+/* Le doigt glisse à l'horizontale, la page défile à la verticale. Rogné en
+   largeur seulement : l'image qui sort ne fait pas défiler la page de côté,
+   et sa lueur garde de la place au-dessus et en dessous. */
+.swipe-hero {
+  touch-action: pan-y;
+  overflow-x: clip;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.swipe-stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  transition:
+    transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.16s ease;
+}
+
+/* Pendant le glissement, l'image colle au doigt : aucune transition. */
+.swipe-stage.dragging {
+  transition: none;
+}
+
+.swipe-stage.leave-next {
+  transform: translateX(-115%) rotate(-6deg);
+  opacity: 0;
+}
+
+.swipe-stage.leave-prev {
+  transform: translateX(115%) rotate(6deg);
+  opacity: 0;
+}
+
+.item-hero img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.swipe-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin: 10px 0 2px;
+}
+
+.swipe-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--fg);
+  font-size: 1.5rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+/* Côté sans voisin : la place est gardée, le bouton n'est pas là. */
+span.swipe-btn {
+  visibility: hidden;
+}
+
+.swipe-count {
+  min-width: 4.5em;
+  text-align: center;
+  font-family: var(--font-display-stack);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* La fiche suivante arrive du côté opposé à celui où l'on a poussé. */
+  @keyframes enter-from-right {
+    from {
+      opacity: 0;
+      transform: translateX(45%) rotate(4deg);
+    }
+  }
+
+  @keyframes enter-from-left {
+    from {
+      opacity: 0;
+      transform: translateX(-45%) rotate(-4deg);
+    }
+  }
+
+  .swipe-stage.enter-next {
+    animation: enter-from-right 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .swipe-stage.enter-prev {
+    animation: enter-from-left 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .swipe-btn {
+    transition: transform 0.15s ease, border-color 0.2s ease;
+  }
+
+  .swipe-btn:active {
+    transform: scale(0.9);
+  }
+}

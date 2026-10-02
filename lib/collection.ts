@@ -683,6 +683,47 @@ function groupKey(item: Item): string {
   return `${item.kind}|${item.sealedType ?? ""}|${item.cardId ?? ""}|${item.language ?? "fr"}|${grading}|${name}`;
 }
 
+export type ItemNeighbors = {
+  /** Fiche du produit précédent et du suivant, dans l'ordre de l'inventaire. */
+  prev: string | null;
+  next: string | null;
+  /** Rang du produit (à partir de 1) et nombre de produits. */
+  position: number;
+  total: number;
+};
+
+/**
+ * Voisins d'un article dans l'inventaire, pour passer d'une fiche à l'autre.
+ *
+ * Même grain et même ordre que la liste : un produit acheté plusieurs fois
+ * compte une fois, et on rejoint chaque produit par son achat le plus récent
+ * (`items` arrive trié du plus récent au plus ancien). Pas besoin de
+ * valoriser : l'ordre ne dépend que des lignes.
+ */
+export function itemNeighbors(items: Item[], id: string): ItemNeighbors | null {
+  const groups: string[][] = [];
+  const index = new Map<string, number>();
+  for (const item of items) {
+    const key = groupKey(item);
+    let at = index.get(key);
+    if (at === undefined) {
+      at = groups.length;
+      index.set(key, at);
+      groups.push([]);
+    }
+    groups[at].push(item.id);
+  }
+
+  const position = groups.findIndex((ids) => ids.includes(id));
+  if (position < 0) return null;
+  return {
+    prev: position > 0 ? groups[position - 1][0] : null,
+    next: position < groups.length - 1 ? groups[position + 1][0] : null,
+    position: position + 1,
+    total: groups.length,
+  };
+}
+
 /**
  * Regroupe les achats d'un même produit en une ligne.
  *

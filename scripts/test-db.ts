@@ -30,6 +30,7 @@ import {
   markAsOwned,
   ownedCountsByCard,
   inScope,
+  itemNeighbors,
   scopeOf,
   deleteItem,
   getItem,
@@ -674,6 +675,24 @@ async function main() {
   assert.equal(scopeOf("other"), "sealed");
   assert.equal(inScope({ kind: "single" }, "sealed"), false);
   ok("les cartes d'un côté, le scellé et le reste de l'autre");
+
+  // --- Passer d'une fiche à l'autre ------------------------------------------
+
+  // Du plus récent au plus ancien, comme `listItems` les rend. Le deuxième
+  // achat de Pikachu ne compte pas : c'est le même produit que le premier.
+  const fil = [
+    { ...etb, id: "p1", kind: "single" as const, sealedType: null, name: "Pikachu" },
+    { ...etb, id: "d1", kind: "single" as const, sealedType: null, name: "Dracaufeu" },
+    { ...etb, id: "p2", kind: "single" as const, sealedType: null, name: "Pikachu" },
+    { ...etb, id: "m1", kind: "single" as const, sealedType: null, name: "Mew" },
+  ];
+  assert.deepEqual(itemNeighbors(fil, "p1"), { prev: null, next: "d1", position: 1, total: 3 });
+  assert.deepEqual(itemNeighbors(fil, "d1"), { prev: "p1", next: "m1", position: 2, total: 3 });
+  assert.deepEqual(itemNeighbors(fil, "m1"), { prev: "d1", next: null, position: 3, total: 3 });
+  // Depuis un achat plus ancien d'un produit : mêmes voisins que le produit.
+  assert.deepEqual(itemNeighbors(fil, "p2"), { prev: null, next: "d1", position: 1, total: 3 });
+  assert.equal(itemNeighbors(fil, "absent"), null);
+  ok("fiche précédente et suivante, au grain des produits de l'inventaire");
 
   // --- Réglages ---------------------------------------------------------------
 
