@@ -4,6 +4,7 @@ import { useRef } from "react";
 
 import type { ItemKind } from "@/lib/collection";
 
+import { ChevronBack } from "../chevron-back";
 import { addItemAction } from "./actions";
 import { ItemForm } from "./item-form";
 
@@ -43,16 +44,18 @@ export function AddFab({
       </button>
 
       <dialog ref={dialog} className="sheet" aria-labelledby="add-title">
+        {/* Le retour en haut à gauche, comme partout un niveau plus bas :
+            c'est là que le pouce et l'œil le cherchent. */}
         <div className="sheet-head">
-          <h2 id="add-title">Ajouter un article</h2>
           <button
             type="button"
-            className="sheet-close"
-            aria-label="Fermer"
+            className="back-btn"
             onClick={() => dialog.current?.close()}
           >
-            ✕
+            <ChevronBack />
+            <span>Retour</span>
           </button>
+          <h2 id="add-title">Ajouter un article</h2>
         </div>
 
         <div className="sheet-body">

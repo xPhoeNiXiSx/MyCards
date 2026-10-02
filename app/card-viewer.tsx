@@ -5,6 +5,7 @@ import { useContext, useEffect, useRef } from "react";
 import { imageUrl } from "@/lib/images";
 import type { CardResume } from "@/lib/tcgdex";
 
+import { ChevronBack } from "./chevron-back";
 import { OwnedContext } from "./owned-context";
 import { QuickAdd } from "./quick-add";
 
@@ -64,6 +65,17 @@ export function CardViewer({
     <dialog ref={dialog} className="viewer" onClose={onClose}>
       {card && index !== null ? (
         <>
+          <div className="viewer-top">
+            <button
+              type="button"
+              className="back-btn"
+              onClick={() => dialog.current?.close()}
+            >
+              <ChevronBack />
+              <span>Retour</span>
+            </button>
+          </div>
+
           <div className="viewer-stage">
             {src ? (
               <img src={src} alt={card.name} />
@@ -110,14 +122,6 @@ export function CardViewer({
               doivent pas déborder sur la suivante. */}
           <QuickAdd key={card.id} card={card} setName={setNameOf(card)} />
 
-          <button
-            type="button"
-            className="viewer-close"
-            aria-label="Fermer"
-            onClick={() => dialog.current?.close()}
-          >
-            ✕
-          </button>
         </>
       ) : null}
     </dialog>

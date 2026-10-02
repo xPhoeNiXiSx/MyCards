@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/auth";
-import { SCOPES, getItem, scopeOf } from "@/lib/collection";
+import { SCOPES, getItem, scopeOf, valuate } from "@/lib/collection";
 
+import { BackBar } from "../../back-bar";
 import { TabBar } from "../../tab-bar";
-import { Wordmark } from "../../wordmark";
 import { updateItemAction } from "../actions";
 import { ItemForm } from "../item-form";
 import { DeleteItem } from "./delete-item";
@@ -23,18 +22,26 @@ export default async function EditItemPage({
   const item = await getItem(id);
   if (!item) notFound();
 
+  // Le visuel : l'image saisie, sinon celui de la carte chez TCGdex.
+  const [valued] = await valuate([item]);
+  const image = valued?.image ?? null;
+  const isCard = item.kind === "single";
+
   return (
     <main className="page narrow">
-      <header className="masthead">
-        <div className="wordmark">
-          <Link href="/">
-            <Wordmark />
-          </Link>
-        </div>
-        <Link href={SCOPES[scopeOf(item.kind)].path} className="back">
-          ← {item.kind === "single" ? "Mes cartes" : "Mon scellé"}
-        </Link>
-      </header>
+      <BackBar
+        href={SCOPES[scopeOf(item.kind)].path}
+        label={isCard ? "Mes cartes" : "Mon scellé"}
+      />
+
+      {/* L'objet d'abord, en grand : c'est lui qu'on vient voir. */}
+      {image ? (
+        <figure className={isCard ? "item-hero card" : "item-hero"}>
+          <span className="holo">
+            <img src={image} alt={item.name} />
+          </span>
+        </figure>
+      ) : null}
 
       <h1 className="page-title">{item.name}</h1>
       <div className="panel">

@@ -1290,7 +1290,7 @@ button[type="submit"]:disabled {
 .viewer-stage img {
   /* La carte occupe la hauteur disponible sans jamais forcer de défilement :
      sous elle, la barre de navigation et l'ajout express. */
-  max-height: calc(100dvh - 340px);
+  max-height: calc(100dvh - 396px);
   max-width: 100%;
   border-radius: 10px;
   display: block;
@@ -1349,21 +1349,6 @@ button[type="submit"]:disabled {
 .viewer-nav:not(:disabled):hover {
   border-color: var(--border-strong);
   background: var(--bg-sunken);
-}
-
-.viewer-close {
-  position: absolute;
-  top: -14px;
-  right: -14px;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--fg);
-  font-size: 0.9375rem;
-  line-height: 1;
-  cursor: pointer;
 }
 
 /* La vignette devient un bouton : elle ne doit pas en prendre l'apparence. */
@@ -1744,8 +1729,8 @@ button.link.danger:hover {
 .sheet-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: flex-start;
+  gap: 12px;
   padding: 18px 20px 14px;
   border-bottom: 1px solid var(--border);
   flex: none;
@@ -1754,18 +1739,6 @@ button.link.danger:hover {
 .sheet-head h2 {
   font-size: 1.0625rem;
   margin: 0;
-}
-
-.sheet-close {
-  width: 34px;
-  height: 34px;
-  flex: none;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--fg);
-  font-size: 0.875rem;
-  cursor: pointer;
 }
 
 .sheet-body {
@@ -3103,7 +3076,7 @@ button[type="submit"],
     }
   }
 
-  .page > :not(.masthead):not(.tabbar):not(.fab):not(dialog) {
+  .page > :not(.masthead):not(.backbar):not(.tabbar):not(.fab):not(dialog) {
     animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   }
 
@@ -3398,4 +3371,105 @@ button[type="submit"],
   .mover .holo {
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+}
+
+
+/* --- Retour : écrans et fenêtres de second niveau ----------------------- */
+
+/* Le bouton retour, le même partout : fiche d'article, feuille d'ajout,
+   visionneuse. Large et contrasté, à gauche, là où on le cherche. */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 0 14px 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  flex: none;
+}
+
+.back-btn:hover {
+  border-color: var(--border-strong);
+}
+
+/* En-tête d'une fiche : le retour seul, sans logo, collé en haut. */
+.backbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 0 12px;
+  background: rgba(10, 15, 31, 0.45);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.2);
+}
+
+.viewer-top {
+  display: flex;
+  padding: 12px 12px 0;
+}
+
+/* --- Fiche d'un article : l'objet en grand ------------------------------ */
+
+.item-hero {
+  margin: 10px 0 4px;
+  display: grid;
+  place-items: center;
+}
+
+.item-hero .holo {
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(124, 92, 255, 0.28), var(--shadow-lg);
+}
+
+.item-hero img {
+  display: block;
+  max-width: 100%;
+  max-height: 46vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Une carte a un format connu : on lui donne une largeur franche plutôt
+   que de dépendre de la taille de l'image fournie. */
+.item-hero.card .holo {
+  width: min(64%, 300px);
+}
+
+.item-hero.card img {
+  width: 100%;
+  max-height: none;
+  aspect-ratio: 245 / 342;
+}
+
+/* --- Inventaire : toute la ligne mène à la fiche ------------------------ */
+
+tbody tr {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Le lien du nom s'étend à toute la ligne… */
+.row-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* …sauf là où un autre lien doit rester atteignable : chaque achat d'un
+   produit acheté plusieurs fois. */
+.purchases a {
+  position: relative;
+  z-index: 1;
 }

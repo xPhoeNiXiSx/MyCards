@@ -475,13 +475,17 @@ export async function InventoryPage({
                         <span className="thumb empty" aria-hidden="true" />
                       )}
                       <div className="title-text">
-                        {group.lines.length === 1 ? (
-                          <Link href={`/collection/${group.lines[0].id}`}>
-                            {group.name}
-                          </Link>
-                        ) : (
-                          <span className="group-name">{group.name}</span>
-                        )}
+                        {/* Le lien couvre toute la ligne (voir `.row-link`) :
+                            on touche la fiche où l'on veut, pas seulement le
+                            nom. Pour un produit acheté plusieurs fois, il
+                            mène à l'achat le plus récent ; les autres restent
+                            atteignables par leurs propres liens, au-dessus. */}
+                        <Link
+                          className="row-link"
+                          href={`/collection/${group.lines[0].id}`}
+                        >
+                          {group.name}
+                        </Link>
                         <Badges
                           badges={group.badges}
                           label={group.edition ?? undefined}
