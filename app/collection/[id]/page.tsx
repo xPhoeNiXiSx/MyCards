@@ -76,7 +76,7 @@ export default async function EditItemPage({
         <DeleteItem id={item.id} name={item.name} />
       </div>
 
-      <TabBar />
+      <TabBar current={SCOPES[scope].path} />
     </main>
   );
 }

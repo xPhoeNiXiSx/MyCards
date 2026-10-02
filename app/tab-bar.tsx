@@ -160,14 +160,19 @@ const TABS: Tab[] = [
   },
 ];
 
-export function TabBar() {
+/**
+ * `current` force l'onglet actif quand l'adresse ne suffit pas à le dire :
+ * la fiche d'un article vit sous `/collection/…` qu'il s'agisse d'une carte ou
+ * d'un scellé, et c'est l'onglet de son inventaire qui doit s'allumer.
+ */
+export function TabBar({ current }: { current?: string } = {}) {
   const pathname = usePathname();
 
   return (
     <nav className="tabbar" aria-label="Navigation principale">
       <ul>
         {TABS.map((tab) => {
-          const active = tab.matches(pathname);
+          const active = current ? tab.href === current : tab.matches(pathname);
           return (
             <li key={tab.href}>
               <Link
