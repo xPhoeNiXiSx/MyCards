@@ -7,6 +7,11 @@ intermédiaire entre deux étapes de travail (« je vérifie… », « c'est
 corrigé… »), les messages de commit, les commentaires du code et la
 documentation. Aucune exception, même pour une phrase courte.
 
+## Réponses courtes
+
+**Être bref.** Quelques lignes : ce qui a été fait, puis la question s'il y en
+a une, mise en évidence. Pas de liste exhaustive des détails techniques.
+
 ## Décisions produit qui reviennent à l'utilisateur
 
 **Ne jamais pousser une modification graphique ou ergonomique sans que
