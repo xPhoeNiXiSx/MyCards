@@ -46,7 +46,7 @@ export function ItemGain({
     return (
       <section className="summary item-gain">
         <div className="summary-main">
-          <span className="summary-label">Plus-value</span>
+          <span className="summary-label">Valeur actuelle</span>
           <span className="summary-value muted">—</span>
           <span className="evolution-note">
             Pas encore de cote : saisissez une valeur actuelle ci-dessous pour
@@ -58,39 +58,18 @@ export function ItemGain({
   }
 
   const change = percentChange(item.totalPurchaseCents, item.totalValueCents);
-  const multiple = item.quantity > 1;
 
+  // Le prix d'achat et la cote sont déjà dans le formulaire, plus bas : ici,
+  // seulement la valeur et ce qu'elle rapporte.
   return (
     <section className="summary summary-split item-gain">
       <div className="summary-main">
-        <span className="summary-label">Plus-value</span>
-        <span className={`summary-value ${item.gainCents >= 0 ? "up" : "down"}`}>
+        <span className="summary-label">Valeur actuelle</span>
+        <span className="summary-value">{formatCents(item.totalValueCents)}</span>
+        <span className={`pill ${item.gainCents >= 0 ? "up" : "down"}`}>
           <Gain cents={item.gainCents} />
+          {change === undefined ? null : <small>{formatSignedPercent(change)}</small>}
         </span>
-        {change === undefined ? null : (
-          <span className={`pill ${item.gainCents >= 0 ? "up" : "down"}`}>
-            {formatSignedPercent(change)}
-          </span>
-        )}
-      </div>
-
-      <div className="summary-aside">
-        <div className="summary-item">
-          <strong>{formatCents(item.totalPurchaseCents)}</strong>
-          <span>
-            achat
-            {multiple ? ` · ${item.quantity} × ${formatCents(item.purchasePriceCents)}` : ""}
-          </span>
-        </div>
-        <div className="summary-item">
-          <strong>{formatCents(item.totalValueCents)}</strong>
-          <span>
-            {item.valueSource === "market" ? "cote Cardmarket" : "cote saisie"}
-            {multiple && item.currentUnitCents !== null
-              ? ` · ${item.quantity} × ${formatCents(item.currentUnitCents)}`
-              : ""}
-          </span>
-        </div>
       </div>
 
       {chart ? <Plot chart={chart} mode={mode} quantity={item.quantity} /> : null}

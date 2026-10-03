@@ -3900,14 +3900,6 @@ button:disabled:has(.spinner) {
   margin-bottom: 22px;
 }
 
-.summary-value.up {
-  color: var(--positive);
-}
-
-.summary-value.down {
-  color: var(--negative);
-}
-
 .summary-value.muted {
   color: var(--fg-faint);
 }
