@@ -3892,3 +3892,40 @@ button:disabled:has(.spinner) {
   height: 26px;
   margin-top: 22px;
 }
+
+/* --- Fiche d'un article : plus-value et courbe de la cote ------------------ */
+
+.item-gain {
+  margin-top: 4px;
+  margin-bottom: 22px;
+}
+
+.summary-value.muted {
+  color: var(--fg-faint);
+}
+
+.item-gain .summary-main .pill {
+  font-size: 0.8125rem;
+}
+
+.item-plot {
+  height: 130px;
+}
+
+/* La valeur à gauche, la plus-value alignée à droite sur la même ligne. */
+.item-gain-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.item-gain .summary-value,
+.item-gain .pill {
+  white-space: nowrap;
+}
+
+.item-gain .summary-main {
+  grid-column: 1 / -1;
+}

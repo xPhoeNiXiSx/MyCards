@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { listItems, summarize, valuate } from "@/lib/collection";
-import { recordSnapshot } from "@/lib/history";
+import { recordItemValues, recordSnapshot } from "@/lib/history";
 import { safeEquals } from "@/lib/session";
 
 /**
@@ -23,8 +23,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const summary = summarize(await valuate(await listItems()));
+    const items = await valuate(await listItems());
+    const summary = summarize(items);
     await recordSnapshot(summary);
+    // La cote de chaque article, pour la courbe de sa fiche.
+    await recordItemValues(items);
     return NextResponse.json({
       valueCents: summary.totalValueCents,
       purchaseCents: summary.totalPurchaseCents,

@@ -22,7 +22,7 @@ import { setIdOf } from "@/lib/card-number";
 import { CHECKS, isCheckKey, matchesCheck } from "@/lib/dashboard";
 import { parisToday } from "@/lib/history";
 import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
-import { formatCents, percentChange } from "@/lib/money";
+import { formatCents, formatSignedPercent, percentChange } from "@/lib/money";
 
 import { Gain } from "../gain";
 import { SubmitButton } from "../submit-button";
@@ -294,8 +294,7 @@ export async function InventoryPage({
             <Gain cents={summary.gainCents} />
             {change === undefined ? null : (
               <small>
-                {change > 0 ? "+" : ""}
-                {change} %
+                {formatSignedPercent(change)}
               </small>
             )}
           </span>

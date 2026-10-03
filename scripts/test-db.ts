@@ -46,12 +46,20 @@ import { defaultSelection, isPocketSerie, selectSeries } from "../lib/catalogue"
 import { DEFAULT_SETTINGS, getSettings, saveSetting } from "../lib/settings";
 import {
   buildChart,
+  buildItemChart,
   categoryBreakdown,
   matchesCheck,
   movers,
   pendingChecks,
 } from "../lib/dashboard";
-import { investedSeries, parisToday, recordSnapshot, valueSeries } from "../lib/history";
+import {
+  investedSeries,
+  itemValueSeries,
+  parisToday,
+  recordItemValues,
+  recordSnapshot,
+  valueSeries,
+} from "../lib/history";
 import { findByNumber, normalizeCardNumber, setIdOf } from "../lib/card-number";
 import { parseImageUrl } from "../lib/images";
 import { formatCents, parseEuros, percentChange } from "../lib/money";
@@ -653,6 +661,52 @@ async function main() {
   );
   assert.equal((await valueSeries())[0].day, "2026-09-01");
   ok("les relevés sont rendus dans l'ordre chronologique");
+
+  // --- Historique de la cote d'un article ---------------------------------
+
+  const suivi = await createItem({
+    ...base,
+    quantity: 2,
+    purchasePriceCents: 1000,
+    purchaseDate: "2026-08-01",
+    manualValueCents: 1500,
+    manualValueDate: "2026-09-01",
+  });
+  // Le schéma rejoué amorce l'historique avec la cote déjà saisie, à sa date.
+  await runMigrations();
+  assert.deepEqual(await itemValueSeries(suivi.id), [{ day: "2026-09-01", cents: 1500 }]);
+  ok("l'historique d'un article démarre à la cote déjà saisie");
+
+  const [suiviValue] = await valuate([{ ...suivi, manualValueCents: 1800 }]);
+  await recordItemValues([suiviValue]);
+  await recordItemValues([{ ...suiviValue, currentUnitCents: 1700 }]);
+  assert.deepEqual(await itemValueSeries(suivi.id), [
+    { day: "2026-09-01", cents: 1500 },
+    { day: today, cents: 1700 },
+  ]);
+  // Ni article sans cote, ni article visé dans l'historique.
+  const [sansCote] = await valuate([{ ...suivi, manualValueCents: null }]);
+  await recordItemValues([{ ...sansCote, id: (await createItem(base)).id }]);
+  assert.equal(Number((await query<{ n: number }>(`select count(*) as n from item_value_history`))[0].n), 2);
+  ok("un relevé de cote par article et par jour, le dernier fait foi");
+
+  const courbe = buildItemChart(
+    [{ day: "2026-09-01", cents: 1500 }, { day: "2026-09-20", cents: 1200 }],
+    1000,
+    2,
+    "2026-08-01",
+    "2026-10-03",
+  );
+  assert.ok(courbe);
+  assert.equal(courbe.start, "2026-08-01");
+  assert.deepEqual(courbe.value.at(-1), { day: "2026-10-03", cents: 1200 });
+  assert.equal(courbe.gainChange, -600);
+  assert.equal(buildItemChart([], 1000, 1, null, "2026-10-03"), null);
+  ok("la courbe d'un article part du jour d'achat et va jusqu'à aujourd'hui");
+
+  await query(`delete from items where id = $1`, [suivi.id]);
+  assert.deepEqual(await itemValueSeries(suivi.id), []);
+  ok("supprimer un article efface son historique");
 
   // --- Possession par carte, pour le catalogue ------------------------------
 
