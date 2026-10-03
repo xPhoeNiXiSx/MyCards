@@ -10,6 +10,7 @@ import { Wordmark } from "../wordmark";
 import { BuyButton } from "./buy-button";
 import { removeWantedAction } from "./actions";
 import { WantedForm } from "./wanted-form";
+import { SubmitButton } from "../submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -83,9 +84,9 @@ export default async function ListePage() {
                 <BuyButton id={item.id} name={item.name} />
                 <form action={removeWantedAction}>
                   <input type="hidden" name="id" value={item.id} />
-                  <button type="submit" className="link danger">
+                  <SubmitButton className="link danger" pendingLabel="Retrait…">
                     Retirer
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             </li>

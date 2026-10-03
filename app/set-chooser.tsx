@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { SerieDetail } from "@/lib/tcgdex";
+import { Spinner } from "./spinner";
 
 /** Case d'une série : cochée, décochée, ou entre les deux. */
 function SerieCheckbox({
@@ -140,7 +141,14 @@ export function SetChooser({
           disabled={pending}
           onClick={() => run(() => onSave([...selected]))}
         >
-          {pending ? "Enregistrement…" : "Enregistrer"}
+          {pending ? (
+          <>
+            <Spinner />
+            Enregistrement…
+          </>
+        ) : (
+          "Enregistrer"
+        )}
         </button>
         <button type="button" className="chooser-secondary" onClick={onCancel} disabled={pending}>
           Annuler

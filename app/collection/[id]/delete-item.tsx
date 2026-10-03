@@ -3,6 +3,7 @@
 import { useRef } from "react";
 
 import { deleteItemAction } from "../actions";
+import { SubmitButton } from "../../submit-button";
 
 /**
  * Suppression d'un article, derrière une confirmation.
@@ -44,9 +45,12 @@ export function DeleteItem({ id, name }: { id: string; name: string }) {
 
           <form action={deleteItemAction}>
             <input type="hidden" name="id" value={id} />
-            <button type="submit" className="danger-button solid">
+            <SubmitButton
+              className="danger-button solid"
+              pendingLabel="Suppression…"
+            >
               Supprimer
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </dialog>

@@ -25,6 +25,7 @@ import { isDatabaseConfigured, isSchemaReady } from "@/lib/db";
 import { formatCents, percentChange } from "@/lib/money";
 
 import { Gain } from "../gain";
+import { SubmitButton } from "../submit-button";
 import { Wordmark } from "../wordmark";
 import { DatabaseErrorScreen, SetupScreen } from "../db-screens";
 import { TabBar } from "../tab-bar";
@@ -44,7 +45,9 @@ function Migrate({ title }: { title: string }) {
           rejoué : rien n&apos;est jamais supprimé.
         </p>
         <form action={migrateAction}>
-          <button type="submit">Initialiser la base</button>
+          <SubmitButton pendingLabel="Initialisation…">
+            Initialiser la base
+          </SubmitButton>
         </form>
       </div>
       <TabBar />

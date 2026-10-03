@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { loginAction, type LoginState } from "./actions";
+import { Spinner } from "../spinner";
 
 export function LoginForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(
@@ -33,7 +34,14 @@ export function LoginForm({ next }: { next: string }) {
       {state.error ? <p className="error">{state.error}</p> : null}
 
       <button type="submit" disabled={pending}>
-        {pending ? "Vérification…" : "Se connecter"}
+        {pending ? (
+          <>
+            <Spinner />
+            Vérification…
+          </>
+        ) : (
+          "Se connecter"
+        )}
       </button>
     </form>
   );

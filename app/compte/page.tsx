@@ -5,6 +5,7 @@ import { query } from "@/lib/db";
 import { getSettingsOrDefaults } from "@/lib/settings";
 
 import { migrateAction } from "../collection/actions";
+import { SubmitButton } from "../submit-button";
 import { saveCatalogueSettingsAction } from "./actions";
 import { logoutAction } from "../login/actions";
 import { Wordmark } from "../wordmark";
@@ -99,7 +100,7 @@ export default async function ComptePage({
           mot de passe unique, défini dans les variables d&apos;environnement.
         </p>
         <form action={logoutAction} className="form">
-          <button type="submit">Se déconnecter</button>
+          <SubmitButton pendingLabel="Déconnexion…">Se déconnecter</SubmitButton>
         </form>
       </div>
 
@@ -113,7 +114,9 @@ export default async function ComptePage({
         </p>
         <p className="hint">{dernierPassage}</p>
         <form action={migrateAction} className="form">
-          <button type="submit">Appliquer les migrations</button>
+          <SubmitButton pendingLabel="Application…">
+            Appliquer les migrations
+          </SubmitButton>
         </form>
 
         {report && report.ledger.length > 0 ? (
@@ -176,7 +179,7 @@ export default async function ComptePage({
               Réglages enregistrés.
             </p>
           ) : null}
-          <button type="submit">Enregistrer</button>
+          <SubmitButton pendingLabel="Enregistrement…">Enregistrer</SubmitButton>
         </form>
       </div>
 

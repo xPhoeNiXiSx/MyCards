@@ -9,6 +9,7 @@ import {
 } from "@/lib/collection";
 
 import { addWantedAction, type ActionState } from "./actions";
+import { Spinner } from "../spinner";
 
 /**
  * Formulaire réduit au nécessaire : ce qu'on vise, et rien d'autre. Le prix
@@ -87,7 +88,14 @@ export function WantedForm() {
       ) : null}
 
       <button type="submit" disabled={pending}>
-        {pending ? "Ajout…" : "Ajouter à la liste"}
+        {pending ? (
+          <>
+            <Spinner />
+            Ajout…
+          </>
+        ) : (
+          "Ajouter à la liste"
+        )}
       </button>
     </form>
   );

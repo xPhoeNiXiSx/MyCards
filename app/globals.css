@@ -921,6 +921,32 @@ button[type="submit"]:disabled {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+/* Avec le mouvement autorisé, la pulsation devient un reflet qui balaie le
+   bloc, dans les teintes holo. */
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton {
+    background: linear-gradient(
+        100deg,
+        transparent 30%,
+        rgba(167, 139, 250, 0.14) 45%,
+        rgba(124, 245, 255, 0.1) 55%,
+        transparent 70%
+      )
+      0 0 / 220% 100% no-repeat,
+      var(--bg-sunken);
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 120% 0, 0 0;
+    }
+    to {
+      background-position: -120% 0, 0 0;
+    }
+  }
+}
+
 @keyframes pulse {
   0%,
   100% {
@@ -3631,4 +3657,238 @@ span.swipe-btn {
    correspond pas. */
 .ledger li strong.none {
   color: var(--gold);
+}
+
+
+/* ==========================================================================
+   Chargement : écran de démarrage, squelettes, boutons qui travaillent
+   ========================================================================== */
+
+/* --- Indicateur : un anneau au dégradé holo ----------------------------- */
+
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  vertical-align: -0.15em;
+  border-radius: 50%;
+  /* Un anneau en dégradé conique, évidé au centre par un masque. */
+  background: conic-gradient(from 90deg, transparent 10%, #7cf5ff, #a78bfa, #ffa8e2, #ffe58a);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  animation: spin 0.75s linear infinite;
+  flex: none;
+}
+
+/* Sur le dégradé holo d'un bouton principal, l'anneau passe en sombre pour
+   rester visible. */
+button[type="submit"] .spinner,
+.quick-submit .spinner,
+.chooser-save .spinner {
+  background: conic-gradient(from 90deg, transparent 10%, var(--on-holo));
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+button[aria-busy="true"],
+button:disabled:has(.spinner) {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+/* --- Écran de démarrage ------------------------------------------------- */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 26px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 260px at 30% 38%, rgba(124, 92, 255, 0.34), transparent 70%),
+    radial-gradient(circle 230px at 74% 56%, rgba(0, 214, 255, 0.2), transparent 70%),
+    var(--bg);
+  animation: splash-out 0.45s ease 0.85s forwards;
+}
+
+.splash-logo {
+  width: min(58vw, 300px);
+  height: auto;
+  filter: drop-shadow(0 0 24px rgba(167, 139, 250, 0.45));
+}
+
+/* La barre de chargement : un trait irisé qui court de gauche à droite. */
+.splash-bar {
+  position: relative;
+  width: min(42vw, 180px);
+  height: 3px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.splash-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  border-radius: inherit;
+  background: var(--holo);
+  animation: splash-run 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes splash-run {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(230%);
+  }
+}
+
+@keyframes splash-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Mouvement réduit : pas d'écran de démarrage du tout, la page s'affiche
+   directement. */
+@media (prefers-reduced-motion: reduce) {
+  .splash {
+    display: none;
+  }
+}
+
+/* --- Squelettes de page ------------------------------------------------- */
+
+.sk {
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+.sk-cover {
+  display: grid;
+  place-items: center;
+  padding: calc(44px + env(safe-area-inset-top, 0px)) 0 30px;
+}
+
+.sk-logo {
+  width: min(56%, 312px);
+  height: auto;
+  opacity: 0.35;
+}
+
+.sk-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+}
+
+.sk-line {
+  height: 12px;
+}
+
+.sk-line.w40 { width: 40%; }
+.sk-line.w60 { width: 60%; }
+.sk-line.w70 { width: 70%; }
+
+.sk-value {
+  height: 38px;
+  width: 55%;
+  border-radius: 10px;
+}
+
+.sk-chart {
+  height: 130px;
+  margin-top: 8px;
+}
+
+.sk-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.sk-tile {
+  height: 96px;
+  border-radius: var(--radius);
+}
+
+.sk-panel {
+  height: 220px;
+  margin-top: 14px;
+  border-radius: var(--radius);
+}
+
+.sk-panel.tall {
+  height: 420px;
+}
+
+.sk-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.sk-row {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+}
+
+.sk-thumb {
+  width: 48px;
+  aspect-ratio: 245 / 342;
+  border-radius: 6px;
+}
+
+.sk-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sk-back {
+  width: 150px;
+  height: 40px;
+  border-radius: 999px;
+}
+
+.sk-hero {
+  display: grid;
+  place-items: center;
+  margin: 10px 0 4px;
+}
+
+.sk-card {
+  width: min(64%, 300px);
+  aspect-ratio: 245 / 342;
+  border-radius: 14px;
+}
+
+.sk-title {
+  height: 26px;
+  margin-top: 22px;
 }

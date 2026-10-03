@@ -3,6 +3,7 @@
 import { useActionState, useRef } from "react";
 
 import { markBoughtAction, type ActionState } from "./actions";
+import { Spinner } from "../spinner";
 
 /**
  * Bascule un article visé dans la collection. Le prix réellement payé est
@@ -61,7 +62,14 @@ export function BuyButton({ id, name }: { id: string; name: string }) {
               Annuler
             </button>
             <button type="submit" disabled={pending}>
-              {pending ? "Enregistrement…" : "Ajouter à ma collection"}
+              {pending ? (
+          <>
+            <Spinner />
+            Enregistrement…
+          </>
+        ) : (
+          "Ajouter à ma collection"
+        )}
             </button>
           </div>
         </form>

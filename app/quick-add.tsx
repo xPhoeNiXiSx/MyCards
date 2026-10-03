@@ -7,6 +7,7 @@ import type { CardResume } from "@/lib/tcgdex";
 
 import { quickAddAction } from "./catalogue/actions";
 import { OwnedContext } from "./owned-context";
+import { Spinner } from "./spinner";
 
 /** Aujourd'hui, au format du champ `date` (AAAA-MM-JJ), dans le fuseau local. */
 function today(): string {
@@ -95,7 +96,14 @@ export function QuickAdd({
       </div>
 
       <button type="submit" className="quick-submit" disabled={pending}>
-        {pending ? "Ajout…" : "Ajouter à l'inventaire"}
+        {pending ? (
+          <>
+            <Spinner />
+            Ajout…
+          </>
+        ) : (
+          "Ajouter à l'inventaire"
+        )}
       </button>
 
       {result?.kind === "added" ? (

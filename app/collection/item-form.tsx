@@ -14,6 +14,7 @@ import {
 
 import type { ActionState } from "./actions";
 import { CardFinder, type PickedCard } from "./card-finder";
+import { Spinner } from "../spinner";
 
 type Props = {
   action: (state: ActionState, form: FormData) => Promise<ActionState>;
@@ -337,7 +338,14 @@ export function ItemForm({
       ) : null}
 
       <button type="submit" disabled={pending}>
-        {pending ? "Enregistrement…" : submitLabel}
+        {pending ? (
+          <>
+            <Spinner />
+            Enregistrement…
+          </>
+        ) : (
+          submitLabel
+        )}
       </button>
     </form>
   );
