@@ -236,3 +236,61 @@ export function buildChart(
       shown.length >= 2 ? shown[shown.length - 1].cents - shown[0].cents : null,
   };
 }
+
+// --- Courbe d'un article -------------------------------------------------
+
+export type ItemChart = {
+  start: string;
+  end: string;
+  /**
+   * Cote unitaire en marches : une cote vaut jusqu'à la suivante, et la
+   * dernière jusqu'à aujourd'hui.
+   */
+  value: Point[];
+  /** Plus-value de la ligne (toutes unités) à chaque relevé, en marches. */
+  gain: Point[];
+  /** Prix d'achat unitaire : la référence de la plus-value. */
+  purchaseCents: number;
+  /** Écart de plus-value entre le premier et le dernier relevé. */
+  gainChange: number | null;
+};
+
+/**
+ * Prépare la courbe d'un article à partir de ses relevés. La courbe part du
+ * jour d'achat s'il est connu et antérieur au premier relevé : la ligne du
+ * prix d'achat montre alors depuis quand l'article est détenu, sans inventer
+ * de cote avant le premier relevé.
+ */
+export function buildItemChart(
+  history: Point[],
+  purchaseCents: number,
+  quantity: number,
+  purchaseDay: string | null,
+  today: string,
+): ItemChart | null {
+  const known = history.filter((point) => point.day <= today);
+  if (known.length === 0) return null;
+
+  const start = [known[0].day, purchaseDay]
+    .filter((day): day is string => Boolean(day) && (day as string) <= today)
+    .sort()[0];
+
+  const last = known[known.length - 1];
+  const value =
+    last.day === today ? known : [...known, { day: today, cents: last.cents }];
+
+  return {
+    start,
+    end: today,
+    value,
+    gain: value.map((point) => ({
+      day: point.day,
+      cents: (point.cents - purchaseCents) * quantity,
+    })),
+    purchaseCents,
+    gainChange:
+      known.length >= 2
+        ? (last.cents - known[0].cents) * quantity
+        : null,
+  };
+}

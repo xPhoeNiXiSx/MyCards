@@ -117,4 +117,24 @@ export const SCHEMA_STATEMENTS: string[] = [
   // distinction, un relevé plus frais ne pourrait jamais rafraîchir une cote
   // sans risquer d'écraser une correction faite à la main.
   `alter table items add column if not exists value_source text`,
+
+  // Historique de la cote de chaque article : un point par jour, la cote
+  // unitaire du moment. Comme pour l'inventaire, ce qui n'est pas relevé le
+  // jour même est perdu : on relève au passage du cron, à l'ouverture d'une
+  // fiche et à chaque enregistrement.
+  `create table if not exists item_value_history (
+     item_id     uuid not null references items (id) on delete cascade,
+     day         date not null,
+     unit_cents  integer not null check (unit_cents >= 0),
+     source      text not null,
+     primary key (item_id, day)
+   )`,
+
+  // Point de départ : les cotes déjà saisies, à leur date. Rejouable, un jour
+  // déjà relevé n'est pas écrasé.
+  `insert into item_value_history (item_id, day, unit_cents, source)
+     select id, manual_value_date, manual_value_cents, coalesce(value_source, 'manual')
+       from items
+      where manual_value_cents is not null and manual_value_date is not null
+   on conflict (item_id, day) do nothing`,
 ];

@@ -1,5 +1,5 @@
 import { query } from "@/lib/db";
-import type { Summary } from "@/lib/collection";
+import type { Summary, ValuedItem } from "@/lib/collection";
 
 /**
  * Historique de l'inventaire, pour la courbe du tableau de bord.
@@ -86,6 +86,46 @@ export async function investedSeries(): Promise<Point[]> {
     total += Number(row.cents);
     return { day: isoDay(row.day), cents: total };
   });
+}
+
+/**
+ * Relève la cote unitaire du jour de chaque article possédé et valorisé.
+ * Rejouable comme le relevé de l'inventaire : le dernier chiffre de la
+ * journée fait foi.
+ */
+export async function recordItemValues(items: ValuedItem[]): Promise<void> {
+  const valued = items.filter(
+    (item) => item.status === "owned" && item.currentUnitCents !== null,
+  );
+  if (valued.length === 0) return;
+
+  await query(
+    `insert into item_value_history (item_id, day, unit_cents, source)
+     select id, ${TODAY}, cents, source
+       from unnest($1::uuid[], $2::integer[], $3::text[]) as t (id, cents, source)
+     on conflict (item_id, day) do update
+       set unit_cents = excluded.unit_cents,
+           source = excluded.source`,
+    [
+      valued.map((item) => item.id),
+      valued.map((item) => item.currentUnitCents as number),
+      valued.map((item) => item.valueSource),
+    ],
+  );
+}
+
+/** La cote unitaire relevée d'un article, du plus ancien au plus récent. */
+export async function itemValueSeries(id: string): Promise<Point[]> {
+  const rows = await query<{ day: string | Date; unit_cents: string | number }>(
+    `select day, unit_cents from item_value_history
+      where item_id = $1
+      order by day`,
+    [id],
+  );
+  return rows.map((row) => ({
+    day: isoDay(row.day),
+    cents: Number(row.unit_cents),
+  }));
 }
 
 /** Aujourd'hui à Paris, au format AAAA-MM-JJ. */

@@ -17,10 +17,12 @@ import {
   createItem,
   deleteItem,
   updateItem,
+  valuate,
   type ItemInput,
   type ItemKind,
 } from "@/lib/collection";
 import { runMigrations } from "@/lib/db";
+import { recordItemValues } from "@/lib/history";
 import { parseImageUrl } from "@/lib/images";
 import { parseEuros } from "@/lib/money";
 
@@ -167,6 +169,16 @@ export async function updateItemAction(
   if (typeof input === "string") return { error: input };
 
   await updateItem(id, input);
+  // Une cote retouchée entre dans l'historique de l'article dès maintenant,
+  // sans attendre le relevé de la nuit.
+  const updated = await getItem(id);
+  if (updated) {
+    try {
+      await recordItemValues(await valuate([updated]));
+    } catch (error) {
+      console.warn("[collection] historique de l'article indisponible", error);
+    }
+  }
   revalidateInventory();
   // Retour à l'inventaire de l'article, tel qu'il est après modification.
   redirect(SCOPES[scopeOf(input.kind)].path);

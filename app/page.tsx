@@ -26,10 +26,11 @@ import { isDatabaseConfigured } from "@/lib/db";
 import {
   investedSeries,
   parisToday,
+  recordItemValues,
   recordSnapshot,
   valueSeries,
 } from "@/lib/history";
-import { formatCents, percentChange } from "@/lib/money";
+import { formatCents, formatSignedPercent, percentChange } from "@/lib/money";
 
 import { DatabaseErrorScreen, SetupScreen } from "./db-screens";
 import { Gain } from "./gain";
@@ -114,6 +115,11 @@ export default async function DashboardPage({
     } catch (error) {
       console.warn("[dashboard] historique indisponible", error);
     }
+    try {
+      await recordItemValues(items);
+    } catch (error) {
+      console.warn("[dashboard] historique des articles indisponible", error);
+    }
   }
 
   return (
@@ -148,8 +154,7 @@ export default async function DashboardPage({
                 <Gain cents={summary.gainCents} />
                 {change === undefined ? null : (
                   <small>
-                    {change > 0 ? "+" : ""}
-                    {change} %
+                    {formatSignedPercent(change)}
                   </small>
                 )}
               </span>

@@ -3892,3 +3892,70 @@ button:disabled:has(.spinner) {
   height: 26px;
   margin-top: 22px;
 }
+
+/* --- Fiche d'un article : plus-value et courbe de la cote ------------------ */
+
+.item-gain {
+  margin-top: 4px;
+  margin-bottom: 22px;
+}
+
+.summary-value.up {
+  color: var(--positive);
+}
+
+.summary-value.down {
+  color: var(--negative);
+}
+
+.summary-value.muted {
+  color: var(--fg-faint);
+}
+
+.item-gain .summary-main .pill {
+  font-size: 0.8125rem;
+}
+
+.item-plot {
+  height: 130px;
+}
+
+.evolution-plot .gain-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolution-plot .gain-line.up {
+  stroke: var(--positive);
+}
+
+.evolution-plot .gain-line.down {
+  stroke: var(--negative);
+}
+
+.evolution-plot .gain-area.up {
+  fill: var(--positive-soft);
+}
+
+.evolution-plot .gain-area.down {
+  fill: var(--negative-soft);
+}
+
+.value-dot.up {
+  background: var(--positive);
+}
+
+.value-dot.down {
+  background: var(--negative);
+}
+
+.evolution-foot .key.gain::before {
+  border-top-color: var(--positive);
+}
+
+/* La flèche et le montant restent sur une ligne. */
+.item-gain .summary-value {
+  white-space: nowrap;
+}

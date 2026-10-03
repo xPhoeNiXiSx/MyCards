@@ -46,3 +46,11 @@ export function percentChange(
   if (from === 0) return undefined;
   return Math.round(((to - from) / from) * 1000) / 10;
 }
+
+/** Pourcentage signé, à la française : « +12,5 % », « −26,7 % ». */
+export function formatSignedPercent(value: number): string {
+  const formatted = `${Math.abs(value).toLocaleString("fr-FR")} %`;
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `−${formatted}`;
+  return formatted;
+}
