@@ -71,6 +71,14 @@ import {
   recordFailure,
 } from "../lib/throttle";
 import { newToken, safeEquals, verifyToken } from "../lib/session";
+import {
+  SEALED_PRODUCTS,
+  decide,
+  parsePrice,
+  readCardmarketPage,
+  readRetailPage,
+  refreshSealedPrices,
+} from "../lib/sealed-prices";
 
 const checks: string[] = [];
 
@@ -1078,6 +1086,113 @@ async function main() {
   ok("le registre garde la trace de ce qui a été posé");
 
   await pgData.close();
+
+  // --- Mise à jour des prix du scellé ------------------------------------------
+
+  assert.equal(parsePrice("12,90 €"), 1290);
+  assert.equal(parsePrice("1 299,00"), 129900);
+  assert.equal(parsePrice("38.99"), 3899);
+  assert.equal(parsePrice(6.49), 649);
+  assert.equal(parsePrice("gratuit"), null);
+  ok("un prix affiché se lit en centimes, virgule ou point");
+
+  const jsonLd = (offer: object) =>
+    `<html><script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [{ "@type": "WebPage" }, { "@type": "Product", name: "Bundle", offers: offer }],
+    })}</script></html>`;
+  assert.deepEqual(
+    readRetailPage(jsonLd({ "@type": "Offer", price: "38.99", availability: "https://schema.org/InStock" })),
+    { cents: 3899, inStock: true },
+  );
+  assert.deepEqual(
+    readRetailPage(jsonLd([{ "@type": "Offer", price: 41, availability: "http://schema.org/OutOfStock" }])),
+    { cents: 4100, inStock: false },
+  );
+  assert.deepEqual(
+    readRetailPage(
+      `<meta property="product:price:amount" content="6.90"><link itemprop="availability" href="https://schema.org/InStock">`,
+    ),
+    { cents: 690, inStock: true },
+  );
+  assert.deepEqual(readRetailPage("<html>rien</html>"), { cents: null, inStock: null });
+  ok("prix et stock d'une page de revendeur, en JSON-LD ou en balises meta");
+
+  assert.equal(
+    readCardmarketPage(`<dt class="col-6">À partir de</dt><dd class="col-6">164,99 €</dd>`),
+    16499,
+  );
+  assert.equal(readCardmarketPage("<html>Just a moment...</html>"), null);
+  ok("le plus bas prix d'une fiche Cardmarket");
+
+  assert.deepEqual(
+    decide(
+      [
+        { cents: 3899, inStock: true },
+        { cents: 4290, inStock: null },
+        { cents: 3500, inStock: false },
+        { cents: 3990, inStock: true },
+      ],
+      2500,
+    ),
+    { cents: 3990, method: "médiane de 3 revendeurs" },
+  );
+  assert.deepEqual(decide([{ cents: 3500, inStock: false }], 16499), {
+    cents: 16499,
+    method: "Cardmarket, plus bas prix",
+  });
+  assert.equal(decide([], null), null);
+  ok("médiane des revendeurs en stock, sinon Cardmarket");
+
+  const pgPrix = new PGlite();
+  setQueryRunner(async (text, params = []) => {
+    const result = await pgPrix.query(text, params as unknown[]);
+    return result.rows as never[];
+  });
+  await runMigrations();
+  const aCoter = { ...etb, quantity: 1, manualValueCents: null, manualValueDate: null };
+  const bundle = await createItem({ ...aCoter, name: "Bundle Nuit Boire" });
+  const bundleSaisi = await createItem({ ...aCoter, name: "bundle nuit noire", manualValueCents: 4500, manualValueDate: "2026-10-01" });
+  const display = await createItem({ ...aCoter, name: "Display Rivalités Destinées" });
+  const booster = await createItem({ ...aCoter, name: "Booster Rivalité Destinées" });
+
+  const pages: Record<string, string> = {};
+  const bundleSources = SEALED_PRODUCTS.find((product) => product.label === "Bundle Nuit Noire")!.sources;
+  pages[bundleSources[0].url] = jsonLd({ price: "38.99", availability: "InStock" });
+  pages[bundleSources[1].url] = jsonLd({ price: "41.90", availability: "InStock" });
+  // La troisième source ne répond pas.
+  const visited: string[] = [];
+  const compteRendu = await refreshSealedPrices(query, "2026-10-07", async (url) => {
+    visited.push(url);
+    if (pages[url]) return pages[url];
+    throw new Error("HTTP 403");
+  });
+
+  const ligneBundle = compteRendu.find((line) => line.label === "Bundle Nuit Noire")!;
+  assert.equal(ligneBundle.cents, 4045);
+  assert.equal(ligneBundle.updated, 1);
+  assert.equal(ligneBundle.kept, 1);
+  assert.deepEqual(ligneBundle.failures, ["cultura.com : refusé (HTTP 403)"]);
+  assert.equal((await getItem(bundle.id))?.manualValueCents, 4045);
+  assert.equal((await getItem(bundle.id))?.manualValueDate, "2026-10-07");
+  assert.equal((await getItem(bundleSaisi.id))?.manualValueCents, 4500);
+  ok("le bouton pose la médiane trouvée, sans toucher une cote saisie à la main");
+
+  assert.deepEqual(await itemValueSeries(bundle.id), [{ day: "2026-10-07", cents: 4045 }]);
+  ok("la cote posée par le bouton entre dans l'historique de l'article");
+
+  const ligneBooster = compteRendu.find((line) => line.label === "Booster Rivalités Destinées")!;
+  assert.equal(ligneBooster.matched, 1);
+  assert.equal(ligneBooster.cents, null);
+  assert.equal((await getItem(booster.id))?.manualValueCents, null);
+  assert.equal((await getItem(display.id))?.manualValueCents, null);
+  ok("un display n'est pas pris pour un booster, et rien n'est posé sans prix");
+
+  // Pas d'ETB dans cet inventaire : Cardmarket n'est même pas interrogé.
+  assert.ok(!visited.some((url) => url.includes("Elite-Trainer-Boxes")));
+  ok("aucun site n'est interrogé pour un produit absent de l'inventaire");
+
+  await pgPrix.close();
 
   console.log(checks.map((check) => `  ✓ ${check}`).join("\n"));
   console.log(`\n${checks.length} vérifications passées.`);

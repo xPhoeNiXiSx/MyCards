@@ -69,6 +69,24 @@ Un relevé vise les types « Scellé » **et** « Autre » (passer
 `["sealed", "other"]` à `fillSealedQuotes`) : un produit rangé en « Autre »
 partage l'écran du scellé et ne doit pas rester sans cote.
 
+## Bouton « Mettre à jour les prix » (page Compte)
+
+Le bouton applique cette méthode tout seul, sur ces mêmes adresses : elles
+sont recopiées dans **`lib/sealed-prices.ts`** (`SEALED_PRODUCTS`). Un
+produit ajouté ou une adresse changée ici doit l'être là aussi, dans le même
+commit.
+
+- Revendeurs : prix et stock lus dans les données produit de la page
+  (JSON-LD schema.org, sinon balises meta), médiane des revendeurs en stock.
+- Cardmarket : « À partir de » de la fiche, seulement si aucun revendeur n'a
+  répondu. Le site bloque souvent les robots ; un produit qui n'a que cette
+  source reste alors à relever à la main, comme avant.
+- Le produit est reconnu dans l'inventaire par deux motifs (objet et
+  extension) plutôt que par son nom exact.
+- Seules les cotes vides ou posées par un relevé sont remplacées ; une cote
+  saisie dans l'application ne l'est jamais. Le compte rendu s'affiche sous
+  le bouton, produit par produit, avec la raison de chaque échec.
+
 ## Accès depuis une session Claude Code
 
 Dans l'environnement cloud actuel, ces sites ne sont **pas joignables

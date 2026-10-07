@@ -3659,6 +3659,20 @@ span.swipe-btn {
   color: var(--gold);
 }
 
+/* Cote saisie à la main : laissée telle quelle, ce n'est pas un échec. */
+.ledger li strong.kept {
+  font-weight: 500;
+  color: var(--fg-faint);
+}
+
+/* Le détail d'une source qui n'a pas répondu, sous le nom du produit. */
+.ledger-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.6875rem;
+  color: var(--fg-faint);
+}
+
 
 /* ==========================================================================
    Chargement : écran de démarrage, squelettes, boutons qui travaillent

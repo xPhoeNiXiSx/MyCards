@@ -7,11 +7,14 @@ import { getSettingsOrDefaults } from "@/lib/settings";
 import { migrateAction } from "../collection/actions";
 import { SubmitButton } from "../submit-button";
 import { saveCatalogueSettingsAction } from "./actions";
+import { PriceRefresh } from "./price-refresh";
 import { logoutAction } from "../login/actions";
 import { Wordmark } from "../wordmark";
 import { TabBar } from "../tab-bar";
 
 export const dynamic = "force-dynamic";
+// Le bouton des prix interroge plusieurs sites : on lui laisse le temps.
+export const maxDuration = 60;
 
 /**
  * Date du dernier passage des migrations, à l'heure de Paris. La base peut ne
@@ -151,6 +154,16 @@ export default async function ComptePage({
             </ul>
           </div>
         ) : null}
+      </div>
+
+      <div className="panel">
+        <h2>Prix du scellé</h2>
+        <p className="hint">
+          Va chercher le prix du jour de chaque produit scellé chez les
+          revendeurs habituels, sinon sur Cardmarket. Une cote saisie à la main
+          n&apos;est jamais remplacée.
+        </p>
+        <PriceRefresh />
       </div>
 
       <div className="panel">
