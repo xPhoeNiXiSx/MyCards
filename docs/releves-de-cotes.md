@@ -15,9 +15,9 @@ plus un produit, on la remplace **ici**, dans le même commit que le relevé.
    cote = **médiane** des prix affichés par les revendeurs du panel. Un prix
    isolé, haut ou bas, ne fait pas la cote. Les produits en rupture chez un
    revendeur sont ignorés pour ce revendeur.
-2. **Produit en rupture partout** (typiquement un ETB dans les semaines qui
-   suivent sa sortie) : cote = **plus bas prix Cardmarket en version
-   française**. Le prix conseillé ne dit plus ce que vaut le produit.
+2. **Produit en rupture partout** : cote = **médiane des prix affichés**
+   malgré la rupture. Cardmarket, qui refuse la lecture automatique, n'est
+   plus consulté.
 3. Pièges déjà rencontrés :
    - Cardmarket mélange les langues : vérifier qu'il s'agit bien de la
      **version française** (`?language=2` dans l'adresse ; `language=1` est
@@ -29,17 +29,18 @@ plus un produit, on la remplace **ici**, dans le même commit que le relevé.
 
 ## Panel de sources
 
-Toujours les mêmes, dans cet ordre de priorité.
+Toujours les mêmes, dans cet ordre de priorité. Depuis le 11/10/2026, on
+s'en tient aux revendeurs que le bouton « Mettre à jour les prix » arrive
+à lire : Cultura, Pokelite, Les Gentlemen du Jeu, Chocobonplan et
+Cardmarket ont été retirés, car ils ne donnaient aucun prix lisible ou
+refusaient la lecture.
 
 | Rôle | Site | Pourquoi |
 |---|---|---|
-| Marché (rupture, revente) | [cardmarket.com](https://www.cardmarket.com/fr/Pokemon) | La référence européenne, prix réels de revente |
-| Revendeur | [pokezenith.com](https://www.pokezenith.com) | Large catalogue scellé FR, prix à jour |
-| Revendeur | [lesgentlemendujeu.com](https://lesgentlemendujeu.com) | Couvre boosters à l'unité et coffrets |
+| Revendeur | [pokezenith.com](https://www.pokezenith.com) | Large catalogue scellé FR, prix lus sans souci |
 | Revendeur | [blazingtail.fr](https://www.blazingtail.fr) | Tripacks et blisters de toutes les séries |
-| Revendeur | [pokelite.fr](https://www.pokelite.fr) | Suivi des restocks, prix constatés |
-| Revendeur | [cultura.com](https://www.cultura.com) | Grande surface : le prix public de référence |
-| Comparateur | [chocobonplan.com](https://chocobonplan.com) | Agrège plusieurs boutiques en une page |
+| Revendeur | [pokestock.fr](https://pokestock.fr) · [hamacards.com](https://www.hamacards.com) | Blisters ME01 |
+| Revendeur | [lecoindesbarons.com](https://lecoindesbarons.com) | Blister ME05 |
 
 ## Adresses par produit
 
@@ -47,19 +48,20 @@ Les produits actuellement suivis, avec l'adresse à consulter en premier.
 
 | Produit (nom dans l'inventaire) | Source de référence |
 |---|---|
-| ETB 30 ans | [Cardmarket — ETB 30th Celebration (VF)](https://www.cardmarket.com/fr/Pokemon/Products/Elite-Trainer-Boxes/30th-Celebration-Elite-Trainer-Box?language=2) |
+| ETB 30 ans | [Pokézenith — ETB ME05.5 30e Anniversaire](https://www.pokezenith.com/me055-30e-anniversaire/459-pokemon-coffret-dresseur-d-elite-etb-me055-30e-anniversaire-196214144835.html) |
+| Coffret Ronflex et Leuphorie | [Pokézenith](https://www.pokezenith.com/coffrets-boites-speciales/364-pokemon-coffret-collection-speciale-ronflex-ex-leuphorie-ex-0196214129788.html) |
 | Coffret Mewtwo Ex de la Team Rocket | [Pokézenith](https://www.pokezenith.com/coffrets-boites-speciales/73-pokemon-coffret-mewtwo-ex-de-la-team-rocket-0196214109391.html) |
-| Coffret Méga-Kangourex Ex | [Pokézenith](https://www.pokezenith.com/coffrets-boites-speciales/259-pokemon-coffret-mega-kangourex-ex-0196214116870.html) · [Chocobonplan](https://chocobonplan.com/bons-plans/cartes-a-jouer/cartes-pokemon/coffret-mega-kangourex-ex) |
+| Coffret Méga-Kangourex Ex | [Pokézenith](https://www.pokezenith.com/coffrets-boites-speciales/259-pokemon-coffret-mega-kangourex-ex-0196214116870.html) |
 | Tripack ME01 | [Blazingtail](https://www.blazingtail.fr/69068-tripack-pokemon-mega-evolution-me01.html) |
-| Tripack ME05 Nuit noire | [Blazingtail](https://www.blazingtail.fr/80477-tripack-pokemon-nuit-noire-me05.html) · [Les Gentlemen du Jeu](https://lesgentlemendujeu.com/pokemon-me05-nuit-noire/12348-pokemon-me05-tripack-nuit-noire-0196214142411.html) |
-| Bundle Nuit Noire | [Les Gentlemen du Jeu](https://lesgentlemendujeu.com/pokemon-me05-nuit-noire/12347-pokemon-me05-bundle-6-boosters-nuit-noire.html) · [Pokelite](https://www.pokelite.fr/produit/bundle-nuit-noire-pokemon-me05/) · [Cultura](https://www.cultura.com/p-bundle-pokemon-mega-evolutions-nuit-noire-13040385.html) |
+| Tripack ME05 Nuit noire | [Blazingtail](https://www.blazingtail.fr/80477-tripack-pokemon-nuit-noire-me05.html) · [Pokézenith](https://www.pokezenith.com/me05-nuit-noire/427-pokemon-tripack-me05-nuit-noire-196214142411.html) |
+| Bundle Nuit Noire | Aucune fiche trouvée sur le panel : à saisir à la main |
 | Blister ME01 | [Pokestock](https://pokestock.fr/produit/booster-blister-me01-pokemon/) · [Hamacards](https://www.hamacards.com/produit/blister-pokemon-mega-evolution-me01/) |
 | Blister ME04 Chaos Ascendant | [Blazingtail](https://www.blazingtail.fr/77320-blister-pokemon-chaos-ascendant-me04.html) |
 | Blister ME05 Nuit noire | [Le Coin des Barons](https://lecoindesbarons.com/tradingcard-game/cartes-pokemon/booster-pokemon/pokemon-blister-nuit-noire-me05-en-francais/) |
-| Blister EV10 Rivalités Destinées | [Pokelite](https://www.pokelite.fr/produit/blister-rivalites-destinees-pokemon-ev10/) |
-| Booster Évolution Prismatique | [Cardmarket — booster (VF)](https://www.cardmarket.com/fr/Pokemon/Products/Boosters/Prismatic-Evolutions-Booster?language=2) |
-| Booster Rivalité Destinées | [Cultura](https://www.cultura.com/p-booster-pokemon-ev10-ecarlate-et-violet-rivalites-destinees-12763471.html) · [Pokézenith](https://www.pokezenith.com/ev10-rivalites-destinees/74-pokemon-booster-ev10-rivalites-destinees-0196214111028.html) |
-| Booster Aventures Ensemble | [Les Gentlemen du Jeu](https://lesgentlemendujeu.com/pokemon-ev09-aventures-ensemble/8668-pokemon-ev09-boosters-aventures-ensemble-0196214107984.html) · [Cultura](https://www.cultura.com/p-booster-ev09-aventures-ensemble-pokemon-modeles-aleatoires-vendu-a-l-unite-11793678.html) |
+| Blister EV10 Rivalités Destinées | [Blazingtail](https://www.blazingtail.fr/68215-blister-pokemon-ev10-rivalites-destinees.html) |
+| Booster Évolution Prismatique | Aucune fiche du booster seul sur le panel : à saisir à la main |
+| Booster Rivalité Destinées | [Pokézenith](https://www.pokezenith.com/ev10-rivalites-destinees/74-pokemon-booster-ev10-rivalites-destinees-0196214111028.html) |
+| Booster Aventures Ensemble | Aucune fiche du booster seul sur le panel : à saisir à la main |
 
 Un nouveau produit scellé dans l'inventaire : l'ajouter à ce tableau, avec son
 nom **exact** tel qu'il apparaît dans l'inventaire (c'est le seul point
@@ -81,10 +83,9 @@ commit.
   est définie dans Vercel (offre gratuite : 1 000 pages par mois).
 - Revendeurs : prix et stock lus dans les données produit de la page
   (JSON-LD schema.org, sinon balises meta), médiane des revendeurs en stock.
-- Cardmarket : « À partir de » de la fiche, seulement si aucun revendeur n'a
-  le produit en stock. Lu en mode « premium » de ScraperAPI (10 crédits la
-  page).
-- Tous les revendeurs en rupture et Cardmarket muet : médiane des prix
+- Cardmarket n'est plus interrogé : une page Cardmarket collée dans une
+  fiche est ignorée, et l'article prend le prix de la liste.
+- Tous les revendeurs en rupture : médiane des prix
   qu'ils affichent malgré tout, plutôt que pas de cote. Le site bloque souvent les robots ; un produit qui n'a que cette
   source reste alors à relever à la main, comme avant.
 - **Page du prix** : un article peut porter sa propre adresse (champ « Page

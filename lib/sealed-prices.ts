@@ -34,7 +34,6 @@ export type SealedProduct = {
 };
 
 const retail = (url: string): SealedSource => ({ url, kind: "retail" });
-const market = (url: string): SealedSource => ({ url, kind: "market" });
 
 /** Fin d'un numéro d'extension : « me01 » ne doit pas attraper « me010 ». */
 const END = "([^0-9]|$)";
@@ -47,8 +46,8 @@ export const SEALED_PRODUCTS: SealedProduct[] = [
     marker: "30",
     exclude: "pokemon center|pokémon center",
     sources: [
-      market(
-        "https://www.cardmarket.com/fr/Pokemon/Products/Elite-Trainer-Boxes/30th-Celebration-Elite-Trainer-Box?language=2",
+      retail(
+        "https://www.pokezenith.com/me055-30e-anniversaire/459-pokemon-coffret-dresseur-d-elite-etb-me055-30e-anniversaire-196214144835.html",
       ),
     ],
   },
@@ -63,15 +62,22 @@ export const SEALED_PRODUCTS: SealedProduct[] = [
     ],
   },
   {
+    label: "Coffret Ronflex et Leuphorie",
+    object: "coffret",
+    marker: "ronflex|leuphorie",
+    sources: [
+      retail(
+        "https://www.pokezenith.com/coffrets-boites-speciales/364-pokemon-coffret-collection-speciale-ronflex-ex-leuphorie-ex-0196214129788.html",
+      ),
+    ],
+  },
+  {
     label: "Coffret Méga-Kangourex Ex",
     object: "coffret",
     marker: "kangourex",
     sources: [
       retail(
         "https://www.pokezenith.com/coffrets-boites-speciales/259-pokemon-coffret-mega-kangourex-ex-0196214116870.html",
-      ),
-      retail(
-        "https://chocobonplan.com/bons-plans/cartes-a-jouer/cartes-pokemon/coffret-mega-kangourex-ex",
       ),
     ],
   },
@@ -88,7 +94,7 @@ export const SEALED_PRODUCTS: SealedProduct[] = [
     sources: [
       retail("https://www.blazingtail.fr/80477-tripack-pokemon-nuit-noire-me05.html"),
       retail(
-        "https://lesgentlemendujeu.com/pokemon-me05-nuit-noire/12348-pokemon-me05-tripack-nuit-noire-0196214142411.html",
+        "https://www.pokezenith.com/me05-nuit-noire/427-pokemon-tripack-me05-nuit-noire-196214142411.html",
       ),
     ],
   },
@@ -96,13 +102,8 @@ export const SEALED_PRODUCTS: SealedProduct[] = [
     label: "Bundle Nuit Noire",
     object: "bundle",
     marker: `nuit|me ?0?5${END}`,
-    sources: [
-      retail(
-        "https://lesgentlemendujeu.com/pokemon-me05-nuit-noire/12347-pokemon-me05-bundle-6-boosters-nuit-noire.html",
-      ),
-      retail("https://www.pokelite.fr/produit/bundle-nuit-noire-pokemon-me05/"),
-      retail("https://www.cultura.com/p-bundle-pokemon-mega-evolutions-nuit-noire-13040385.html"),
-    ],
+    // Pas encore de fiche trouvée chez Pokézenith ni Blazingtail.
+    sources: [],
   },
   {
     label: "Blister ME01",
@@ -133,18 +134,15 @@ export const SEALED_PRODUCTS: SealedProduct[] = [
     label: "Blister EV10 Rivalités Destinées",
     object: "blister",
     marker: "rivalit|ev ?10",
-    sources: [retail("https://www.pokelite.fr/produit/blister-rivalites-destinees-pokemon-ev10/")],
+    sources: [retail("https://www.blazingtail.fr/68215-blister-pokemon-ev10-rivalites-destinees.html")],
   },
   {
     label: "Booster Évolution Prismatique",
     object: "booster",
     marker: "prismatique",
     exclude: NOT_A_SINGLE_BOOSTER,
-    sources: [
-      market(
-        "https://www.cardmarket.com/fr/Pokemon/Products/Boosters/Prismatic-Evolutions-Booster?language=2",
-      ),
-    ],
+    // Pas de booster à l'unité chez Pokézenith ni Blazingtail.
+    sources: [],
   },
   {
     label: "Booster Rivalités Destinées",
@@ -152,7 +150,6 @@ export const SEALED_PRODUCTS: SealedProduct[] = [
     marker: "rivalit|ev ?10",
     exclude: NOT_A_SINGLE_BOOSTER,
     sources: [
-      retail("https://www.cultura.com/p-booster-pokemon-ev10-ecarlate-et-violet-rivalites-destinees-12763471.html"),
       retail("https://www.pokezenith.com/ev10-rivalites-destinees/74-pokemon-booster-ev10-rivalites-destinees-0196214111028.html"),
     ],
   },
@@ -161,14 +158,8 @@ export const SEALED_PRODUCTS: SealedProduct[] = [
     object: "booster",
     marker: `aventures|ev ?0?9${END}`,
     exclude: NOT_A_SINGLE_BOOSTER,
-    sources: [
-      retail(
-        "https://lesgentlemendujeu.com/pokemon-ev09-aventures-ensemble/8668-pokemon-ev09-boosters-aventures-ensemble-0196214107984.html",
-      ),
-      retail(
-        "https://www.cultura.com/p-booster-ev09-aventures-ensemble-pokemon-modeles-aleatoires-vendu-a-l-unite-11793678.html",
-      ),
-    ],
+    // Pas de fiche du booster seul chez Pokézenith ni Blazingtail.
+    sources: [],
   },
 ];
 
@@ -500,9 +491,14 @@ async function readSources(
 }
 
 // Un article qui a sa propre page du prix est traité à part : c'est elle qui
-// fait foi, pas l'adresse de la liste.
+// fait foi, pas l'adresse de la liste. Sauf une page Cardmarket : le site
+// refuse la lecture, l'article retombe donc sur la liste.
+const CARDMARKET = `price_url ~ 'cardmarket\\.com'`;
+// Une page du prix renseignée, même Cardmarket, vaut demande de mise à
+// jour automatique : la cote saisie à la main n'est alors plus protégée.
+const UNLOCKED = `(manual_value_cents is null or value_source = 'auto' or price_url is not null)`;
 const MATCH = `kind in ('sealed', 'other')
-  and price_url is null
+  and (price_url is null or ${CARDMARKET})
   and lower(name) ~ $1
   and lower(name) ~ $2
   and ($3::text is null or lower(name) !~ $3)`;
@@ -517,7 +513,7 @@ async function refreshListed(
     SEALED_PRODUCTS.map(async (product) => {
       const match = [product.object, product.marker, product.exclude ?? null];
       const owned = await query<{ id: string; locked: boolean }>(
-        `select id, (manual_value_cents is not null and value_source is distinct from 'auto') as locked
+        `select id, not ${UNLOCKED} as locked
            from items where ${MATCH}`,
         match,
       );
@@ -532,6 +528,10 @@ async function refreshListed(
       };
       // Pas d'article à mettre à jour : inutile d'aller sur les sites.
       if (owned.every((row) => row.locked)) return line;
+      if (product.sources.length === 0) {
+        line.failures = ["aucune source fiable : à saisir à la main"];
+        return line;
+      }
 
       const { decision, failures } = await readSources(product, fetcher);
       line.failures = failures;
@@ -546,7 +546,7 @@ async function refreshListed(
                 value_source       = 'auto',
                 updated_at         = now()
           where ${MATCH}
-            and (manual_value_cents is null or value_source = 'auto')
+            and ${UNLOCKED}
          returning id`,
         [...match, decision.cents, today],
       );
@@ -577,6 +577,7 @@ async function refreshOwnPages(
   const items = await query<{ id: string; name: string; price_url: string }>(
     `select id, name, price_url from items
       where kind in ('sealed', 'other') and price_url is not null
+        and not ${CARDMARKET}
       order by name`,
   );
 

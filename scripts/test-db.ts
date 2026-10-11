@@ -1167,10 +1167,11 @@ async function main() {
   });
   await runMigrations();
   const aCoter = { ...etb, quantity: 1, manualValueCents: null, manualValueDate: null };
-  const bundle = await createItem({ ...aCoter, name: "Bundle Nuit Boire" });
-  const bundleSaisi = await createItem({ ...aCoter, name: "bundle nuit noire", manualValueCents: 4500, manualValueDate: "2026-10-01" });
+  const tripack = await createItem({ ...aCoter, name: "Tripack Nuit Boire" });
+  const tripackSaisi = await createItem({ ...aCoter, name: "tripack me05 nuit noire", manualValueCents: 4500, manualValueDate: "2026-10-01" });
   const display = await createItem({ ...aCoter, name: "Display Rivalités Destinées" });
   const booster = await createItem({ ...aCoter, name: "Booster Rivalité Destinées" });
+  const bundleSansSource = await createItem({ ...aCoter, name: "Bundle Nuit Noire" });
 
   const coffret = await createItem({
     ...aCoter,
@@ -1180,20 +1181,30 @@ async function main() {
     priceUrl: "https://boutique.test/coffret-dracaufeu",
   });
   // Sa propre page fait foi : la liste ne le touche pas, même s'il lui ressemble.
-  const bundlePage = await createItem({
+  const tripackPage = await createItem({
     ...aCoter,
-    name: "Bundle ME05",
-    priceUrl: "https://boutique.test/bundle",
+    name: "Tripack ME05",
+    priceUrl: "https://boutique.test/tripack",
+  });
+  // Une page Cardmarket est ignorée : l'article retombe sur la liste, et sa
+  // cote saisie n'est plus protégée puisqu'une page a été renseignée.
+  const ronflex = await createItem({
+    ...aCoter,
+    name: "Coffret Ronflex et Leuphorie",
+    manualValueCents: 5000,
+    manualValueDate: "2026-10-01",
+    priceUrl: "https://www.cardmarket.com/fr/Pokemon/Products/Box-Sets/Snorlax",
   });
 
+  const sourcesDe = (label: string) =>
+    SEALED_PRODUCTS.find((product) => product.label === label)!.sources;
   const pages: Record<string, string> = {
     "https://boutique.test/coffret-dracaufeu": jsonLd({ price: "34.90", availability: "OutOfStock" }),
-    "https://boutique.test/bundle": jsonLd({ price: "45.00", availability: "InStock" }),
+    "https://boutique.test/tripack": jsonLd({ price: "45.00", availability: "InStock" }),
+    [sourcesDe("Tripack ME05 Nuit noire")[0].url]: jsonLd({ price: "38.99", availability: "InStock" }),
+    [sourcesDe("Coffret Ronflex et Leuphorie")[0].url]: jsonLd({ price: "58.33", availability: "InStock" }),
   };
-  const bundleSources = SEALED_PRODUCTS.find((product) => product.label === "Bundle Nuit Noire")!.sources;
-  pages[bundleSources[0].url] = jsonLd({ price: "38.99", availability: "InStock" });
-  pages[bundleSources[1].url] = jsonLd({ price: "41.90", availability: "InStock" });
-  // La troisième source ne répond pas.
+  // La seconde source du tripack ne répond pas.
   const visited: string[] = [];
   const compteRendu = await refreshSealedPrices(query, "2026-10-07", async (url) => {
     visited.push(url);
@@ -1201,17 +1212,17 @@ async function main() {
     throw new Error("HTTP 403");
   });
 
-  const ligneBundle = compteRendu.find((line) => line.label === "Bundle Nuit Noire")!;
-  assert.equal(ligneBundle.cents, 4045);
-  assert.equal(ligneBundle.updated, 1);
-  assert.equal(ligneBundle.kept, 1);
-  assert.deepEqual(ligneBundle.failures, ["cultura.com : refusé (HTTP 403)"]);
-  assert.equal((await getItem(bundle.id))?.manualValueCents, 4045);
-  assert.equal((await getItem(bundle.id))?.manualValueDate, "2026-10-07");
-  assert.equal((await getItem(bundleSaisi.id))?.manualValueCents, 4500);
-  ok("le bouton pose la médiane trouvée, sans toucher une cote saisie à la main");
+  const ligneTripack = compteRendu.find((line) => line.label === "Tripack ME05 Nuit noire")!;
+  assert.equal(ligneTripack.cents, 3899);
+  assert.equal(ligneTripack.updated, 1);
+  assert.equal(ligneTripack.kept, 1);
+  assert.deepEqual(ligneTripack.failures, ["pokezenith.com : refusé (HTTP 403)"]);
+  assert.equal((await getItem(tripack.id))?.manualValueCents, 3899);
+  assert.equal((await getItem(tripack.id))?.manualValueDate, "2026-10-07");
+  assert.equal((await getItem(tripackSaisi.id))?.manualValueCents, 4500);
+  ok("le bouton pose le prix trouvé, sans toucher une cote saisie à la main");
 
-  assert.deepEqual(await itemValueSeries(bundle.id), [{ day: "2026-10-07", cents: 4045 }]);
+  assert.deepEqual(await itemValueSeries(tripack.id), [{ day: "2026-10-07", cents: 3899 }]);
   ok("la cote posée par le bouton entre dans l'historique de l'article");
 
   const ligneCoffret = compteRendu.find((line) => line.label === "Coffret Dracaufeu ex")!;
@@ -1220,8 +1231,17 @@ async function main() {
   assert.deepEqual(ligneCoffret.failures, ["boutique.test : en rupture, prix affiché retenu"]);
   assert.equal((await getItem(coffret.id))?.manualValueCents, 3490);
   assert.equal((await getItem(coffret.id))?.priceUrl, "https://boutique.test/coffret-dracaufeu");
-  assert.equal((await getItem(bundlePage.id))?.manualValueCents, 4500);
+  assert.equal((await getItem(tripackPage.id))?.manualValueCents, 4500);
   ok("un article avec sa page du prix est mis à jour depuis elle, même saisi à la main");
+
+  assert.equal((await getItem(ronflex.id))?.manualValueCents, 5833);
+  assert.ok(!visited.some((url) => url.includes("cardmarket.com")));
+  ok("une page Cardmarket est ignorée : l'article prend le prix de la liste");
+
+  const ligneBundle = compteRendu.find((line) => line.label === "Bundle Nuit Noire")!;
+  assert.deepEqual(ligneBundle.failures, ["aucune source fiable : à saisir à la main"]);
+  assert.equal((await getItem(bundleSansSource.id))?.manualValueCents, null);
+  ok("un produit sans source le dit, sans rien poser");
 
   const ligneBooster = compteRendu.find((line) => line.label === "Booster Rivalités Destinées")!;
   assert.equal(ligneBooster.matched, 1);
@@ -1230,8 +1250,8 @@ async function main() {
   assert.equal((await getItem(display.id))?.manualValueCents, null);
   ok("un display n'est pas pris pour un booster, et rien n'est posé sans prix");
 
-  // Pas d'ETB dans cet inventaire : Cardmarket n'est même pas interrogé.
-  assert.ok(!visited.some((url) => url.includes("Elite-Trainer-Boxes")));
+  // Pas d'ETB dans cet inventaire : sa page n'est même pas interrogée.
+  assert.ok(!visited.some((url) => url.includes("coffret-dresseur-d-elite")));
   ok("aucun site n'est interrogé pour un produit absent de l'inventaire");
 
   await pgPrix.close();
