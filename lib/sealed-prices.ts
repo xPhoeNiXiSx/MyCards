@@ -303,18 +303,39 @@ export type Fetcher = (url: string) => Promise<string>;
 /** Au-delà, une source est abandonnée : le bouton ne doit pas pendre. */
 const TIMEOUT_MS = 8000;
 
+/**
+ * Les revendeurs refusent les requêtes venues des serveurs de Vercel (403) :
+ * leur protection anti-robots reconnaît un centre de données. Avec une clé
+ * `SCRAPER_API_KEY`, les pages passent par ScraperAPI, qui les lit depuis une
+ * adresse française ordinaire. Il lui faut plus de temps qu'un appel direct.
+ */
+const SCRAPER_ENDPOINT = "https://api.scraperapi.com/";
+const SCRAPER_TIMEOUT_MS = 50000;
+
+export function isScraperConfigured(): boolean {
+  return Boolean(process.env.SCRAPER_API_KEY);
+}
+
 export const fetchPage: Fetcher = async (url) => {
-  const response = await fetch(url, {
-    headers: {
-      "user-agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
-      "accept-language": "fr-FR,fr;q=0.9",
-      accept: "text/html,application/xhtml+xml",
-    },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const key = process.env.SCRAPER_API_KEY;
+  const response = key
+    ? await fetch(
+        `${SCRAPER_ENDPOINT}?${new URLSearchParams({ api_key: key, url, country_code: "fr" })}`,
+        { signal: AbortSignal.timeout(SCRAPER_TIMEOUT_MS), cache: "no-store" },
+      )
+    : await fetch(url, {
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
+          "accept-language": "fr-FR,fr;q=0.9",
+          accept: "text/html,application/xhtml+xml",
+        },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        cache: "no-store",
+      });
+  if (!response.ok) {
+    throw new Error(`${key ? "SERVICE" : "HTTP"} ${response.status}`);
+  }
   return response.text();
 };
 
@@ -342,6 +363,12 @@ function failureReason(error: unknown): string {
   if (error instanceof Error && error.name === "TimeoutError") return "pas de réponse";
   if (error instanceof Error && error.message.startsWith("HTTP")) {
     return `refusé (${error.message})`;
+  }
+  if (error instanceof Error && /^SERVICE 40[13]$/.test(error.message)) {
+    return "clé ScraperAPI refusée ou crédits épuisés";
+  }
+  if (error instanceof Error && error.message.startsWith("SERVICE")) {
+    return `ScraperAPI n'a pas pu lire la page (${error.message.slice(8)})`;
   }
   return "inaccessible";
 }

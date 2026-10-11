@@ -76,6 +76,9 @@ sont recopiées dans **`lib/sealed-prices.ts`** (`SEALED_PRODUCTS`). Un
 produit ajouté ou une adresse changée ici doit l'être là aussi, dans le même
 commit.
 
+- Les sites refusent les requêtes venues des serveurs de Vercel (403). Les
+  pages passent donc par **ScraperAPI** quand la variable `SCRAPER_API_KEY`
+  est définie dans Vercel (offre gratuite : 1 000 pages par mois).
 - Revendeurs : prix et stock lus dans les données produit de la page
   (JSON-LD schema.org, sinon balises meta), médiane des revendeurs en stock.
 - Cardmarket : « À partir de » de la fiche, seulement si aucun revendeur n'a

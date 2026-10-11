@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { lastMigrationRun, migrationLedger } from "@/lib/data-migrations";
 import { query } from "@/lib/db";
+import { isScraperConfigured } from "@/lib/sealed-prices";
 import { getSettingsOrDefaults } from "@/lib/settings";
 
 import { migrateAction } from "../collection/actions";
@@ -163,6 +164,12 @@ export default async function ComptePage({
           revendeurs habituels, sinon sur Cardmarket. Une cote saisie à la main
           n&apos;est jamais remplacée.
         </p>
+        {isScraperConfigured() ? null : (
+          <p className="hint">
+            Sans clé ScraperAPI (variable <code>SCRAPER_API_KEY</code> dans
+            Vercel), la plupart des sites refusent la lecture.
+          </p>
+        )}
         <PriceRefresh />
       </div>
 

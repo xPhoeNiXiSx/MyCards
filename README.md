@@ -89,6 +89,7 @@ Environment Variables) et dans un `.env.local` pour le développement :
 | `APP_PASSWORD`  | Mot de passe unique d'accès à l'inventaire                   |
 | `AUTH_SECRET`   | Clé de signature du cookie de session — une valeur aléatoire |
 | `CRON_SECRET`   | Secret du relevé quotidien, envoyé par le cron Vercel — une valeur aléatoire |
+| `SCRAPER_API_KEY` | Facultative. Clé [ScraperAPI](https://www.scraperapi.com) : sans elle, les revendeurs refusent la lecture des prix du scellé (403) |
 
 Tant qu'elles manquent, `/collection` affiche un écran expliquant ce qui
 manque plutôt que de planter. La page d'accueil, elle, n'en dépend pas.
