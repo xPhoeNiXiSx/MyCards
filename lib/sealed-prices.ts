@@ -310,19 +310,49 @@ const TIMEOUT_MS = 8000;
  * adresse française ordinaire. Il lui faut plus de temps qu'un appel direct.
  */
 const SCRAPER_ENDPOINT = "https://api.scraperapi.com/";
-const SCRAPER_TIMEOUT_MS = 50000;
+const SCRAPER_TIMEOUT_MS = 30000;
 
 export function isScraperConfigured(): boolean {
   return Boolean(process.env.SCRAPER_API_KEY);
 }
 
+/**
+ * L'offre gratuite de ScraperAPI ne traite que cinq pages à la fois : au-delà,
+ * elle répond 429. Les lectures attendent donc leur tour.
+ */
+const SCRAPER_CONCURRENCY = 5;
+let running = 0;
+const waiting: (() => void)[] = [];
+
+async function inTurn<T>(task: () => Promise<T>): Promise<T> {
+  if (running >= SCRAPER_CONCURRENCY) {
+    await new Promise<void>((resolve) => waiting.push(resolve));
+  }
+  running += 1;
+  try {
+    return await task();
+  } finally {
+    running -= 1;
+    waiting.shift()?.();
+  }
+}
+
+async function viaScraper(key: string, url: string): Promise<Response> {
+  const call = () =>
+    fetch(
+      `${SCRAPER_ENDPOINT}?${new URLSearchParams({ api_key: key, url, country_code: "fr" })}`,
+      { signal: AbortSignal.timeout(SCRAPER_TIMEOUT_MS), cache: "no-store" },
+    );
+  const response = await inTurn(call);
+  // Un 429 malgré la file (une autre requête en cours chez ScraperAPI) : un
+  // second essai, à son tour.
+  return response.status === 429 ? inTurn(call) : response;
+}
+
 export const fetchPage: Fetcher = async (url) => {
   const key = process.env.SCRAPER_API_KEY;
   const response = key
-    ? await fetch(
-        `${SCRAPER_ENDPOINT}?${new URLSearchParams({ api_key: key, url, country_code: "fr" })}`,
-        { signal: AbortSignal.timeout(SCRAPER_TIMEOUT_MS), cache: "no-store" },
-      )
+    ? await viaScraper(key, url)
     : await fetch(url, {
         headers: {
           "user-agent":

@@ -14,8 +14,9 @@ import { Wordmark } from "../wordmark";
 import { TabBar } from "../tab-bar";
 
 export const dynamic = "force-dynamic";
-// Le bouton des prix interroge plusieurs sites : on lui laisse le temps.
-export const maxDuration = 60;
+// Le bouton des prix lit une vingtaine de pages, cinq à la fois : on lui
+// laisse le temps.
+export const maxDuration = 300;
 
 /**
  * Date du dernier passage des migrations, à l'heure de Paris. La base peut ne
