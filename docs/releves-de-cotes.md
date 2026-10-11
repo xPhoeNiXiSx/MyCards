@@ -82,7 +82,10 @@ commit.
 - Revendeurs : prix et stock lus dans les données produit de la page
   (JSON-LD schema.org, sinon balises meta), médiane des revendeurs en stock.
 - Cardmarket : « À partir de » de la fiche, seulement si aucun revendeur n'a
-  répondu. Le site bloque souvent les robots ; un produit qui n'a que cette
+  le produit en stock. Lu en mode « premium » de ScraperAPI (10 crédits la
+  page).
+- Tous les revendeurs en rupture et Cardmarket muet : médiane des prix
+  qu'ils affichent malgré tout, plutôt que pas de cote. Le site bloque souvent les robots ; un produit qui n'a que cette
   source reste alors à relever à la main, comme avant.
 - **Page du prix** : un article peut porter sa propre adresse (champ « Page
   du prix » de la fiche). Le bouton la lit en priorité, à la place de la

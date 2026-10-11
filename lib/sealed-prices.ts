@@ -256,7 +256,33 @@ export function readRetailPage(html: string): Reading {
     attr(html, /<meta[^>]+property=["']product:availability["'][^>]+content=["']([^"']+)["']/i) ??
     attr(html, /itemprop=["']availability["'][^>]+(?:href|content)=["']([^"']+)["']/i);
 
-  return { cents: parsePrice(metaPrice), inStock: availability(metaStock) };
+  const stock = availability(metaStock);
+  if (parsePrice(metaPrice) !== null) return { cents: parsePrice(metaPrice), inStock: stock };
+
+  // Dernier recours : le prix tel que la boutique le range pour son propre
+  // code (attribut Magento, état d'une application Next.js, couche de
+  // mesure d'audience). Le premier trouvé est celui du produit de la page :
+  // les produits suggérés viennent plus bas.
+  const fallback =
+    attr(html, /data-price-amount=["']([\d.,]+)["']/i) ??
+    attr(
+      html,
+      /"(?:price|salePrice|finalPrice|currentPrice)"\s*:\s*\{?\s*(?:"(?:value|amount)"\s*:\s*)?"?(\d+(?:[.,]\d{1,2})?)"?/i,
+    );
+  return { cents: parsePrice(fallback), inStock: stock };
+}
+
+/**
+ * Ce qu'était la page quand aucun prix n'y a été lu : son titre et son
+ * poids. Une page de vérification anti-robots (« Just a moment… ») se
+ * reconnaît tout de suite, une vraie fiche produit aussi.
+ */
+export function describePage(html: string): string {
+  const title = (attr(html, /<title[^>]*>([^<]*)<\/title>/i) ?? "sans titre")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40);
+  return `« ${title} », ${Math.round(html.length / 1024)} ko`;
 }
 
 /** Le « À partir de » d'une fiche produit Cardmarket : le plus bas prix. */
@@ -279,11 +305,14 @@ export type Decision = { cents: number; method: string } | null;
 /**
  * La méthode du fichier de relevés : la médiane des revendeurs qui ont le
  * produit, sinon le plus bas prix Cardmarket. Un revendeur en rupture ne
- * compte pas ; un stock non précisé est pris tel quel.
+ * compte pas ; un stock non précisé est pris tel quel. Si tous sont en
+ * rupture et que Cardmarket ne répond pas, le prix qu'ils affichent vaut
+ * mieux que pas de cote du tout.
  */
 export function decide(retailers: Reading[], marketCents: number | null): Decision {
-  const inStock = retailers
-    .filter((reading) => reading.cents !== null && reading.inStock !== false)
+  const priced = retailers.filter((reading) => reading.cents !== null);
+  const inStock = priced
+    .filter((reading) => reading.inStock !== false)
     .map((reading) => reading.cents as number);
   if (inStock.length > 0) {
     return {
@@ -293,6 +322,12 @@ export function decide(retailers: Reading[], marketCents: number | null): Decisi
     };
   }
   if (marketCents !== null) return { cents: marketCents, method: "Cardmarket, plus bas prix" };
+  if (priced.length > 0) {
+    return {
+      cents: median(priced.map((reading) => reading.cents as number)),
+      method: "prix affiché, en rupture",
+    };
+  }
   return null;
 }
 
@@ -337,12 +372,23 @@ async function inTurn<T>(task: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * Cardmarket est derrière une protection anti-robots que les adresses
+ * ordinaires de ScraperAPI ne passent pas : il lui faut le mode « premium »
+ * (10 crédits la page au lieu de 1) et bien plus de temps.
+ */
+const PREMIUM_HOSTS = ["cardmarket.com"];
+const PREMIUM_TIMEOUT_MS = 70000;
+
 async function viaScraper(key: string, url: string): Promise<Response> {
+  const premium = PREMIUM_HOSTS.some((domain) => host(url).endsWith(domain));
+  const params = new URLSearchParams({ api_key: key, url, country_code: "fr" });
+  if (premium) params.set("premium", "true");
   const call = () =>
-    fetch(
-      `${SCRAPER_ENDPOINT}?${new URLSearchParams({ api_key: key, url, country_code: "fr" })}`,
-      { signal: AbortSignal.timeout(SCRAPER_TIMEOUT_MS), cache: "no-store" },
-    );
+    fetch(`${SCRAPER_ENDPOINT}?${params}`, {
+      signal: AbortSignal.timeout(premium ? PREMIUM_TIMEOUT_MS : SCRAPER_TIMEOUT_MS),
+      cache: "no-store",
+    });
   const response = await inTurn(call);
   // Un 429 malgré la file (une autre requête en cours chez ScraperAPI) : un
   // second essai, à son tour.
@@ -433,11 +479,15 @@ async function readSources(
         const html = await fetcher(source.url);
         if (source.kind === "market") {
           marketCents = readCardmarketPage(html);
-          if (marketCents === null) failures.push(`${host(source.url)} : prix introuvable`);
+          if (marketCents === null) {
+            failures.push(`${host(source.url)} : prix introuvable (${describePage(html)})`);
+          }
           return;
         }
         const reading = readRetailPage(html);
-        if (reading.cents === null) failures.push(`${host(source.url)} : prix introuvable`);
+        if (reading.cents === null) {
+          failures.push(`${host(source.url)} : prix introuvable (${describePage(html)})`);
+        }
         else if (reading.inStock === false) failures.push(`${host(source.url)} : en rupture`);
         retailers.push(reading);
       } catch (error) {
@@ -554,7 +604,9 @@ async function refreshOwnPages(
             line.failures.push(`${host(item.price_url)} : en rupture, prix affiché retenu`);
           }
         }
-        if (cents === null) line.failures.push(`${host(item.price_url)} : prix introuvable`);
+        if (cents === null) {
+          line.failures.push(`${host(item.price_url)} : prix introuvable (${describePage(html)})`);
+        }
       } catch (error) {
         line.failures.push(`${host(item.price_url)} : ${failureReason(error)}`);
       }

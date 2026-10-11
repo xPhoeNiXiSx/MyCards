@@ -74,6 +74,7 @@ import { newToken, safeEquals, verifyToken } from "../lib/session";
 import {
   SEALED_PRODUCTS,
   decide,
+  describePage,
   parsePrice,
   readCardmarketPage,
   readRetailPage,
@@ -1117,7 +1118,16 @@ async function main() {
     ),
     { cents: 690, inStock: true },
   );
+  assert.equal(readRetailPage(`<div data-price-amount="29.99">`).cents, 2999);
+  assert.equal(
+    readRetailPage(`<script id="__NEXT_DATA__">{"product":{"price":{"value":38.99}}}</script>`).cents,
+    3899,
+  );
   assert.deepEqual(readRetailPage("<html>rien</html>"), { cents: null, inStock: null });
+  assert.equal(
+    describePage("<html><title>Just a moment...</title></html>"),
+    "« Just a moment... », 0 ko",
+  );
   ok("prix et stock d'une page de revendeur, en JSON-LD ou en balises meta");
 
   assert.equal(
@@ -1142,6 +1152,10 @@ async function main() {
   assert.deepEqual(decide([{ cents: 3500, inStock: false }], 16499), {
     cents: 16499,
     method: "Cardmarket, plus bas prix",
+  });
+  assert.deepEqual(decide([{ cents: 3500, inStock: false }, { cents: 3700, inStock: false }], null), {
+    cents: 3600,
+    method: "prix affiché, en rupture",
   });
   assert.equal(decide([], null), null);
   ok("médiane des revendeurs en stock, sinon Cardmarket");
