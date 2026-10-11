@@ -118,7 +118,6 @@ async function main() {
     manualValueCents: 6200,
     manualValueDate: "2026-09-22",
     imageUrl: "https://exemple.test/etb.jpg",
-    priceUrl: null,
     notes: null,
     language: null,
     condition: null,
@@ -918,7 +917,6 @@ async function main() {
     manualValueCents: null,
     manualValueDate: null,
     imageUrl: null,
-    priceUrl: null,
     notes: null,
     language: null,
     condition: null,
@@ -1173,36 +1171,10 @@ async function main() {
   const booster = await createItem({ ...aCoter, name: "Booster Rivalité Destinées" });
   const bundleSansSource = await createItem({ ...aCoter, name: "Bundle Nuit Noire" });
 
-  const coffret = await createItem({
-    ...aCoter,
-    name: "Coffret Dracaufeu ex",
-    manualValueCents: 3000,
-    manualValueDate: "2026-10-01",
-    priceUrl: "https://boutique.test/coffret-dracaufeu",
-  });
-  // Sa propre page fait foi : la liste ne le touche pas, même s'il lui ressemble.
-  const tripackPage = await createItem({
-    ...aCoter,
-    name: "Tripack ME05",
-    priceUrl: "https://boutique.test/tripack",
-  });
-  // Une page Cardmarket est ignorée : l'article retombe sur la liste, et sa
-  // cote saisie n'est plus protégée puisqu'une page a été renseignée.
-  const ronflex = await createItem({
-    ...aCoter,
-    name: "Coffret Ronflex et Leuphorie",
-    manualValueCents: 5000,
-    manualValueDate: "2026-10-01",
-    priceUrl: "https://www.cardmarket.com/fr/Pokemon/Products/Box-Sets/Snorlax",
-  });
-
   const sourcesDe = (label: string) =>
     SEALED_PRODUCTS.find((product) => product.label === label)!.sources;
   const pages: Record<string, string> = {
-    "https://boutique.test/coffret-dracaufeu": jsonLd({ price: "34.90", availability: "OutOfStock" }),
-    "https://boutique.test/tripack": jsonLd({ price: "45.00", availability: "InStock" }),
     [sourcesDe("Tripack ME05 Nuit noire")[0].url]: jsonLd({ price: "38.99", availability: "InStock" }),
-    [sourcesDe("Coffret Ronflex et Leuphorie")[0].url]: jsonLd({ price: "58.33", availability: "InStock" }),
   };
   // La seconde source du tripack ne répond pas.
   const visited: string[] = [];
@@ -1225,19 +1197,6 @@ async function main() {
   assert.deepEqual(await itemValueSeries(tripack.id), [{ day: "2026-10-07", cents: 3899 }]);
   ok("la cote posée par le bouton entre dans l'historique de l'article");
 
-  const ligneCoffret = compteRendu.find((line) => line.label === "Coffret Dracaufeu ex")!;
-  assert.equal(ligneCoffret.cents, 3490);
-  assert.equal(ligneCoffret.method, "page du prix");
-  assert.deepEqual(ligneCoffret.failures, ["boutique.test : en rupture, prix affiché retenu"]);
-  assert.equal((await getItem(coffret.id))?.manualValueCents, 3490);
-  assert.equal((await getItem(coffret.id))?.priceUrl, "https://boutique.test/coffret-dracaufeu");
-  assert.equal((await getItem(tripackPage.id))?.manualValueCents, 4500);
-  ok("un article avec sa page du prix est mis à jour depuis elle, même saisi à la main");
-
-  assert.equal((await getItem(ronflex.id))?.manualValueCents, 5833);
-  assert.ok(!visited.some((url) => url.includes("cardmarket.com")));
-  ok("une page Cardmarket est ignorée : l'article prend le prix de la liste");
-
   const ligneBundle = compteRendu.find((line) => line.label === "Bundle Nuit Noire")!;
   assert.deepEqual(ligneBundle.failures, ["aucune source fiable : à saisir à la main"]);
   assert.equal((await getItem(bundleSansSource.id))?.manualValueCents, null);
@@ -1253,6 +1212,22 @@ async function main() {
   // Pas d'ETB dans cet inventaire : sa page n'est même pas interrogée.
   assert.ok(!visited.some((url) => url.includes("coffret-dresseur-d-elite")));
   ok("aucun site n'est interrogé pour un produit absent de l'inventaire");
+
+  // Retrait de la page du prix : un article qui en avait une garde sa mise à
+  // jour automatique, et la colonne disparaît.
+  await query(`alter table items add column price_url text`);
+  const avecPage = await createItem({ ...aCoter, name: "Coffret Ronflex et Leuphorie", manualValueCents: 5000, manualValueDate: "2026-10-01" });
+  await query(`update items set price_url = 'https://www.cardmarket.com/x' where id = $1`, [avecPage.id]);
+  await runMigrations();
+  assert.equal(
+    (await query<{ value_source: string }>(`select value_source from items where id = $1`, [avecPage.id]))[0].value_source,
+    "auto",
+  );
+  assert.equal(
+    (await query(`select 1 from information_schema.columns where table_name = 'items' and column_name = 'price_url'`)).length,
+    0,
+  );
+  ok("la page du prix retirée, l'article qui en avait une reste mis à jour par le bouton");
 
   await pgPrix.close();
 

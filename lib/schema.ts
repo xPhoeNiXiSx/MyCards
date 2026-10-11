@@ -122,10 +122,6 @@ export const SCHEMA_STATEMENTS: string[] = [
   // unitaire du moment. Comme pour l'inventaire, ce qui n'est pas relevé le
   // jour même est perdu : on relève au passage du cron, à l'ouverture d'une
   // fiche et à chaque enregistrement.
-  // Page d'un revendeur (ou de Cardmarket) où lire le prix d'un produit
-  // scellé : le bouton « Mettre à jour les prix » s'y rend directement.
-  `alter table items add column if not exists price_url text`,
-
   `create table if not exists item_value_history (
      item_id     uuid not null references items (id) on delete cascade,
      day         date not null,
@@ -141,4 +137,20 @@ export const SCHEMA_STATEMENTS: string[] = [
        from items
       where manual_value_cents is not null and manual_value_date is not null
    on conflict (item_id, day) do nothing`,
+
+  // La « page du prix » d'un article (11/10/2026) a été retirée : seule la
+  // liste de `lib/sealed-prices.ts` fait foi. Un article qui en portait une
+  // avait demandé la mise à jour automatique ; sa cote passe donc en
+  // « relevé » pour que le bouton continue de la rafraîchir. Puis la
+  // colonne disparaît.
+  `do $$
+   begin
+     if exists (select 1 from information_schema.columns
+                 where table_name = 'items' and column_name = 'price_url') then
+       update items set value_source = 'auto'
+        where price_url is not null and manual_value_cents is not null;
+     end if;
+   end $$`,
+
+  `alter table items drop column if exists price_url`,
 ];

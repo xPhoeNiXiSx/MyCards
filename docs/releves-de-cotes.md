@@ -83,16 +83,10 @@ commit.
   est définie dans Vercel (offre gratuite : 1 000 pages par mois).
 - Revendeurs : prix et stock lus dans les données produit de la page
   (JSON-LD schema.org, sinon balises meta), médiane des revendeurs en stock.
-- Cardmarket n'est plus interrogé : une page Cardmarket collée dans une
-  fiche est ignorée, et l'article prend le prix de la liste.
+- Cardmarket n'est plus interrogé.
 - Tous les revendeurs en rupture : médiane des prix
   qu'ils affichent malgré tout, plutôt que pas de cote. Le site bloque souvent les robots ; un produit qui n'a que cette
   source reste alors à relever à la main, comme avant.
-- **Page du prix** : un article peut porter sa propre adresse (champ « Page
-  du prix » de la fiche). Le bouton la lit en priorité, à la place de la
-  liste, et remplace alors la cote même saisie à la main : renseigner la
-  page, c'est demander la mise à jour automatique. C'est le moyen de suivre
-  un produit qui n'est pas dans le tableau ci-dessus.
 - Le produit est reconnu dans l'inventaire par deux motifs (objet et
   extension) plutôt que par son nom exact.
 - Seules les cotes vides ou posées par un relevé sont remplacées ; une cote

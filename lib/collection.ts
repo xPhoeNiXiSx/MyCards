@@ -219,11 +219,6 @@ export type Item = {
   manualValueCents: number | null;
   manualValueDate: string | null;
   imageUrl: string | null;
-  /**
-   * Page où le bouton « Mettre à jour les prix » lit la cote d'un produit
-   * scellé. Renseignée, elle fait foi sur la valeur saisie.
-   */
-  priceUrl: string | null;
   notes: string | null;
   /** `null` = non précisé, supposé français. */
   language: Language | null;
@@ -290,7 +285,6 @@ type Row = {
   manual_value_cents: number | null;
   manual_value_date: string | Date | null;
   image_url: string | null;
-  price_url: string | null;
   notes: string | null;
   language: string | null;
   condition: string | null;
@@ -321,7 +315,6 @@ function toItem(row: Row): Item {
       row.manual_value_cents === null ? null : Number(row.manual_value_cents),
     manualValueDate: toIsoDate(row.manual_value_date),
     imageUrl: row.image_url,
-    priceUrl: row.price_url ?? null,
     notes: row.notes,
     language: isLanguage(row.language) ? row.language : null,
     condition: isCondition(row.condition) ? row.condition : null,
@@ -333,7 +326,7 @@ function toItem(row: Row): Item {
 const COLUMNS = `id, status, kind, sealed_type, name, card_id, set_name, quantity,
                  purchase_price_cents, purchase_date,
                  manual_value_cents, manual_value_date, image_url, notes,
-                 language, condition, grader, grade, price_url`;
+                 language, condition, grader, grade`;
 
 /** Les articles d'un statut donné, du plus récent au plus ancien. */
 export async function listItems(
@@ -384,10 +377,9 @@ export async function createItem(input: ItemInput): Promise<Item> {
     `insert into items (status, kind, sealed_type, name, card_id, set_name,
                         quantity, purchase_price_cents, purchase_date,
                         manual_value_cents, manual_value_date, image_url, notes,
-                        language, condition, grader, grade, value_source,
-                        price_url)
+                        language, condition, grader, grade, value_source)
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-             $14, $15, $16, $17, $18, $19)
+             $14, $15, $16, $17, $18)
      returning ${COLUMNS}`,
     [
       input.status,
@@ -408,7 +400,6 @@ export async function createItem(input: ItemInput): Promise<Item> {
       input.grader,
       input.grade,
       valueSource(input),
-      input.priceUrl,
     ],
   );
   return toItem(rows[0]);
@@ -422,7 +413,7 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
             purchase_date = $10, manual_value_cents = $11,
             manual_value_date = $12, image_url = $13, notes = $14,
             language = $15, condition = $16, grader = $17, grade = $18,
-            value_source = $19, price_url = $20, updated_at = now()
+            value_source = $19, updated_at = now()
       where id = $1`,
     [
       id,
@@ -444,7 +435,6 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
       input.grader,
       input.grade,
       valueSource(input),
-      input.priceUrl,
     ],
   );
 }

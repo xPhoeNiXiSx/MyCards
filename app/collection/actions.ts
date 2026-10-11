@@ -92,12 +92,6 @@ function parse(form: FormData): ItemInput | string {
     return "L'adresse de l'image doit commencer par http:// ou https://.";
   }
 
-  // Même règle que l'image : une adresse web, rien d'autre.
-  const priceUrl = parseImageUrl(text(form, "priceUrl"));
-  if (priceUrl === null) {
-    return "L'adresse de la page du prix doit commencer par http:// ou https://.";
-  }
-
   const rawStatus = text(form, "status");
   const status = STATUSES.find((candidate) => candidate === rawStatus) ?? "owned";
 
@@ -140,8 +134,6 @@ function parse(form: FormData): ItemInput | string {
         ? null
         : (manualDate ?? new Date().toISOString().slice(0, 10)),
     imageUrl: image ?? null,
-    // Une carte a sa cote automatique : la page du prix ne vaut que pour le reste.
-    priceUrl: kind === "single" ? null : (priceUrl ?? null),
     notes: text(form, "notes"),
     language,
     condition,
