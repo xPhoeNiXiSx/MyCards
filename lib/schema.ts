@@ -122,6 +122,10 @@ export const SCHEMA_STATEMENTS: string[] = [
   // unitaire du moment. Comme pour l'inventaire, ce qui n'est pas relevé le
   // jour même est perdu : on relève au passage du cron, à l'ouverture d'une
   // fiche et à chaque enregistrement.
+  // Page d'un revendeur (ou de Cardmarket) où lire le prix d'un produit
+  // scellé : le bouton « Mettre à jour les prix » s'y rend directement.
+  `alter table items add column if not exists price_url text`,
+
   `create table if not exists item_value_history (
      item_id     uuid not null references items (id) on delete cascade,
      day         date not null,

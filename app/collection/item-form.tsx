@@ -201,6 +201,23 @@ export function ItemForm({
         </label>
       </div>
 
+      {isCard ? null : (
+        <label>
+          Page du prix (adresse)
+          <input
+            name="priceUrl"
+            inputMode="url"
+            defaultValue={item?.priceUrl ?? ""}
+            placeholder="https://…"
+          />
+          <small>
+            La page du produit chez un revendeur ou sur Cardmarket. Renseignée,
+            le bouton « Mettre à jour les prix » du compte y lit la valeur
+            actuelle.
+          </small>
+        </label>
+      )}
+
       <label>
         Image (adresse)
         <div className="with-preview">

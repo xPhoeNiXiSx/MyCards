@@ -117,6 +117,7 @@ async function main() {
     manualValueCents: 6200,
     manualValueDate: "2026-09-22",
     imageUrl: "https://exemple.test/etb.jpg",
+    priceUrl: null,
     notes: null,
     language: null,
     condition: null,
@@ -916,6 +917,7 @@ async function main() {
     manualValueCents: null,
     manualValueDate: null,
     imageUrl: null,
+    priceUrl: null,
     notes: null,
     language: null,
     condition: null,
@@ -1156,7 +1158,24 @@ async function main() {
   const display = await createItem({ ...aCoter, name: "Display Rivalités Destinées" });
   const booster = await createItem({ ...aCoter, name: "Booster Rivalité Destinées" });
 
-  const pages: Record<string, string> = {};
+  const coffret = await createItem({
+    ...aCoter,
+    name: "Coffret Dracaufeu ex",
+    manualValueCents: 3000,
+    manualValueDate: "2026-10-01",
+    priceUrl: "https://boutique.test/coffret-dracaufeu",
+  });
+  // Sa propre page fait foi : la liste ne le touche pas, même s'il lui ressemble.
+  const bundlePage = await createItem({
+    ...aCoter,
+    name: "Bundle ME05",
+    priceUrl: "https://boutique.test/bundle",
+  });
+
+  const pages: Record<string, string> = {
+    "https://boutique.test/coffret-dracaufeu": jsonLd({ price: "34.90", availability: "OutOfStock" }),
+    "https://boutique.test/bundle": jsonLd({ price: "45.00", availability: "InStock" }),
+  };
   const bundleSources = SEALED_PRODUCTS.find((product) => product.label === "Bundle Nuit Noire")!.sources;
   pages[bundleSources[0].url] = jsonLd({ price: "38.99", availability: "InStock" });
   pages[bundleSources[1].url] = jsonLd({ price: "41.90", availability: "InStock" });
@@ -1180,6 +1199,15 @@ async function main() {
 
   assert.deepEqual(await itemValueSeries(bundle.id), [{ day: "2026-10-07", cents: 4045 }]);
   ok("la cote posée par le bouton entre dans l'historique de l'article");
+
+  const ligneCoffret = compteRendu.find((line) => line.label === "Coffret Dracaufeu ex")!;
+  assert.equal(ligneCoffret.cents, 3490);
+  assert.equal(ligneCoffret.method, "page du prix");
+  assert.deepEqual(ligneCoffret.failures, ["boutique.test : en rupture, prix affiché retenu"]);
+  assert.equal((await getItem(coffret.id))?.manualValueCents, 3490);
+  assert.equal((await getItem(coffret.id))?.priceUrl, "https://boutique.test/coffret-dracaufeu");
+  assert.equal((await getItem(bundlePage.id))?.manualValueCents, 4500);
+  ok("un article avec sa page du prix est mis à jour depuis elle, même saisi à la main");
 
   const ligneBooster = compteRendu.find((line) => line.label === "Booster Rivalités Destinées")!;
   assert.equal(ligneBooster.matched, 1);

@@ -337,6 +337,31 @@ function host(url: string): string {
   return new URL(url).hostname.replace(/^www\./, "");
 }
 
+/** Ce qu'on dit d'une source qui n'a pas répondu. */
+function failureReason(error: unknown): string {
+  if (error instanceof Error && error.name === "TimeoutError") return "pas de réponse";
+  if (error instanceof Error && error.message.startsWith("HTTP")) {
+    return `refusé (${error.message})`;
+  }
+  return "inaccessible";
+}
+
+/** Une cote posée par le bouton entre aussitôt dans l'historique des articles. */
+async function recordHistory(
+  query: QueryRunner,
+  ids: string[],
+  today: string,
+  cents: number,
+): Promise<void> {
+  await query(
+    `insert into item_value_history (item_id, day, unit_cents, source)
+     select id, $2::date, $3, 'auto' from unnest($1::uuid[]) as t (id)
+     on conflict (item_id, day) do update
+       set unit_cents = excluded.unit_cents, source = excluded.source`,
+    [ids, today, cents],
+  );
+}
+
 async function readSources(
   product: SealedProduct,
   fetcher: Fetcher,
@@ -359,13 +384,7 @@ async function readSources(
         else if (reading.inStock === false) failures.push(`${host(source.url)} : en rupture`);
         retailers.push(reading);
       } catch (error) {
-        const reason =
-          error instanceof Error && error.name === "TimeoutError"
-            ? "pas de réponse"
-            : error instanceof Error && error.message.startsWith("HTTP")
-              ? `refusé (${error.message})`
-              : "inaccessible";
-        failures.push(`${host(source.url)} : ${reason}`);
+        failures.push(`${host(source.url)} : ${failureReason(error)}`);
       }
     }),
   );
@@ -373,16 +392,19 @@ async function readSources(
   return { decision: decide(retailers, marketCents), failures };
 }
 
+// Un article qui a sa propre page du prix est traité à part : c'est elle qui
+// fait foi, pas l'adresse de la liste.
 const MATCH = `kind in ('sealed', 'other')
+  and price_url is null
   and lower(name) ~ $1
   and lower(name) ~ $2
   and ($3::text is null or lower(name) !~ $3)`;
 
-/** Va chercher les prix et les pose. Une ligne de compte rendu par produit. */
-export async function refreshSealedPrices(
+/** Les produits de la liste : une ligne de compte rendu par produit. */
+async function refreshListed(
   query: QueryRunner,
   today: string,
-  fetcher: Fetcher = fetchPage,
+  fetcher: Fetcher,
 ): Promise<RefreshLine[]> {
   return Promise.all(
     SEALED_PRODUCTS.map(async (product) => {
@@ -425,15 +447,84 @@ export async function refreshSealedPrices(
 
       // La nouvelle cote entre aussitôt dans l'historique de chaque article.
       if (rows.length > 0) {
-        await query(
-          `insert into item_value_history (item_id, day, unit_cents, source)
-           select id, $2::date, $3, 'auto' from unnest($1::uuid[]) as t (id)
-           on conflict (item_id, day) do update
-             set unit_cents = excluded.unit_cents, source = excluded.source`,
-          [rows.map((row) => row.id), today, decision.cents],
-        );
+        await recordHistory(query, rows.map((row) => row.id), today, decision.cents);
       }
       return line;
     }),
   );
+}
+
+/**
+ * Les articles qui ont leur propre page du prix : une ligne par article.
+ *
+ * Renseigner cette page, c'est demander la mise à jour automatique : la cote
+ * est donc remplacée même si elle avait été saisie à la main. Une page
+ * Cardmarket se lit comme Cardmarket, toute autre comme un revendeur ; un
+ * revendeur en rupture donne quand même son prix, faute d'autre source.
+ */
+async function refreshOwnPages(
+  query: QueryRunner,
+  today: string,
+  fetcher: Fetcher,
+): Promise<RefreshLine[]> {
+  const items = await query<{ id: string; name: string; price_url: string }>(
+    `select id, name, price_url from items
+      where kind in ('sealed', 'other') and price_url is not null
+      order by name`,
+  );
+
+  return Promise.all(
+    items.map(async (item) => {
+      const line: RefreshLine = {
+        label: item.name,
+        matched: 1,
+        cents: null,
+        method: null,
+        updated: 0,
+        kept: 0,
+        failures: [],
+      };
+
+      let cents: number | null = null;
+      try {
+        const html = await fetcher(item.price_url);
+        if (host(item.price_url).endsWith("cardmarket.com")) {
+          cents = readCardmarketPage(html);
+        } else {
+          const reading = readRetailPage(html);
+          cents = reading.cents;
+          if (reading.inStock === false && cents !== null) {
+            line.failures.push(`${host(item.price_url)} : en rupture, prix affiché retenu`);
+          }
+        }
+        if (cents === null) line.failures.push(`${host(item.price_url)} : prix introuvable`);
+      } catch (error) {
+        line.failures.push(`${host(item.price_url)} : ${failureReason(error)}`);
+      }
+      if (cents === null) return line;
+
+      await query(
+        `update items
+            set manual_value_cents = $2, manual_value_date = $3,
+                value_source = 'auto', updated_at = now()
+          where id = $1`,
+        [item.id, cents, today],
+      );
+      await recordHistory(query, [item.id], today, cents);
+      return { ...line, cents, method: "page du prix", updated: 1 };
+    }),
+  );
+}
+
+/** Va chercher les prix et les pose. Une ligne de compte rendu par produit. */
+export async function refreshSealedPrices(
+  query: QueryRunner,
+  today: string,
+  fetcher: Fetcher = fetchPage,
+): Promise<RefreshLine[]> {
+  const [own, listed] = await Promise.all([
+    refreshOwnPages(query, today, fetcher),
+    refreshListed(query, today, fetcher),
+  ]);
+  return [...own, ...listed];
 }

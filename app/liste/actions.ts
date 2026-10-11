@@ -64,6 +64,7 @@ export async function addWantedAction(
     manualValueCents: null,
     manualValueDate: null,
     imageUrl: null,
+    priceUrl: null,
     notes: null,
     language: null,
     condition: null,

@@ -81,6 +81,11 @@ commit.
 - Cardmarket : « À partir de » de la fiche, seulement si aucun revendeur n'a
   répondu. Le site bloque souvent les robots ; un produit qui n'a que cette
   source reste alors à relever à la main, comme avant.
+- **Page du prix** : un article peut porter sa propre adresse (champ « Page
+  du prix » de la fiche). Le bouton la lit en priorité, à la place de la
+  liste, et remplace alors la cote même saisie à la main : renseigner la
+  page, c'est demander la mise à jour automatique. C'est le moyen de suivre
+  un produit qui n'est pas dans le tableau ci-dessus.
 - Le produit est reconnu dans l'inventaire par deux motifs (objet et
   extension) plutôt que par son nom exact.
 - Seules les cotes vides ou posées par un relevé sont remplacées ; une cote
